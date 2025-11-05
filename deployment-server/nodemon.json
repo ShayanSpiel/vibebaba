@@ -1,0 +1,11 @@
+{
+  "watch": ["server.js", "pocketbase.js", "db-routes.js", "../lib/**/*"],
+  "ignore": [
+    "deployments/**",
+    "pb_data/**",
+    "pb_migrations/**",
+    "node_modules/**",
+    "builds/**"
+  ],
+  "ext": "js,json,ts"
+}

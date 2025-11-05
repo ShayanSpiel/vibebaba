@@ -1,0 +1,14 @@
+{
+  "watch": ["server.js", "pocketbase.js", "db-routes.js", "build-manager.js", "nextjs-scaffold.js", "dependency-analyzer.js"],
+  "ignore": [
+    "deployments/**",
+    "pb_data/**",
+    "pb_migrations/**",
+    "node_modules/**",
+    "builds/**",
+    ".build-cache/**"
+  ],
+  "ext": "js,json",
+  "delay": 3000,
+  "verbose": true
+}

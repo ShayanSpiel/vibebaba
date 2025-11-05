@@ -1,0 +1,114 @@
+[
+  {
+    "id": "example_categories_id",
+    "name": "example_categories",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "slug_field",
+        "name": "slug",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "unique": false,
+        "options": {
+          "min": 1,
+          "max": 100,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "name_field",
+        "name": "name",
+        "type": "text",
+        "system": false,
+        "required": true,
+        "unique": false,
+        "options": {
+          "min": 1,
+          "max": 200,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "description_field",
+        "name": "description",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "unique": false,
+        "options": {
+          "min": 0,
+          "max": 500,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "min_examples_field",
+        "name": "minExamplesRequired",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "unique": false,
+        "options": {
+          "min": 0,
+          "max": null
+        }
+      },
+      {
+        "id": "target_examples_field",
+        "name": "targetExamples",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "unique": false,
+        "options": {
+          "min": 0,
+          "max": null
+        }
+      },
+      {
+        "id": "parent_field",
+        "name": "parentCategory",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "unique": false,
+        "options": {
+          "min": 0,
+          "max": 100,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "is_active_field",
+        "name": "isActive",
+        "type": "bool",
+        "system": false,
+        "required": false,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "id": "priority_field",
+        "name": "priority",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "unique": false,
+        "options": {
+          "min": 0,
+          "max": 10
+        }
+      }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "options": {}
+  }
+]

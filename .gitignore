@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+deployment-server/node_modules/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# TypeScript
+*.tsbuildinfo
+*.tsbuildinfo.*
+
+# Deployment artifacts
+deployment-server/builds/
+deployment-server/deployments/
+deployment-server/pb_data/
+deployment-server/pb.log
+deployment-server/pocketbase.log
+
+# PocketBase data
+pb_data/
+pb.log
+pocketbase.log
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# LangGraph
+.langgraph_api/
+
+# Test/temporary data
+messages/
+.langsmith-evolution/
+
+# PocketBase database files
+pocketbase/data.db*
+pocketbase/logs.db*
+pocketbase/*.backup-*

@@ -1,0 +1,351 @@
+/**
+ * FONT LOADING OPTIMIZATION
+ *
+ * Strategy:
+ * - font-display: block - Brief invisible text period, then always shows custom font
+ * - Preload critical fonts in layout.tsx for instant discovery
+ * - Fallback fonts adjusted with size-adjust to match metrics precisely
+ * - Font Loading API ensures fonts load before rendering
+ *
+ * Result: Consistent rendering on every page load, no random weight/spacing changes
+ */
+
+/* ============================================
+   FALLBACK FONT ADJUSTMENTS
+   Adjust system fonts to match custom font metrics
+   Calculated from actual Proxima Nova Regular metrics:
+   - Ascent: 920/1000 (92.0%)
+   - Descent: 298/1000 (29.8%)
+   - Line Gap: 0
+   ============================================ */
+
+@font-face {
+  font-family: 'Proxima Nova Fallback';
+  src: local('Arial');
+  size-adjust: 96%;
+  ascent-override: 95.8%;
+  descent-override: 31.0%;
+  line-gap-override: 0%;
+}
+
+/**
+ * PROXIMA NOVA FONT FAMILY
+ *
+ * Font: Proxima Nova
+ * Weights: 300 (Light), 400 (Regular), 600 (Bold), 800 (Extra Bold), 900 (Black)
+ * Styles: Normal and Italic
+ *
+ * Usage:
+ * - Light text: font-weight: 300
+ * - Regular text: font-weight: 400
+ * - Bold text: font-weight: 600
+ * - Extra Bold: font-weight: 800
+ * - Black: font-weight: 900
+ */
+
+/* ============================================
+   PROXIMA NOVA - Main English Font
+   ============================================ */
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: 300;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_light.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: bold;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: italic;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_boldit.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_extrabold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_black.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  font-style: italic;
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/proxima-nova/proximanova_blackit.woff2') format('woff2');
+}
+
+/**
+ * IRANSANSX FONT FAMILY
+ *
+ * Font: IRANSansX (Pro)
+ * Dot Style: Mixed (Default is Dot 7 standard, Dot 4 for Farsi numerals)
+ * Weights: 100-1000 (All available weights)
+ * Features: Farsi numerals, RTL support
+ *
+ * Usage:
+ * - Titles/Headings: font-weight: 1000
+ * - Regular text: font-weight: 200
+ * - Bold text: font-weight: 700
+ */
+
+/* ============================================
+   IRANSANSX - Standard (Dot 7 - Default)
+   ============================================ */
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 100;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Thin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 200;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-UltraLight.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 300;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Light.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-DemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: bold;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-ExtraBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Black.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 950;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-ExtraBlack.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  font-style: normal;
+  font-weight: 1000;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansX-Heavy.woff2') format('woff2');
+}
+
+/* ============================================
+   IRANSANSX - Farsi Numerals (Dot 4)
+   For when you need Farsi numbers specifically
+   ============================================ */
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 100;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-ThinD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 200;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-UltraLightD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 300;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-LightD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-RegularD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-RegularD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-MediumD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-DemiBoldD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-BoldD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: bold;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-BoldD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-ExtraBoldD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-BlackD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 950;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-ExtraBlackD4.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  font-style: normal;
+  font-weight: 1000;
+  font-display: block;
+  src: url('/fonts/iransansx/IRANSansXFaNum-HeavyD4.woff2') format('woff2');
+}

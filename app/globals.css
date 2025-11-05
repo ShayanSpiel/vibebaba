@@ -1,0 +1,369 @@
+/* Import all custom fonts (Proxima Nova & IranSansX) - Must be at the top before any other rules */
+@import './fonts.css';
+
+/* Font optimization: Critical fonts are preloaded in layout.tsx to prevent FOUT */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   SHADCN UI THEME VARIABLES - MAPPED TO YOUR THEME SYSTEM
+   ============================================ */
+@layer base {
+  :root {
+    /* Map shadcn to YOUR existing color system */
+    --background: 34 34 32; /* #222220 = backgroundBase */
+    --foreground: 250 249 245; /* #FAF9F5 = textPrimary */
+
+    --card: 42 42 40; /* #2A2A28 = backgroundRaised */
+    --card-foreground: 250 249 245; /* textPrimary */
+
+    --popover: 49 49 49; /* #313131 = backgroundOverlay */
+    --popover-foreground: 250 249 245;
+
+    --primary: 174 133 27; /* #AE851B = brandPrimary (YOUR gold!) */
+    --primary-foreground: 250 249 245;
+
+    --secondary: 54 54 52; /* #363634 = backgroundSubtle */
+    --secondary-foreground: 250 249 245;
+
+    --muted: 54 54 52; /* #363634 = backgroundSubtle */
+    --muted-foreground: 160 159 152; /* #A09F98 = textSubtle */
+
+    --accent: 193 154 58; /* #C19A3A = accentDefault */
+    --accent-foreground: 34 34 32;
+
+    --destructive: 216 124 124; /* #D87C7C = error */
+    --destructive-foreground: 250 249 245;
+
+    --border: 40 6 31; /* #53504A = borderLight (visible grey!) */
+    --input: 40 6 31; /* borderLight */
+    --ring: 174 133 27; /* #AE851B = brandPrimary (focus rings) */
+
+    --radius: 0.5rem; /* 8px border radius */
+
+    /* Alert/Notification Colors - Dark Theme */
+    --color-success: #4ADE80; /* Green */
+    --color-success-rgb: 74 222 128;
+    --color-error: #D87C7C; /* Red from your theme */
+    --color-error-rgb: 216 124 124;
+    --color-warning: #F59E0B; /* Amber */
+    --color-warning-rgb: 245 158 11;
+    --color-info: #60A5FA; /* Blue */
+    --color-info-rgb: 96 165 250;
+  }
+
+  /* CRITICAL: Override Tailwind's hardcoded border-color in reset */
+  *, ::before, ::after {
+    border-color: hsl(var(--border));
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #262624;
+  color: #FAF9F5;
+  font-size: 0.95rem;
+  /* Optimize font rendering for consistency */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================
+   FONT SYSTEM - Language Aware
+   ============================================ */
+
+/* Default: English - Let Tailwind's font-sans apply (already configured in tailwind.config.js) */
+/* Tailwind's base layer will apply: font-family: 'Proxima Nova', 'Proxima Nova Fallback', ... */
+
+/* Ensure smooth font loading transition */
+html:not(.fonts-loaded) body {
+  /* Use fallback while fonts are loading */
+  opacity: 1;
+}
+
+html.fonts-loaded body {
+  /* Fonts are loaded, render normally */
+  opacity: 1;
+}
+
+/* Farsi: IRANSansX with Farsi numerals */
+[lang="fa"],
+[lang="fa"] * {
+  font-family: 'IRANSansXFaNum', 'IRANSansX', sans-serif !important;
+}
+
+/* Arabic: IRANSansX */
+[lang="ar"],
+[lang="ar"] * {
+  font-family: 'IRANSansX', sans-serif !important;
+}
+
+/* ============================================
+   TYPOGRAPHY STANDARDS
+   ============================================ */
+
+/* Headings - Black/Extra Bold for English, Heavy for Farsi */
+h1, h2, h3, h4, h5, h6,
+.heading {
+  font-weight: 900; /* Proxima Nova Black */
+}
+
+[lang="fa"] h1,
+[lang="fa"] h2,
+[lang="fa"] h3,
+[lang="fa"] h4,
+[lang="fa"] h5,
+[lang="fa"] h6,
+[lang="fa"] .heading {
+  font-weight: 1000; /* IRANSansX Heavy */
+}
+
+/* Regular text - Light weight for readability */
+p, span, div, a, button, input, textarea, label {
+  font-weight: 300; /* Proxima Nova Light */
+}
+
+[lang="fa"] p,
+[lang="fa"] span,
+[lang="fa"] div,
+[lang="fa"] a,
+[lang="fa"] button,
+[lang="fa"] input,
+[lang="fa"] textarea,
+[lang="fa"] label {
+  font-weight: 200; /* IRANSansX UltraLight */
+}
+
+/* Bold text - Bold weight */
+strong, b, .font-bold {
+  font-weight: 600; /* Proxima Nova Bold */
+}
+
+[lang="fa"] strong,
+[lang="fa"] b,
+[lang="fa"] .font-bold {
+  font-weight: 700; /* IRANSansX Bold */
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  direction: rtl;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+}
+
+/* RTL-specific adjustments */
+[dir="rtl"] .rtl\:mirror {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .rtl\:text-right {
+  text-align: right;
+}
+
+[dir="ltr"] .ltr\:text-left {
+  text-align: left;
+}
+
+/* ============================================
+   COMPONENT SIZING STANDARDS
+   ============================================ */
+
+/* Button Sizes - Consistent across all buttons */
+.btn-xs {
+  padding: 0.375rem 0.75rem;  /* 6px 12px */
+  font-size: 0.875rem;        /* 14px */
+  line-height: 1.25rem;       /* 20px */
+  border-radius: 0.5rem;      /* 8px */
+  min-height: 1.875rem;       /* 30px */
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;      /* 8px 16px */
+  font-size: 0.875rem;        /* 14px */
+  line-height: 1.25rem;       /* 20px */
+  border-radius: 0.5rem;      /* 8px */
+  min-height: 2.25rem;        /* 36px */
+}
+
+.btn-md, .btn {
+  padding: 0.625rem 1.5rem;   /* 10px 24px */
+  font-size: 1rem;            /* 16px */
+  line-height: 1.5rem;        /* 24px */
+  border-radius: 0.5rem;      /* 8px */
+  min-height: 2.75rem;        /* 44px */
+}
+
+.btn-lg {
+  padding: 0.75rem 2rem;      /* 12px 32px */
+  font-size: 1.125rem;        /* 18px */
+  line-height: 1.75rem;       /* 28px */
+  border-radius: 0.75rem;     /* 12px */
+  min-height: 3.25rem;        /* 52px */
+}
+
+/* Input Sizes - Consistent with buttons */
+.input-sm {
+  padding: 0.5rem 0.75rem;    /* 8px 12px */
+  font-size: 0.875rem;        /* 14px */
+  line-height: 1.25rem;       /* 20px */
+  border-radius: 0.5rem;      /* 8px */
+  min-height: 2.25rem;        /* 36px */
+}
+
+.input-md, .input {
+  padding: 0.625rem 1rem;     /* 10px 16px */
+  font-size: 1rem;            /* 16px */
+  line-height: 1.5rem;        /* 24px */
+  border-radius: 0.5rem;      /* 8px */
+  min-height: 2.75rem;        /* 44px */
+}
+
+.input-lg {
+  padding: 0.75rem 1.25rem;   /* 12px 20px */
+  font-size: 1.125rem;        /* 18px */
+  line-height: 1.75rem;       /* 28px */
+  border-radius: 0.75rem;     /* 12px */
+  min-height: 3.25rem;        /* 52px */
+}
+
+/* Card/Container Spacing */
+.container-sm {
+  padding: 1rem;              /* 16px */
+}
+
+.container-md, .container {
+  padding: 1.5rem;            /* 24px */
+}
+
+.container-lg {
+  padding: 2rem;              /* 32px */
+}
+
+.container-xl {
+  padding: 3rem;              /* 48px */
+}
+
+/* Spacing System - Use these for consistent margins/padding */
+.space-xs { margin: 0.25rem; }        /* 4px */
+.space-sm { margin: 0.5rem; }         /* 8px */
+.space-md { margin: 1rem; }           /* 16px */
+.space-lg { margin: 1.5rem; }         /* 24px */
+.space-xl { margin: 2rem; }           /* 32px */
+.space-2xl { margin: 3rem; }          /* 48px */
+
+/* Gap System - For flex/grid layouts */
+.gap-xs { gap: 0.25rem; }            /* 4px */
+.gap-sm { gap: 0.5rem; }             /* 8px */
+.gap-md { gap: 1rem; }               /* 16px */
+.gap-lg { gap: 1.5rem; }             /* 24px */
+.gap-xl { gap: 2rem; }               /* 32px */
+.gap-2xl { gap: 3rem; }              /* 48px */
+
+/* ============================================
+   CHAT ANIMATIONS
+   ============================================ */
+
+/* Slide up animation for chat messages appearing from bottom */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Shimmer animation for gradient overlays */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Animation delays for sparkle effects */
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Fade in animation for tags */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Slide in from left animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease-out;
+}
+
+/* Slow spin animation - correct direction (clockwise) */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS - Styled via Tailwind in layout.tsx
+   ============================================ */
+/* NO CSS OVERRIDES HERE - Using Tailwind classes in Toaster component for consistency */

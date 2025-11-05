@@ -1,0 +1,25 @@
+{
+  "watch": [
+    "app/**/*",
+    "components/**/*",
+    "lib/**/*",
+    "public/**/*",
+    "styles/**/*",
+    ".env",
+    ".env.local"
+  ],
+  "ext": "js,jsx,ts,tsx,json,css,scss",
+  "ignore": [
+    ".next/**/*",
+    "node_modules/**/*",
+    ".git/**/*",
+    "scripts/**/*"
+  ],
+  "exec": "pkill -9 -f 'next dev|next-server|node.*\\.next' 2>/dev/null || true; sleep 2; next dev",
+  "delay": 5000,
+  "restartable": "rs",
+  "verbose": true,
+  "events": {
+    "restart": "echo '\n🔄 Killing all old servers and restarting after cooldown...'"
+  }
+}
