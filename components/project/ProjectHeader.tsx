@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/PocketBaseAuthProvider";
 import { useState, useEffect, useRef } from "react";
 import PublishModal from "./PublishModal";
 import ProjectSettingsModal from "./ProjectSettingsModal";
+import { useProjectSettings } from "@/lib/contexts/ProjectSettingsContext";
 
 interface ProjectHeaderProps {
   projectTitle: string;
@@ -41,6 +42,9 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
   const projectMenuRef = useRef<HTMLDivElement>(null);
+
+  // 🎯 SINGLE SOURCE OF TRUTH: Use centralized project settings context
+  const { settings: projectSettings } = useProjectSettings();
 
   const displayTitle = truncateTitle(projectTitle);
 
@@ -195,7 +199,7 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
       localStorage.setItem(`project_${newProjectId}`, JSON.stringify(duplicatedProject));
 
       // Save to PocketBase
-      const { pb } = await import('@/lib/pocketbase');
+      const { pb } = await import('@/lib/database/pocketbase');
       await pb.collection('projects').create({
         userId: user?.id,
         description: duplicatedProject.description,
@@ -233,7 +237,7 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
       localStorage.setItem(`project_${projectId}`, JSON.stringify(updatedProject));
 
       // Update in PocketBase
-      const { pb } = await import('@/lib/pocketbase');
+      const { pb } = await import('@/lib/database/pocketbase');
       const records = await pb.collection('projects').getFullList({
         filter: `userId = "${user?.id}"`,
       });
@@ -257,60 +261,32 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
     }
   };
 
-  // Get project data for settings modal - re-read on every render to get latest stylingConfig
+  // Get project data for settings modal - merge localStorage with centralized settings
   const [projectData, setProjectData] = useState<any>(null);
 
   useEffect(() => {
-    const loadProjectData = async () => {
+    const loadProjectData = () => {
       const data = localStorage.getItem(`project_${projectId}`);
       if (data) {
         const parsed = JSON.parse(data);
 
-        // ✨ Load stylingConfig and projectName from project_settings_memory
-        try {
-          console.log('[ProjectHeader] 🔍 Fetching from /api/memory/project-settings?projectId=' + projectId);
-          const memoryRes = await fetch(`/api/memory/project-settings?projectId=${projectId}`);
-          console.log('[ProjectHeader] 📡 Memory API status:', memoryRes.status);
+        // 🎯 SINGLE SOURCE OF TRUTH: Merge with centralized settings from context
+        if (projectSettings) {
+          console.log('[ProjectHeader] ✅ Using centralized settings from context');
 
-          if (memoryRes.ok) {
-            const memory = await memoryRes.json();
-            console.log('[ProjectHeader] 📦 Memory API response:', {
-              success: memory.success,
-              hasData: !!memory.data,
-              dataKeys: memory.data ? Object.keys(memory.data) : []
-            });
-
-            // API returns { success: true, data: { stylingConfig: ..., projectName: ... } }
-            if (memory.success && memory.data) {
-              if (memory.data.stylingConfig) {
-                parsed.stylingConfig = memory.data.stylingConfig;
-                console.log('[ProjectHeader] ✅ Loaded stylingConfig from memory, keys:', Object.keys(memory.data.stylingConfig));
-              } else {
-                console.log('[ProjectHeader] ⚠️ No stylingConfig in memory.data');
-              }
-              if (memory.data.projectName) {
-                parsed.projectName = memory.data.projectName;
-                // Update the title callback if project name was loaded
-                if (onUpdateTitle && memory.data.projectName !== projectTitle) {
-                  onUpdateTitle(memory.data.projectName);
-                }
-                console.log('[ProjectHeader] ✅ Loaded projectName from memory:', memory.data.projectName);
-              }
-            } else {
-              console.log('[ProjectHeader] ⚠️ Memory response not successful or no data');
-            }
-          } else {
-            console.log('[ProjectHeader] ❌ Memory API failed with status:', memoryRes.status);
+          if (projectSettings.stylingConfig) {
+            parsed.stylingConfig = projectSettings.stylingConfig;
           }
-        } catch (error) {
-          console.warn('[ProjectHeader] ❌ Could not load from memory:', error);
+
+          if (projectSettings.projectName) {
+            parsed.projectName = projectSettings.projectName;
+            // Update the title callback if project name changed
+            if (onUpdateTitle && projectSettings.projectName !== projectTitle) {
+              onUpdateTitle(projectSettings.projectName);
+            }
+          }
         }
 
-        console.log('[ProjectHeader] Setting projectData:', {
-          id: parsed.id,
-          hasStylingConfig: !!parsed.stylingConfig,
-          stylingConfigKeys: parsed.stylingConfig ? Object.keys(parsed.stylingConfig) : [],
-        });
         setProjectData(parsed);
       }
     };
@@ -328,7 +304,7 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [projectId, onUpdateTitle, projectTitle]);
+  }, [projectId, onUpdateTitle, projectTitle, projectSettings]);
 
   return (
     <header className="h-16 bg-background-base border-b border-light flex items-center px-6 shadow-sm">

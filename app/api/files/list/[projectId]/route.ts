@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/pocketbase-middleware';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 import PocketBase from 'pocketbase';
-import { sanitizeError } from '@/lib/pocketbase-utils';
-
-const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090';
+import { sanitizeError } from '@/lib/database/pocketbase-utils';
+import { config, Collections } from '@/lib/config';
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/files/list/[projectId]
@@ -26,8 +26,10 @@ export async function GET(
 
     const { projectId } = await params;
 
+    log.info('Fetching file list', { projectId, userId: user.id });
+
     // Initialize PocketBase
-    const pb = new PocketBase(POCKETBASE_URL);
+    const pb = new PocketBase(config.POCKETBASE_URL);
 
     // Authenticate with PocketBase
     const authToken = request.headers.get('authorization')?.split(' ')[1];
@@ -37,8 +39,9 @@ export async function GET(
 
     // First, verify the user owns this project
     try {
-      const project = await pb.collection('projects').getOne(projectId);
+      const project = await pb.collection(Collections.PROJECTS).getOne(projectId);
       if (project.userId !== user.id) {
+        log.warn('User does not own project', { projectId, userId: user.id, ownerId: project.userId });
         return NextResponse.json(
           { error: 'Forbidden: You do not own this project' },
           { status: 403 }
@@ -46,19 +49,23 @@ export async function GET(
       }
     } catch (error: any) {
       if (error.status === 404) {
+        log.warn('Project not found', { projectId, userId: user.id });
         return NextResponse.json(
           { error: 'Project not found' },
           { status: 404 }
         );
       }
+      log.error('Error fetching project', { projectId, userId: user.id }, error);
       throw error;
     }
 
     // Get all files for this project
-    const files = await pb.collection('uploaded_files').getFullList({
+    const files = await pb.collection(Collections.UPLOADED_FILES).getFullList({
       filter: `projectId = "${projectId}"`,
       sort: '-created'
     });
+
+    log.info('Files fetched successfully', { projectId, count: files.length });
 
     // Map to include file URLs
     const filesWithUrls = files.map(file => ({
@@ -78,7 +85,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('[File List] Error:', error);
+    log.error('Failed to list files', { projectId: (await params).projectId }, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to list files' },

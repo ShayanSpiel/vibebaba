@@ -23,11 +23,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/pocketbase-credits";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
+import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
 import type { AppGenState } from "@/lib/langgraph/types";
 import { customAlphabet } from "nanoid";
-import { loadMemoryContext, storeProjectContext } from "@/lib/langgraph/memory-loader";
+// Memory loader functions removed - using conversation-memory instead
+import { getConversationContext } from "@/lib/memory/conversation-memory";
 import { unifiedSearch } from "@/lib/mcp/unified-search";
 
 // PocketBase-compatible ID generator (alphanumeric only, no hyphens)
@@ -82,10 +83,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // #done Load MCP Memory Context
+    // #done Load Memory Context
     const finalProjectId = projectId || nanoid();  // Exactly 15 chars, alphanumeric only (no hyphens)
     console.log('[Prototype] Loading memory context...');
-    const memoryContext = await loadMemoryContext(user.id, projectId);
+    const memoryContext = projectId ? await getConversationContext(projectId) : null;
 
     // #done Run Unified Search (if not already in context)
     let searchResult;
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
       projectId: finalProjectId,
       plan,
       context,
-      memoryContext, // #done MCP Memory integration
+      memoryContext: memoryContext ? { conversationHistory: [memoryContext] } : undefined, // Wrap string in object
       backgroundContext: searchResult?.success ? searchResult : (context?.backgroundContext || undefined), // #done Unified search
       backendConfig, // May be pre-generated or null
       completedNodes: ['founder', 'pm'], // Already completed in planning phase
@@ -206,15 +207,8 @@ export async function POST(req: NextRequest) {
     console.log('[Prototype] 📤 Returning response with', response.files.length, 'files');
     console.log('[Prototype] Files:', response.files.map((f: any) => f.path).join(', '));
 
-    // #done Store project context in MCP Memory
-    await storeProjectContext(state.projectId, {
-      userDescription: state.userDescription,
-      plan: state.plan,
-      designSystem: state.designSystem,
-      backendConfig: state.backendConfig,
-      files: state.files,
-      context: state.context
-    });
+    // Context is now automatically saved by conversation-memory in nodes
+    // No need to manually store here
 
     // Return same format as before (BACKWARD COMPATIBLE)
     return NextResponse.json(response);

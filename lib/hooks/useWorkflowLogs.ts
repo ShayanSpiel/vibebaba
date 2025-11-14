@@ -105,49 +105,103 @@ export function useWorkflowLogs({
       eventSourceRef.current = null;
     }
 
-    // Create EventSource connection
-    const eventSource = new EventSource(`/api/langgraph/stream?projectId=${projectId}`);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onopen = () => {
-      setIsConnected(true);
-    };
-
+    let eventSource: EventSource | null = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let connectionClosed = false;
     let workflowCompleted = false;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const log: WorkflowLog = JSON.parse(event.data);
-        addLog(log);
-
-        // Handle workflow completion
-        if (log.type === 'workflow:complete') {
-          workflowCompleted = true; // Mark as completed to prevent error reporting
-          onCompleteRef.current?.();
-          // Close connection after a delay
-          setTimeout(() => {
-            eventSource.close();
-            setIsConnected(false);
-          }, 2000);
-        }
-      } catch (error) {
-        // Silent error handling - connection issues are handled by onerror
-      }
+    // Exponential backoff calculator
+    const getBackoffDelay = (attempt: number) => {
+      return Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
     };
 
-    eventSource.onerror = (error) => {
+    const closeConnection = () => {
+      if (connectionClosed) return;
+      connectionClosed = true;
+
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
+
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+
       setIsConnected(false);
-      // Don't call onError if the workflow completed successfully or connection was manually closed
-      if (!workflowCompleted && eventSource.readyState !== EventSource.CLOSED) {
-        onErrorRef.current?.(new Error('SSE connection failed'));
-      }
-      eventSource.close();
     };
+
+    const connect = () => {
+      if (connectionClosed) return;
+
+      // Create EventSource connection
+      eventSource = new EventSource(`/api/langgraph/stream?projectId=${projectId}`);
+      eventSourceRef.current = eventSource;
+
+      eventSource.onopen = () => {
+        setIsConnected(true);
+        reconnectAttempts = 0; // Reset on successful connection
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const log: WorkflowLog = JSON.parse(event.data);
+          addLog(log);
+
+          // Handle workflow completion
+          if (log.type === 'workflow:complete') {
+            workflowCompleted = true; // Mark as completed to prevent error reporting
+            onCompleteRef.current?.();
+            // Close connection after a delay
+            setTimeout(() => {
+              closeConnection();
+            }, 2000);
+          }
+        } catch (error) {
+          // Silent error handling - connection issues are handled by onerror
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        // Close current connection
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+
+        // Only retry if not manually closed, under retry limit, and workflow not complete
+        if (!connectionClosed && !workflowCompleted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && enabled) {
+          reconnectAttempts++;
+          const delay = getBackoffDelay(reconnectAttempts);
+
+          console.log(`[Workflow SSE] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
+          reconnectTimeout = setTimeout(() => {
+            if (!connectionClosed && !workflowCompleted) {
+              connect(); // Retry connection
+            }
+          }, delay);
+        } else {
+          // Max retries exceeded or workflow complete
+          setIsConnected(false);
+          // Don't call onError if the workflow completed successfully
+          if (!workflowCompleted && !connectionClosed) {
+            onErrorRef.current?.(new Error('SSE connection failed'));
+          }
+          closeConnection();
+        }
+      };
+    };
+
+    // Start initial connection
+    connect();
 
     // Cleanup on unmount
     return () => {
-      eventSource.close();
-      setIsConnected(false);
+      closeConnection();
     };
     // Only re-run when projectId or enabled changes, not when callbacks change
     // eslint-disable-next-line react-hooks/exhaustive-deps

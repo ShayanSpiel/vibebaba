@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pb } from "@/lib/pocketbase";
-import { escapeFilterValue, sanitizeError, validateCollectionName } from "@/lib/pocketbase-utils";
+import { pb } from "@/lib/database/pocketbase";
+import { escapeFilterValue, sanitizeError, validateCollectionName } from "@/lib/database/pocketbase-utils";
 
 /**
  * GET /api/database/[projectId]/[collection]

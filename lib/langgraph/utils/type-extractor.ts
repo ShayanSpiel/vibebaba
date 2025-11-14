@@ -101,31 +101,30 @@ export function extractTypeDefinitions(code: string): TypeDefinition[] {
 
 /**
  * Format type definitions for AI context
- * Creates a human-readable summary of types
+ * Shows ONLY property names (not structure) to prevent hallucination
+ * Does not show type structure to avoid AI copying it as local definition
  */
 export function formatTypeDefinitionsForContext(types: TypeDefinition[]): string {
   if (types.length === 0) {
     return '';
   }
 
-  let context = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-  context += '📋 AVAILABLE TYPES (Use these exact definitions)\n';
-  context += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+  // ✅ CONSTRAINT FORMAT: Show properties with types for strict validation
+  let context = '🚨 PROPERTY VALIDATION - Imported Types from @/lib/api:\n\n';
 
   for (const type of types) {
-    context += `${type.name} {\n`;
-    for (const prop of type.properties) {
-      context += `  ${prop.name}${prop.optional ? '?' : ''}: ${prop.type}\n`;
-    }
-    context += `}\n\n`;
-
-    // Add usage hint
-    context += `Usage: import { ${type.name} } from '@/lib/types'\n`;
-
-    // Add example with actual property names
-    const exampleProps = type.properties.slice(0, 2).map(p => p.name).join(', ');
-    context += `Example: const item: ${type.name} = { ${exampleProps}, ... }\n\n`;
+    // Show property names with types and optional indicator
+    const propList = type.properties.map(p =>
+      `${p.name}${p.optional ? '?' : ''}: ${p.type}`
+    );
+    context += `${type.name}: { ${propList.join(', ')} }\n`;
   }
+
+  context += '\n❌ CRITICAL: Do NOT access properties not listed above\n';
+  context += '❌ CRITICAL: Do NOT guess property names - use ONLY listed properties\n';
+  context += '❌ CRITICAL: Do NOT hallucinate properties (e.g., price, timeRange) not in type definition\n';
+  context += '⚠️  CRITICAL: Properties with ? are optional - check before use (e.g., post.created || \'fallback\')\n';
+  context += '✅ These types are imported from @/lib/api - do not redefine them\n';
 
   return context;
 }

@@ -5,9 +5,9 @@ import {
   updateTransactionStatus,
   addTokens,
   activatePackage,
-} from "@/lib/pocketbase-credits";
+} from "@/lib/database/pocketbase-credits";
 import { getExchangeRateToRials, tomanToRials } from "@/lib/config/pricing-config";
-import { sanitizeError, validateUrl } from "@/lib/pocketbase-utils";
+import { sanitizeError, validateUrl } from "@/lib/database/pocketbase-utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,8 +15,9 @@ export async function GET(req: NextRequest) {
     const authority = searchParams.get("Authority");
     const status = searchParams.get("Status");
     const transactionId = searchParams.get("transactionId");
+    const token = searchParams.get("token");  // 🔒 NEW: Verify token
 
-    if (!authority || !transactionId) {
+    if (!authority || !transactionId || !token) {
       return NextResponse.redirect(
         new URL("/pricing?error=invalid_payment", req.nextUrl.origin)
       );
@@ -34,6 +35,14 @@ export async function GET(req: NextRequest) {
     const transaction = await getTransaction(transactionId);
     if (!transaction) {
       return NextResponse.redirect(new URL("/pricing?error=not_found", req.nextUrl.origin));
+    }
+
+    // 🔒 SECURITY: Validate verify token before processing
+    if ((transaction as any).verifyToken !== token) {
+      console.error(`[Payment Verify] Token mismatch for transaction ${transactionId}`);
+      return NextResponse.redirect(
+        new URL("/pricing?error=authentication_failed", req.nextUrl.origin)
+      );
     }
 
     // Verify transaction hasn't already been completed (prevent double-processing)

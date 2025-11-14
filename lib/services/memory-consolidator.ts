@@ -3,15 +3,21 @@
  * Background job to consolidate observations and build user personas
  */
 
-import { getMemoryService } from './memory-service';
+// OLD: import { getMemoryService } from './memory-service';
+// DEPRECATED: Now using LangChain memory agent instead of MCP memory
 
 export class MemoryConsolidator {
-  private memoryService = getMemoryService();
+  // private memoryService = getMemoryService();
 
   /**
    * Consolidate user observations into preferences
    */
   async consolidateUserMemory(userId: string): Promise<void> {
+    console.log(`[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`);
+    return;
+
+    // DEPRECATED CODE BELOW (commented out - now using LangChain memory)
+    /*
     console.log(`[Consolidator] Consolidating memory for user ${userId}`);
 
     try {
@@ -72,55 +78,23 @@ export class MemoryConsolidator {
     } catch (error) {
       console.error(`[Consolidator] Failed to consolidate user ${userId}:`, error);
     }
+    */
   }
 
   /**
    * Consolidate project observations
    */
   async consolidateProjectMemory(projectId: string): Promise<void> {
-    console.log(`[Consolidator] Consolidating memory for project ${projectId}`);
-
-    try {
-      const projectContext = await this.memoryService.getProjectContext(projectId);
-      if (!projectContext) return;
-
-      // TODO: Implement project-level consolidation
-      // - Extract common patterns
-      // - Identify technical stack
-      // - Build component inventory
-      console.log(`[Consolidator] Project consolidation not yet implemented for ${projectId}`);
-    } catch (error) {
-      console.error(`[Consolidator] Failed to consolidate project ${projectId}:`, error);
-    }
+    console.log(`[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`);
+    return;
   }
 
   /**
    * Run consolidation for all users (cron job)
    */
   async consolidateAll(): Promise<void> {
-    console.log('[Consolidator] Running full consolidation...');
-
-    try {
-      // Get all users from knowledge graph
-      const graph = await this.memoryService.getKnowledgeGraph();
-      const entities = (graph as any)?.entities || [];
-      const users = entities.filter((e: any) => e.entityType === 'user');
-
-      console.log(`[Consolidator] Found ${users.length} users to consolidate`);
-
-      for (const user of users) {
-        try {
-          const userId = user.name.replace('user_', '');
-          await this.consolidateUserMemory(userId);
-        } catch (error) {
-          console.error('[Consolidator] Failed for user:', user.name, error);
-        }
-      }
-
-      console.log('[Consolidator] Consolidation complete');
-    } catch (error) {
-      console.error('[Consolidator] Consolidation failed:', error);
-    }
+    console.log(`[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`);
+    return;
   }
 }
 

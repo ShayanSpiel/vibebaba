@@ -5,6 +5,7 @@ import { X, Globe, Check, AlertCircle, Loader2, Info, Lock } from "lucide-react"
 import { toast } from "sonner";
 import { formatSubdomainDisplay, getConfig } from "@/lib/domain-config";
 import { useAuth } from "@/components/auth/PocketBaseAuthProvider";
+import { useProjectSettings } from "@/lib/contexts/ProjectSettingsContext";
 
 interface PublishModalProps {
   projectId: string;
@@ -29,7 +30,6 @@ export default function PublishModal({
   onPublish,
   onClose,
 }: PublishModalProps) {
-  const [loadedProjectName, setLoadedProjectName] = useState<string | null>(null);
   const [subdomain, setSubdomain] = useState(initialSubdomain || defaultName || '');
   const [customDomain, setCustomDomain] = useState(initialCustomDomain || '');
   const [isPublishing, setIsPublishing] = useState(false);
@@ -39,34 +39,24 @@ export default function PublishModal({
   const config = getConfig();
   const { user } = useAuth();
 
-  // Load project name from memory for better subdomain suggestion
-  // Only runs once when component mounts
+  // 🎯 SINGLE SOURCE OF TRUTH: Use centralized project settings context
+  const { settings: projectSettings } = useProjectSettings();
+
+  // Load project name from context for better subdomain suggestion
   useEffect(() => {
-    const loadProjectName = async () => {
-      try {
-        const res = await fetch(`/api/memory/project-settings?projectId=${projectId}`);
-        if (!res.ok) return; // Silently fail if API unavailable
-
-        const data = await res.json();
-        if (data.success && data.data?.projectName) {
-          setLoadedProjectName(data.data.projectName);
-          // Only update subdomain if it's still the default
-          if (subdomain === (initialSubdomain || defaultName || '')) {
-            const suggestedSubdomain = data.data.projectName
-              .toLowerCase()
-              .replace(/[^a-z0-9-]/g, '-')
-              .replace(/-+/g, '-')
-              .replace(/^-|-$/g, '');
-            setSubdomain(suggestedSubdomain);
-          }
-        }
-      } catch (error) {
-        // Silently fail - subdomain will use fallback
+    if (projectSettings?.projectName) {
+      console.log('[PublishModal] ✅ Using centralized settings from context');
+      // Only update subdomain if it's still the default
+      if (subdomain === (initialSubdomain || defaultName || '')) {
+        const suggestedSubdomain = projectSettings.projectName
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+        setSubdomain(suggestedSubdomain);
       }
-    };
-
-    loadProjectName();
-  }, []); // Empty deps - only load once on mount
+    }
+  }, [projectSettings]); // Depend on projectSettings from context
 
   // Check if user has active subscription
   const hasActiveSubscription = user?.packageId && user?.packageExpiry

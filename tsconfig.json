@@ -40,6 +40,10 @@
   "exclude": [
     "node_modules",
     "scripts/**/*.ts",
-    "__tests__/**/*.ts"
+    "__tests__/**/*.ts",
+    "deployment-server/**/*",
+    "deployments/**/*",
+    "pb_data/**/*",
+    "backups/**/*"
   ]
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useProjectSettings } from "@/lib/contexts/ProjectSettingsContext";
 
 interface ProjectSettingsModalProps {
   isOpen: boolean;
@@ -25,77 +26,63 @@ export default function ProjectSettingsModal({
   const [projectName, setProjectName] = useState(initialProjectName);
   const [prompt, setPrompt] = useState(initialDescription);
   const [isSaving, setIsSaving] = useState(false);
-  const [loadedProjectName, setLoadedProjectName] = useState<string | null>(null);
+
+  // 🎯 SINGLE SOURCE OF TRUTH: Use centralized project settings context
+  const { settings: projectSettings, updateSettings } = useProjectSettings();
 
   useEffect(() => {
-    // Only load from memory if modal is open and we haven't loaded yet
+    // Only load from context if modal is open
     if (!isOpen) return;
 
-    const loadProjectName = async () => {
-      try {
-        const res = await fetch(`/api/memory/project-settings?projectId=${projectId}`);
-        if (!res.ok) {
-          // Silently fall back to props if API fails
-          setProjectName(initialProjectName);
-          setPrompt(initialDescription);
-          return;
-        }
-
-        const data = await res.json();
-        if (data.success && data.data) {
-          setLoadedProjectName(data.data.projectName || initialProjectName);
-          setProjectName(data.data.projectName || initialProjectName);
-          setPrompt(data.data.initialPrompt || initialDescription);
-        } else {
-          setProjectName(initialProjectName);
-          setPrompt(initialDescription);
-        }
-      } catch (error) {
-        // Silently fall back to props on error
-        setProjectName(initialProjectName);
-        setPrompt(initialDescription);
-      }
-    };
-
-    loadProjectName();
-  }, [isOpen]); // Only depend on isOpen to avoid excessive calls
+    // 🎯 Use centralized settings from context (no API call!)
+    if (projectSettings) {
+      console.log('[ProjectSettingsModal] ✅ Using centralized settings from context');
+      setProjectName(projectSettings.projectName || initialProjectName);
+      setPrompt(projectSettings.initialPrompt || initialDescription);
+    } else {
+      // Fallback to props if context not loaded yet
+      setProjectName(initialProjectName);
+      setPrompt(initialDescription);
+    }
+  }, [isOpen, projectSettings, initialProjectName, initialDescription]);
 
   if (!isOpen) return null;
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Store in LangChain memory for future reference (FIRST - this is the source of truth)
-      const memoryRes = await fetch('/api/memory/project-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          projectName,
-          prompt,
-          stylingConfig,
-          timestamp: new Date().toISOString(),
-        }),
+      console.log('[Settings] Saving settings:', {
+        projectId,
+        projectName,
+        initialPrompt: prompt
       });
 
-      if (!memoryRes.ok) {
-        throw new Error('Failed to save to memory');
-      }
+      // 🎯 SINGLE SOURCE OF TRUTH: Use centralized updateSettings from context
+      await updateSettings({
+        projectName: projectName,
+        initialPrompt: prompt,
+        stylingConfig,
+      });
 
-      // Update project in database and localStorage (description is the project name now)
+      console.log('[Settings] ✅ Saved to centralized context successfully');
+
+      // Update project in database and localStorage
       if (onUpdateProject) {
         await onUpdateProject({
-          description: projectName, // This will update the project title
-          userDescription: prompt,  // This is the initial prompt
+          description: projectName,
+          userDescription: prompt,
+          initialPrompt: prompt,
         });
       }
+
+      console.log('[Settings] ✅ Updated project successfully');
 
       // Trigger a storage event to notify other components
       window.dispatchEvent(new Event('storage'));
 
       onClose();
     } catch (error) {
-      console.error('Failed to save project settings:', error);
+      console.error('[Settings] ❌ Failed to save project settings:', error);
       alert('Failed to save settings. Please try again.');
     } finally {
       setIsSaving(false);

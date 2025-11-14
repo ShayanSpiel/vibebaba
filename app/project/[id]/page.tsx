@@ -12,7 +12,9 @@ import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { useWorkflowLogs } from "@/lib/hooks/useWorkflowLogs";
 import CreditPurchaseModal from "@/components/payment/CreditPurchaseModal";
 import GenerationErrorModal from "@/components/project/GenerationErrorModal";
-import { pb, ensureAuth } from "@/lib/pocketbase";
+import { pb, ensureAuth } from "@/lib/database/pocketbase";
+import { ProjectSettingsProvider } from "@/lib/contexts/ProjectSettingsContext";
+import { UploadedFilesProvider } from "@/lib/contexts/UploadedFilesContext";
 
 interface ProjectFile {
   path: string; // e.g., "index.html", "about.html", "css/style.css"
@@ -56,14 +58,50 @@ export default function ProjectPage() {
   const { dir } = useLanguage();
   const isRTL = dir === "rtl";
 
+  // 🎯 REMOVED: lastMemoryCheckRef - no longer needed since ProjectSettingsProvider handles all fetching
+
   // ✨ Real-time workflow logs streaming
   const { logs, currentNode, isComplete } = useWorkflowLogs({
     projectId,
     enabled: isGenerating,
     initialLogs: project?.workflowLogs || [], // Restore logs from previous session
-    onComplete: () => {
+    onComplete: async () => {
       console.log('🎉 Workflow complete! Generation finished.');
       setIsGenerating(false);
+
+      // Add follow-up message with feature actions after initial generation
+      if (project && project.allRequestedFeatures && project.allRequestedFeatures.length > 0) {
+        // Filter out features already included in MVP
+        const queuedFeatures = project.allRequestedFeatures.filter((f: any) => !f.included_in_mvp);
+
+        if (queuedFeatures.length > 0) {
+          console.log('[Project] Adding follow-up message with queued features:', queuedFeatures);
+
+          const followUpMessage = {
+            role: 'assistant' as const,
+            content: `✨ Your app is ready! I've built the core features. ${queuedFeatures.length > 1 ? 'Here are additional features you can add:' : 'Here\'s an additional feature you can add:'}`,
+            actions: queuedFeatures.map((f: any) => ({
+              type: 'feature-add' as const,
+              featureId: f.id,
+              label: f.name,
+              description: f.description || '',
+              priority: f.priority || 'medium',
+              disabled: false
+            }))
+          };
+
+          // Add message to project
+          const currentMessages = project.messages || [];
+          const updatedMessages = [...currentMessages, followUpMessage];
+
+          try {
+            await updateProjectHelper(projectId, { messages: updatedMessages });
+            console.log('[Project] ✅ Follow-up message added successfully');
+          } catch (error) {
+            console.error('[Project] Failed to add follow-up message:', error);
+          }
+        }
+      }
     },
     onError: (error) => {
       console.error('❌ Workflow error:', error);
@@ -138,38 +176,20 @@ export default function ProjectPage() {
       try {
         const projectData = await getProject(projectId);
         if (projectData) {
-          setProject(projectData as any);
+          // 🎯 REMOVED: Redundant API call - ProjectSettingsProvider handles this centrally
+          // All project settings are now managed by the context at the page level
 
-          // Try to load project name from memory first (most accurate)
-          try {
-            const memoryRes = await fetch(`/api/memory/project-settings?projectId=${projectId}`);
-            if (memoryRes.ok) {
-              const memoryData = await memoryRes.json();
-              if (memoryData.success && memoryData.data?.projectName) {
-                const memoryProjectName = memoryData.data.projectName;
-                console.log('[Project] Loaded project name from memory:', memoryProjectName);
-                if (memoryProjectName !== projectData.description) {
-                  updateProject({ description: memoryProjectName });
-                }
-                return; // Use memory name, don't extract from files
-              }
-            }
-          } catch (memoryError) {
-            console.warn('[Project] Could not load project name from memory:', memoryError);
-          }
-
-          // Fallback: Extract and update project name from generated files
+          // Extract project name from generated files if needed
           if (projectData.files && projectData.files.length > 0) {
             const extractedName = extractProjectName(projectData.files);
             if (extractedName && extractedName !== projectData.description) {
-              // Update project title if we found a better name from the AI-generated code
-              console.log('[Project] Extracted project name from files:', extractedName);
-              updateProject({ description: extractedName });
+              projectData.description = extractedName;
             }
           }
+
+          setProject(projectData as any);
         }
       } catch (error: any) {
-        // Only log non-404 errors (404 is expected for projects not yet synced)
         if (error?.status !== 404) {
           console.error('Failed to load project:', error);
         }
@@ -188,6 +208,55 @@ export default function ProjectPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.stage, project?.plan]);
+
+  // Add feature action buttons for existing completed projects (retroactive)
+  const featureMessageAddedRef = useRef(false);
+  useEffect(() => {
+    const addFeatureActionsIfNeeded = async () => {
+      if (!project || featureMessageAddedRef.current) return;
+
+      // Only for projects that are completed (have files) and have queued features
+      if (project.files && project.files.length > 0 && project.allRequestedFeatures && project.allRequestedFeatures.length > 0) {
+        const messages = project.messages || [];
+
+        // Check if we already have a message with actions
+        const hasActionMessage = messages.some((m: any) => m.actions && m.actions.length > 0);
+
+        if (!hasActionMessage) {
+          const queuedFeatures = project.allRequestedFeatures.filter((f: any) => !f.included_in_mvp);
+
+          if (queuedFeatures.length > 0) {
+            featureMessageAddedRef.current = true;
+            console.log('[Project] Retroactively adding feature actions for existing project');
+
+            const followUpMessage = {
+              role: 'assistant' as const,
+              content: `✨ Your app is ready! I've built the core features. ${queuedFeatures.length > 1 ? 'Here are additional features you can add:' : 'Here\'s an additional feature you can add:'}`,
+              actions: queuedFeatures.map((f: any) => ({
+                type: 'feature-add' as const,
+                featureId: f.id,
+                label: f.name,
+                description: f.description || '',
+                priority: f.priority || 'medium',
+                disabled: false
+              }))
+            };
+
+            const updatedMessages = [...messages, followUpMessage];
+
+            try {
+              await updateProjectHelper(projectId, { messages: updatedMessages });
+              console.log('[Project] ✅ Retroactive feature actions added successfully');
+            } catch (error) {
+              console.error('[Project] Failed to add retroactive feature actions:', error);
+            }
+          }
+        }
+      }
+    };
+
+    addFeatureActionsIfNeeded();
+  }, [project?.id, project?.files, project?.allRequestedFeatures]);
 
   // Use ref to track if generation has been triggered
   const generationTriggeredRef = useRef(false);
@@ -306,10 +375,10 @@ export default function ProjectPage() {
     console.log('🐛 [constructCompletionMessages] mvpFeatures:', mvpFeatures);
 
     if (mvpFeatures.length > 0) {
-      // Show actual extracted features
+      // Show feature names only (descriptions can hallucinate features not built)
       const featureList = mvpFeatures.map((f: any, i: number) =>
-        `**${i + 1}. ${f.name}**\n${f.description}`
-      ).join('\n\n');
+        `${i + 1}. ${f.name}`
+      ).join('\n');
 
       messages.push({
         role: "assistant",
@@ -353,6 +422,33 @@ export default function ProjectPage() {
             disabledReason: unmetDeps.length > 0
               ? `Requires: ${unmetDeps.map((id: string) => workflowData.allRequestedFeatures?.find((af: any) => af.id === id)?.name).join(', ')}`
               : undefined
+          }]
+        });
+      });
+    }
+
+    // 4. Infrastructure feature suggestions (Auth, Payments, Admin, etc.)
+    const infrastructureFeatures = workflowData.infrastructureFeatures?.filter((f: any) => f.suggested && !f.userRequested) || [];
+
+    if (infrastructureFeatures.length > 0) {
+      // Intro message for infrastructure suggestions
+      messages.push({
+        role: "assistant",
+        content: `💡 **Suggested enhancements** to make your app production-ready:`
+      });
+
+      // Each infrastructure feature as a separate message with its own action button
+      infrastructureFeatures.forEach((f: any) => {
+        messages.push({
+          role: "assistant",
+          content: `**${f.name}**\n${f.description}`,
+          actions: [{
+            type: "feature-add",
+            featureId: f.id,
+            label: `Add ${f.name}`,
+            description: f.description,
+            priority: f.priority || 'medium',
+            disabled: false
           }]
         });
       });
@@ -801,69 +897,73 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background-base">
-      {/* Top Header */}
-      <ProjectHeader
-        projectTitle={project.description || t("untitledProject")}
-        activeView={activeView}
-        onViewChange={setActiveView}
-        projectId={projectId}
-        deployUrl={project.deployUrl}
-        onUpdateDeployUrl={(url) => updateProject({ deployUrl: url })}
-        onUpdateTitle={(title) => updateProject({ description: title })}
-        deploymentStatus={deploymentStatus}
-      />
-
-      {/* Main Content Area - Three Column Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Chat Panel */}
-        <div className="w-96 border-r border-light bg-background-raised flex flex-col">
-          <ChatPanelClaude
-            projectId={projectId}
-            project={project}
-            onUpdateProject={updateProject}
-            workflowLogs={logs}
-            isGenerating={isGenerating}
-            deploymentStatus={deploymentStatus}
-            deploymentError={deploymentError}
-            onGeneratingChange={setIsGenerating}
-          />
-        </div>
-
-        {/* Right: Main Content Area */}
-        <div className="flex-1 flex flex-col bg-background-base overflow-hidden">
-          <PreviewTabs
-            project={project}
-            onUpdateProject={updateProject}
-            activeView={activeView}
-            onDeploymentStatusChange={handleDeploymentStatusChange}
-          />
-        </div>
-      </div>
-
-      {/* AI Status Indicator */}
-      <AIStatusIndicator />
-
-      {/* Generation Error Modal - Shows above chatbox */}
-      {showErrorModal && (
-        <GenerationErrorModal
-          errorMessage={errorMessage}
-          onRegenerate={handleRegenerate}
-          onClose={() => setShowErrorModal(false)}
+    <ProjectSettingsProvider projectId={projectId}>
+      <UploadedFilesProvider projectId={projectId}>
+        <div className="h-screen flex flex-col bg-background-base">
+          {/* Top Header */}
+          <ProjectHeader
+          projectTitle={project.description || t("untitledProject")}
+          activeView={activeView}
+          onViewChange={setActiveView}
+          projectId={projectId}
+          deployUrl={project.deployUrl}
+          onUpdateDeployUrl={(url) => updateProject({ deployUrl: url })}
+          onUpdateTitle={(title) => updateProject({ description: title })}
+          deploymentStatus={deploymentStatus}
         />
-      )}
 
-      {/* Credit Purchase Modal - Fixed overlay over entire page */}
-      {showCreditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="max-w-2xl w-full mx-4">
-            <CreditPurchaseModal
-              isOpen={showCreditModal}
-              onClose={() => setShowCreditModal(false)}
+        {/* Main Content Area - Three Column Layout */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left: Chat Panel */}
+          <div className="w-96 border-r border-light bg-background-raised flex flex-col">
+            <ChatPanelClaude
+              projectId={projectId}
+              project={project}
+              onUpdateProject={updateProject}
+              workflowLogs={logs}
+              isGenerating={isGenerating}
+              deploymentStatus={deploymentStatus}
+              deploymentError={deploymentError}
+              onGeneratingChange={setIsGenerating}
+            />
+          </div>
+
+          {/* Right: Main Content Area */}
+          <div className="flex-1 flex flex-col bg-background-base overflow-hidden">
+            <PreviewTabs
+              project={project}
+              onUpdateProject={updateProject}
+              activeView={activeView}
+              onDeploymentStatusChange={handleDeploymentStatusChange}
             />
           </div>
         </div>
-      )}
-    </div>
+
+        {/* AI Status Indicator */}
+        <AIStatusIndicator />
+
+        {/* Generation Error Modal - Shows above chatbox */}
+        {showErrorModal && (
+          <GenerationErrorModal
+            errorMessage={errorMessage}
+            onRegenerate={handleRegenerate}
+            onClose={() => setShowErrorModal(false)}
+          />
+        )}
+
+        {/* Credit Purchase Modal - Fixed overlay over entire page */}
+        {showCreditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="max-w-2xl w-full mx-4">
+              <CreditPurchaseModal
+                isOpen={showCreditModal}
+                onClose={() => setShowCreditModal(false)}
+              />
+            </div>
+          </div>
+        )}
+        </div>
+      </UploadedFilesProvider>
+    </ProjectSettingsProvider>
   );
 }

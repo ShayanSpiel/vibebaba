@@ -1,9 +1,11 @@
-import { pb, ensureAuth } from './pocketbase';
+import { pb, ensureAuth } from './database/pocketbase';
 import { getUserOrganizationSafe } from './services/org-auto-create';
 
 export interface ProjectData {
   id: string;
-  description: string;
+  description: string; // Project name/title (mutable, shown in header)
+  initialPrompt?: string; // Original user prompt - IMMUTABLE, set once at creation
+  userDescription?: string; // 🔥 CRITICAL: Copy of initialPrompt for chat bubble display (prevents mixing with description)
   createdAt: string;
   stage: 'planning' | 'building';
   plan?: string;
@@ -74,6 +76,8 @@ export async function createProject(data: Omit<ProjectData, 'createdAt'>): Promi
     organizationId: organizationId, // ✨ NEW: Auto-assigned to user's org
     name: data.description.substring(0, 100), // Use first 100 chars as name
     description: data.description,
+    initialPrompt: data.description, // Store original prompt separately - IMMUTABLE
+    userDescription: data.description, // 🔥 CRITICAL: Separate field for chat bubble (prevents mixing with project name)
     stage: data.stage,
     plan: data.plan || '',
     planMessages: data.messages ? JSON.stringify(data.messages) : '[]',
@@ -121,6 +125,8 @@ export async function getProject(projectId: string): Promise<ProjectData | null>
     const projectData = {
       id: projectId,
       description: project.description,
+      initialPrompt: project.initialPrompt || project.description, // Fallback to description for old projects
+      userDescription: project.userDescription || project.initialPrompt || project.description, // 🔥 FIX: Load userDescription for chat bubble
       createdAt: project.created,
       stage: project.stage,
       plan: project.plan || undefined,
@@ -263,6 +269,11 @@ export async function updateProject(projectId: string, updates: Partial<ProjectD
 
     const pbUpdates: any = {};
     if (updates.description !== undefined) pbUpdates.description = updates.description;
+    // 🔒 CRITICAL: Keep initialPrompt and userDescription separate!
+    // initialPrompt is the ORIGINAL user idea - IMMUTABLE after creation
+    // userDescription can be the same as initialPrompt, but stored explicitly
+    if ((updates as any).userDescription !== undefined) pbUpdates.userDescription = (updates as any).userDescription;
+    // NOTE: initialPrompt is NEVER updated - it's set once on creation
     if (updates.stage !== undefined) pbUpdates.stage = updates.stage;
     if (updates.plan !== undefined) pbUpdates.plan = updates.plan;
     if (updates.messages !== undefined) pbUpdates.planMessages = JSON.stringify(updates.messages);
@@ -280,7 +291,7 @@ export async function updateProject(projectId: string, updates: Partial<ProjectD
     if (updates.isPublished !== undefined) pbUpdates.isPublished = updates.isPublished;
     if (updates.publishedAt !== undefined) pbUpdates.publishedAt = updates.publishedAt;
 
-    // Update name if description changed
+    // Update name if description changed (project title)
     if (updates.description !== undefined) {
       pbUpdates.name = updates.description.substring(0, 100);
     }
@@ -337,6 +348,8 @@ export async function listUserProjects(userId: string): Promise<ProjectData[]> {
     return records.map(project => ({
       id: project.id,
       description: project.description,
+      initialPrompt: project.initialPrompt || project.description, // Fallback to description for old projects
+      userDescription: project.userDescription || project.initialPrompt || project.description, // 🔥 FIX: Load userDescription for chat bubble
       createdAt: project.created,
       stage: project.stage,
       plan: project.plan || undefined,

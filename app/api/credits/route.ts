@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
-import { getAvailableTokens, checkAndResetDailyTokens } from "@/lib/pocketbase-credits";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
+import { getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
 
 export async function GET(req: NextRequest) {
   try {

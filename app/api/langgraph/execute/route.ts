@@ -1,12 +1,11 @@
 // app/api/langgraph/execute/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/pocketbase-credits";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
+import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
 import { createAppGenWorkflow } from "@/lib/langgraph/workflow";
 import type { AppGenState } from "@/lib/langgraph/types";
 import { customAlphabet } from "nanoid";
-import { emitWorkflowStart, emitWorkflowComplete } from "@/lib/langgraph/events";
-import { loadMemoryContext, storeProjectContext } from "@/lib/langgraph/memory-loader";
+import { emitWorkflowStart, emitWorkflowComplete } from "@/lib/langgraph/utils/logging/events";
 import { unifiedSearch } from "@/lib/mcp/unified-search";
 import {
   addUserMessage,
@@ -14,7 +13,7 @@ import {
   storeProjectConfig,
   storeWorkflowMetadata
 } from "@/lib/memory/conversation-memory";
-import { pb } from "@/lib/pocketbase";
+import { pb } from "@/lib/database/pocketbase";
 
 // PocketBase-compatible ID generator (alphanumeric only, no hyphens)
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 15);
@@ -97,23 +96,48 @@ export async function POST(req: NextRequest) {
       // For new projects, generate 15-char ID (PocketBase compatible, no hyphens)
       projectId = nanoid();
       console.log(`[LangGraph] 🆕 New project - generated ID: ${projectId}`);
+
+      // ✅ FIX: Create project in PocketBase IMMEDIATELY to avoid 404 errors
+      try {
+        const PocketBase = (await import('pocketbase')).default;
+        const serverPb = new PocketBase('http://localhost:8090');
+        await serverPb.admins.authWithPassword('admin@vibebaba.com', 'admin1234567890');
+
+        await serverPb.collection('projects').create({
+          id: projectId,
+          userId: user.id,
+          name: description.substring(0, 100),
+          description: description,
+          initialPrompt: description,
+          stage: 'planning',
+          plan: '',
+          planMessages: JSON.stringify([]),
+          context: JSON.stringify({}),
+          backendConfig: null
+        });
+
+        console.log(`[LangGraph] ✅ Project created in PocketBase: ${projectId}`);
+      } catch (error: any) {
+        console.error(`[LangGraph] ❌ Failed to create project in PocketBase:`, error);
+        // Continue anyway - devops node will handle creation if this fails
+      }
     }
 
-    const memoryContext = await loadMemoryContext(user.id, existingProjectId);
+    // ✅ PHASE 2: Load conversation memory from PocketBase
+    console.log('[LangGraph] 📦 Loading project memory...');
+    const memory = await conversationMemoryStore.loadMemory(projectId);
 
-    // ✅ UNIFIED MEMORY: Load conversation memory from PocketBase (for existing projects)
-    if (existingProjectId) {
-      const loadedMemory = await conversationMemoryStore.loadMemory(existingProjectId);
-      if (loadedMemory) {
-        console.log('[LangGraph] ✅ Loaded conversation memory from PocketBase');
-        console.log(`[LangGraph] 💬 ${loadedMemory.messages.length} messages loaded`);
-        if (loadedMemory.projectConfig) {
-          console.log(`[LangGraph] 📦 Project config loaded: ${loadedMemory.projectConfig.files?.length || 0} files`);
-        }
-        if (loadedMemory.workflowMetadata) {
-          console.log(`[LangGraph] 📊 Previous workflow: ${loadedMemory.workflowMetadata.completedNodes.join(' → ')}`);
-        }
+    if (memory) {
+      console.log('[LangGraph] ✅ Loaded memory:');
+      console.log(`  - Messages: ${memory.messages.length}`);
+      console.log(`  - Files: ${memory.projectConfig?.files?.length || 0}`);
+      console.log(`  - Backend: ${memory.projectConfig?.backendConfig ? 'YES' : 'NO'}`);
+      console.log(`  - Features: ${memory.projectConfig?.allRequestedFeatures?.length || 0}`);
+      if (memory.workflowMetadata?.completedNodes?.length) {
+        console.log(`  - Previous workflow: ${memory.workflowMetadata.completedNodes.join(' → ')}`);
       }
+    } else {
+      console.log('[LangGraph] ℹ️  No existing memory (new project)');
     }
 
     // #done Run Unified Search for Background Context
@@ -128,26 +152,62 @@ export async function POST(req: NextRequest) {
     // Create workflow
     const workflow = createAppGenWorkflow();
 
-    // Initialize state with memory and search context
+    // ✅ PHASE 2: Initialize state with memory hydration
     const initialState: AppGenState = {
       userDescription: description,
       userId: user.id,
       projectId,
-      memoryContext, // #done MCP Memory integration
-      backgroundContext: searchResult.success ? searchResult : undefined, // #done Unified search integration
+      stage: 'initial',
+
+      // ✅ HYDRATE FROM MEMORY:
+      files: memory?.projectConfig?.files?.map(f => ({
+        path: f.path,
+        content: '', // Content loaded separately if needed
+        language: f.path.endsWith('.tsx') || f.path.endsWith('.ts') ? 'typescript' : 'javascript'
+      })) || [],
+
+      backendConfig: memory?.projectConfig?.backendConfig || null,
+      stylingConfig: memory?.projectConfig?.stylingConfig || null,
+      allRequestedFeatures: (memory?.projectConfig?.allRequestedFeatures || []).map((f: any) => ({
+        ...f,
+        dependencies: f.dependencies || [] // Ensure dependencies property exists
+      })),
+      context: memory?.projectConfig?.context ? {
+        appType: memory.projectConfig.context.appType || 'app',
+        complexity: memory.projectConfig.context.complexity || 'moderate',
+        designStyle: memory.projectConfig.context.designStyle || 'modern',
+        visualTone: memory.projectConfig.context.visualTone || 'professional',
+        animationLevel: memory.projectConfig.context.animationLevel || 'subtle',
+        targetAudience: memory.projectConfig.context.targetAudience || 'general',
+        pmPlan: (memory.projectConfig.context as any).pmPlan
+      } : {
+        appType: 'app',
+        complexity: 'moderate',
+        designStyle: 'modern',
+        visualTone: 'professional',
+        animationLevel: 'subtle',
+        targetAudience: 'general'
+      },
+      plan: memory?.projectConfig?.plan || '',
+      designSystem: memory?.projectConfig?.designSystem as 'ant-design' | 'tailwind-shadcn' | 'v0-inspired' | 'enhanced-2025' | undefined,
+
+      // Background context from unified search
+      backgroundContext: searchResult.success ? searchResult : undefined,
+
       completedNodes: [],
       errors: [],
-      artifacts: new Map(),
-      stage: 'initial'
+      artifacts: new Map()
     };
 
-    // ✨ NEW: Add user message to conversation memory
-    addUserMessage(projectId, description);
+    // ✨ Add user message to conversation memory
+    await addUserMessage(projectId, description);
     console.log('[LangGraph] 💬 Added user message to conversation memory');
 
     console.log('[LangGraph] Starting FULL pipeline execution...');
     console.log(`[LangGraph] Project ID: ${projectId}`);
-    console.log(`[LangGraph] Memory loaded: ${memoryContext.userPreferences ? 'Yes' : 'No'}`);
+    console.log(`[LangGraph] Memory hydrated: ${memory ? 'YES' : 'NO'}`);
+    console.log(`[LangGraph] Files restored: ${initialState.files?.length || 0}`);
+    console.log(`[LangGraph] Backend restored: ${initialState.backendConfig ? 'YES' : 'NO'}`);
     console.log(`[LangGraph] Search results: ${searchResult.success ? searchResult.source : 'none'}`);
     emitWorkflowStart(projectId, description);
 
@@ -188,7 +248,7 @@ export async function POST(req: NextRequest) {
     emitWorkflowComplete(result, totalDuration);
 
     // Get token usage stats
-    const { aiConversationLogger } = await import('@/lib/langgraph/ai-conversation-logger');
+    const { aiConversationLogger } = await import('@/lib/langgraph/utils/logging/ai-conversation-logger');
     const stats = aiConversationLogger.getProjectStats(projectId);
 
     console.log('[LangGraph] ✅ Pipeline COMPLETE!');
@@ -209,7 +269,7 @@ export async function POST(req: NextRequest) {
       files: result.files?.map(f => ({
         path: f.path,
         size: f.content?.length || 0,
-        purpose: f.purpose
+        purpose: (f as any).purpose
       })),
       context: result.context,
       allRequestedFeatures: result.allRequestedFeatures
@@ -221,27 +281,16 @@ export async function POST(req: NextRequest) {
       totalDuration,
       tokenUsage: {
         total: stats.totalTokens,
-        byNode: stats.tokensByNode || {}
+        byNode: (stats as any).tokensByNode || {}
       },
       deployUrl: result.deployUrl,
       validationResult: result.validationResult ? {
-        valid: result.validationResult.status === 'pass',
-        errors: result.validationResult.errors?.length || 0,
-        warnings: result.validationResult.warnings?.length || 0
+        valid: result.validationResult.valid || false,
+        errors: result.validationResult.report?.errors?.length || 0,
+        warnings: result.validationResult.report?.warnings?.length || 0
       } : undefined,
       debugAttempts: result.debugAttempts || 0,
       lastUpdated: new Date()
-    });
-
-    // #done Keep legacy MCP Memory call for backward compatibility (can be removed later)
-    await storeProjectContext(projectId, {
-      userDescription: result.userDescription,
-      plan: result.plan,
-      designSystem: result.designSystem,
-      stylingConfig: result.stylingConfig,
-      backendConfig: result.backendConfig,
-      files: result.files,
-      context: result.context
     });
 
     // ✅ OPTIONAL: Persist stylingConfig to project_settings_memory database
@@ -281,7 +330,7 @@ export async function POST(req: NextRequest) {
         filter: `projectId = "${projectId}"`
       });
 
-      const projectName = result.requirements?.projectName || result.userDescription?.split(' ').slice(0, 3).join(' ') || 'Untitled Project';
+      const projectName = (result as any).requirements?.projectName || result.userDescription?.split(' ').slice(0, 3).join(' ') || 'Untitled Project';
 
       const settingsData = {
         projectId,
@@ -338,7 +387,7 @@ export async function POST(req: NextRequest) {
     const hasCriticalErrors = result.errors.some(
       err => err.node === 'devops' || err.node === 'qa' || err.node === 'frontend' || err.node === 'backend'
     );
-    const validationFailed = result.validationResult?.status === 'fail' && (result.validationResult?.errors || []).length > 0;
+    const validationFailed = !result.validationResult?.valid && (result.validationResult?.report?.errors || []).length > 0;
 
     // SUCCESS CRITERIA: Has files, has deploy URL, no critical errors, validation passed
     const workflowSuccess = hasFiles && hasDeployUrl && !hasCriticalErrors && !validationFailed;

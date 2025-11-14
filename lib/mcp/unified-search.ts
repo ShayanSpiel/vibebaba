@@ -12,13 +12,13 @@
  * - AI-ready formatting
  */
 
-import { getMCPManager } from '../mcp-client';
+import { getMCPManager } from './client';
 import {
   detectBrands,
   optimizeGitHubQuery,
   optimizeWebQuery,
   type BrandName
-} from '../mcp-query-optimizer';
+} from './query-optimizer';
 import {
   extractGitHubData,
   extractWebData,
@@ -26,8 +26,8 @@ import {
   type ExtractedRepository,
   type ExtractedWebResult,
   type ExtractedContext
-} from '../mcp-data-extractor';
-import { searchDuckDuckGo } from '../mcp-duckduckgo';
+} from './data-extractor';
+import { searchDuckDuckGo } from './duckduckgo';
 import { searchCache, queryOptimizerCache } from './cache';
 
 export interface UnifiedSearchOptions {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/admin-middleware';
+import { requireAdmin } from '@/lib/auth/admin-middleware';
 import PocketBase from 'pocketbase';
 import { loadUserCreditsPage } from '@/lib/credits/batch-operations';
 

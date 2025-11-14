@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { pb, User, getCurrentUser, logout as pbLogout } from '@/lib/pocketbase';
+import { pb, User, getCurrentUser, logout as pbLogout } from '@/lib/database/pocketbase';
 
 interface AuthContextType {
   user: User | null;

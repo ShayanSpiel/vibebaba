@@ -1,4 +1,4 @@
-import { pb } from "./pocketbase";
+import { pb } from "./database/pocketbase";
 import { creditsCache } from "./credits-cache";
 
 // Pricing packages

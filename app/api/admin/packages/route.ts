@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/admin-middleware';
-import { PRICING_PACKAGES, CUSTOM_CREDIT_PRICING } from '@/lib/pocketbase-credits';
+import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { PRICING_PACKAGES, CUSTOM_CREDIT_PRICING } from '@/lib/database/pocketbase-credits';
 
 /**
  * Get all pricing packages

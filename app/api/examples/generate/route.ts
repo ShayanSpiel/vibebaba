@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateExample, generateCategoryExamples } from '@/lib/example-generator';
-import { pb, type ExampleCategory } from '@/lib/pocketbase';
+import { generateExample, generateCategoryExamples } from '@/lib/examples/example-generator';
+import { pb, type ExampleCategory } from '@/lib/database/pocketbase';
 
 export async function POST(request: NextRequest) {
   try {

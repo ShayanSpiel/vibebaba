@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Send, Loader2, Trash2, Copy, Check, Sparkles } from 'lucide-react';
-import { getCurrentAIConfig } from '@/lib/ai-config';
+import { getCurrentAIConfig } from '@/lib/ai/ai-config';
 
 interface Message {
   id: string;

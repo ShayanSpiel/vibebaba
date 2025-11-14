@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/pocketbase-middleware';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 import PocketBase from 'pocketbase';
-import { sanitizeError } from '@/lib/pocketbase-utils';
+import { sanitizeError } from '@/lib/database/pocketbase-utils';
 
 const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090';
 

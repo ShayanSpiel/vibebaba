@@ -363,6 +363,19 @@ strong, b, .font-bold {
   animation: spin-slow 2s linear infinite;
 }
 
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 1s linear infinite;
+}
+
 /* ============================================
    TOAST NOTIFICATIONS - Styled via Tailwind in layout.tsx
    ============================================ */

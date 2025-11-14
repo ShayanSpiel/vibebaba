@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/pocketbase-credits";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
+import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
 import { createAppGenWorkflow } from "@/lib/langgraph/workflow";
 import type { AppGenState } from "@/lib/langgraph/types";
 import { customAlphabet } from "nanoid";
@@ -102,8 +102,8 @@ export async function POST(req: NextRequest) {
  */
 async function runPlanningPhase(workflow: any, initialState: AppGenState): Promise<AppGenState> {
   // Import nodes directly for partial execution
-  const { founderNode } = await import('@/lib/langgraph/nodes/founder-node');
-  const { pmNode } = await import('@/lib/langgraph/nodes/pm-node');
+  const { founderNode } = await import('@/lib/langgraph/nodes/founder');
+  const { pmNode } = await import('@/lib/langgraph/nodes/pm');
 
   // Execute Founder node
   let state = { ...initialState };
@@ -122,10 +122,10 @@ async function runPlanningPhase(workflow: any, initialState: AppGenState): Promi
  * Original implementation for rollback capability
  */
 async function legacyPlanHandler(req: NextRequest) {
-  const { generateWithFallback } = await import('@/lib/ai');
-  const { isMCPEnabled } = await import('@/lib/mcp-config');
-  const { gatherBackgroundContext, formatContextForAI, getSuggestedStarThreshold } = await import('@/lib/mcp-background-helper');
-  const { getMemoryService, formatMemoryForPrompt } = await import('@/lib/services/memory-service');
+  const { generateWithFallback } = await import('@/lib/ai/ai');
+  // const { isMCPEnabled } = await import('@/lib/mcp/config');
+  // const { gatherBackgroundContext, formatContextForAI, getSuggestedStarThreshold } = await import('@/lib/mcp/background-helper');
+  const { getConversationContext } = await import('@/lib/memory/conversation-memory');
 
   try {
     const user = await getAuthenticatedUser(req);
@@ -189,34 +189,31 @@ Return ONLY valid JSON, no explanations.`;
       };
     }
 
-    const mcpEnabled = isMCPEnabled();
-    let backgroundContext = null;
+    // COMMENTED OUT FOR WORKFLOW OPTIMIZATION - Search/BackgroundContext disabled for simplicity
+    // const mcpEnabled = isMCPEnabled();
+    // let backgroundContext = null;
 
-    if (mcpEnabled) {
-      console.log("[Plan] Gathering background context silently...");
-      const minStars = getSuggestedStarThreshold(context.appType);
+    // if (mcpEnabled) {
+    //   console.log("[Plan] Gathering background context silently...");
+    //   const minStars = getSuggestedStarThreshold(context.appType);
 
-      backgroundContext = await gatherBackgroundContext(
-        description,
-        context.appType,
-        {
-          timeout: 3000,
-          minStars: minStars,
-        }
-      );
+    //   backgroundContext = await gatherBackgroundContext(
+    //     description,
+    //     context.appType,
+    //     {
+    //       timeout: 3000,
+    //       minStars: minStars,
+    //     }
+    //   );
+    // }
+
+    const optionalContext = ""; // backgroundContext ? formatContextForAI(backgroundContext) : "";
+
+    // MEMORY INTEGRATION: Retrieve conversation context if projectId exists
+    let conversationContext = '';
+    if (projectId) {
+      conversationContext = await getConversationContext(projectId) || '';
     }
-
-    const optionalContext = backgroundContext ? formatContextForAI(backgroundContext) : "";
-
-    // MEMORY INTEGRATION: Retrieve user preferences
-    const memoryService = getMemoryService();
-    const userPreferences = await memoryService.getUserPreferences(user.id);
-
-    const memoryContext = formatMemoryForPrompt({
-      userPreferences,
-      projectContext: null,
-      conversationHistory: []
-    });
 
     const planPrompt = `You are an expert product manager creating a focused, precise plan.
 
@@ -230,15 +227,7 @@ ANALYZED CONTEXT:
 - Visual Tone: ${context.visualTone}
 - Animation Level: ${context.animationLevel}
 ${optionalContext}
-${memoryContext}
-
-${userPreferences ? `
-⚠️ IMPORTANT: This user has preferences! Follow them:
-- Design Style: ${userPreferences.designStyle || 'Not specified'}
-- Color Scheme: ${userPreferences.colorScheme || 'Not specified'}
-- Dark Mode: ${userPreferences.prefersDarkMode ? 'REQUIRED - User prefers dark mode' : 'Not required'}
-${userPreferences.favoriteComponents ? `- Favorite Components: ${userPreferences.favoriteComponents.join(', ')}` : ''}
-` : ''}
+${conversationContext ? `\n📝 CONVERSATION CONTEXT:\n${conversationContext}\n` : ''}
 
 Create a concise plan (max 250 words) with:
 
@@ -265,32 +254,9 @@ Keep it focused and actionable. No fluff, no unnecessary features.`;
     const plan = await generateWithFallback(planPrompt);
     await consumeTokens(user.id, estimatedTokens, "/api/ai/plan");
 
-    // MEMORY INTEGRATION: Store plan and project context
+    // MEMORY INTEGRATION: Disabled - using conversation-memory in LangGraph nodes
+    // (Legacy code - not used when USE_LANGGRAPH=true)
     const finalProjectId = projectId || `plan_${Date.now()}_${user.id}`;
-    await memoryService.storeProjectContext(finalProjectId, {
-      projectId: finalProjectId,
-      description,
-      plan,
-      designDecisions: [],
-      componentChoices: [],
-      technicalStack: [],
-      timestamp: Date.now()
-    });
-
-    // Link project to user
-    await memoryService.linkEntities(
-      `user_${user.id}`,
-      `project_${finalProjectId}`,
-      'owns'
-    );
-
-    // Learn from plan: Extract preferences
-    if (plan.toLowerCase().includes('dark')) {
-      await memoryService.storeUserPreference(user.id, 'learningNotes', `Requested dark mode in plan on ${new Date().toISOString()}`);
-    }
-    if (context.designStyle) {
-      await memoryService.storeUserPreference(user.id, 'learningNotes', `Used design style: ${context.designStyle}`);
-    }
 
     console.log(`[Plan] Stored plan in memory: ${finalProjectId}`);
 

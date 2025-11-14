@@ -33,9 +33,13 @@ function generatePackageJson(projectId) {
       '@mui/icons-material': '^5.15.0',
       '@mui/material': '^5.15.0',
       'pocketbase': '^0.21.0',
-      'express': '^4.18.2',
-      'cors': '^2.8.5',
-      'zod': '^3.22.0'
+      '@tanstack/react-query': '^5.0.0',
+      'zod': '^3.23.0',
+      '@hookform/resolvers': '^3.3.0',
+      'bcryptjs': '^2.4.3',
+      '@types/bcryptjs': '^2.4.6',
+      'jsonwebtoken': '^9.0.2',
+      '@types/jsonwebtoken': '^9.0.5'
     },
     devDependencies: {
       'tailwindcss': '^3.4.0',
@@ -46,12 +50,15 @@ function generatePackageJson(projectId) {
 }
 
 /**
- * Generate next.config.js with static export
+ * Generate next.config.js
+ * Standalone mode for dynamic routes with PocketBase backend
  */
-function generateNextConfig(projectId) {
+function generateNextConfig(projectId, hasBackend = false) {
+  // Use standalone output - supports dynamic routes without generateStaticParams()
+  // PocketBase handles backend, Next.js handles frontend with client-side rendering
   return `/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  output: 'standalone',
   basePath: '/apps/project-${projectId}',
   images: {
     unoptimized: true
@@ -319,8 +326,463 @@ function capitalize(str) {
 }
 
 /**
+ * Generate shared PocketBase client (src/lib/db.ts)
+ * Used by both API routes (server-side) and optionally client components
+ */
+function generateDbClient(projectId) {
+  return `import PocketBase from 'pocketbase';
+
+const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || '${projectId}';
+// Use Express proxy (relative URL) to avoid CORS issues
+const PB_URL = process.env.NEXT_PUBLIC_PB_URL || '/pb-api';
+
+export const pb = new PocketBase(PB_URL);
+
+export function getCollectionName(name: string): string {
+  return \`\${PROJECT_ID}_\${name}\`;
+}
+
+// Auto-authenticate as admin (server-side only)
+if (typeof window === 'undefined') {
+  pb.admins.authWithPassword('admin@vibebaba.com', 'admin1234').catch((err) => {
+    console.error('[PocketBase] Admin auth failed:', err);
+  });
+}
+`;
+}
+
+/**
+ * Generate Next.js API route for a collection
+ * Creates both collection route (GET, POST) and [id] route (GET, PUT, DELETE)
+ */
+function generateNextApiRoute(collectionName) {
+  const handlerName = collectionName.toLowerCase();
+
+  // Main collection route (GET all, POST create)
+  const collectionRoute = `import { NextRequest, NextResponse } from 'next/server';
+import { pb, getCollectionName } from '@/lib/db';
+
+// GET /api/${handlerName} - Get all ${collectionName}
+export async function GET(request: NextRequest) {
+  try {
+    const items = await pb.collection(getCollectionName('${collectionName}')).getFullList({
+      sort: '-created',
+    });
+    return NextResponse.json(items);
+  } catch (error: any) {
+    console.error('[API] GET /api/${handlerName} error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to fetch ${collectionName}' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/${handlerName} - Create new ${collectionName.slice(0, -1)}
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const item = await pb.collection(getCollectionName('${collectionName}')).create(data);
+    return NextResponse.json(item, { status: 201 });
+  } catch (error: any) {
+    console.error('[API] POST /api/${handlerName} error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to create ${collectionName.slice(0, -1)}' },
+      { status: 400 }
+    );
+  }
+}
+`;
+
+  // [id] route (GET one, PUT update, DELETE)
+  const idRoute = `import { NextRequest, NextResponse } from 'next/server';
+import { pb, getCollectionName } from '@/lib/db';
+
+// GET /api/${handlerName}/[id] - Get single ${collectionName.slice(0, -1)}
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const item = await pb.collection(getCollectionName('${collectionName}')).getOne(id);
+    return NextResponse.json(item);
+  } catch (error: any) {
+    console.error('[API] GET /api/${handlerName}/[id] error:', error);
+    return NextResponse.json(
+      { error: error?.message || '${capitalize(collectionName.slice(0, -1))} not found' },
+      { status: 404 }
+    );
+  }
+}
+
+// PUT /api/${handlerName}/[id] - Update ${collectionName.slice(0, -1)}
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const data = await request.json();
+    const item = await pb.collection(getCollectionName('${collectionName}')).update(id, data);
+    return NextResponse.json(item);
+  } catch (error: any) {
+    console.error('[API] PUT /api/${handlerName}/[id] error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to update ${collectionName.slice(0, -1)}' },
+      { status: 400 }
+    );
+  }
+}
+
+// DELETE /api/${handlerName}/[id] - Delete ${collectionName.slice(0, -1)}
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await pb.collection(getCollectionName('${collectionName}')).delete(id);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('[API] DELETE /api/${handlerName}/[id] error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to delete ${collectionName.slice(0, -1)}' },
+      { status: 400 }
+    );
+  }
+}
+`;
+
+  return {
+    collectionRoute,
+    idRoute,
+    handlerName
+  };
+}
+
+/**
+ * Generate Next.js API route for a custom endpoint
+ * Creates route file for endpoints like /api/products/search, /api/basket/add, etc.
+ */
+function generateCustomApiRoute(endpoint, projectId) {
+  const { method, path, handler, collection, description } = endpoint;
+
+  // Extract the route path (remove /api prefix)
+  const routePath = path.replace(/^\/api\//, '');
+
+  // Determine if endpoint has path parameters
+  const hasPathParams = path.includes('/:');
+  const pathParams = hasPathParams
+    ? path.match(/:[a-zA-Z_][a-zA-Z0-9_]*/g)?.map(p => p.slice(1)) || []
+    : [];
+
+  // Determine if endpoint uses request body
+  const hasBody = ['POST', 'PUT', 'PATCH'].includes(method);
+
+  // Generate the handler function
+  let handlerCode = '';
+
+  if (hasPathParams) {
+    // Handler with path parameters
+    handlerCode = `export async function ${method}(
+  request: NextRequest,
+  { params }: { params: Promise<{ ${pathParams.map(p => `${p}: string`).join('; ')} }> }
+) {
+  try {
+    const { ${pathParams.join(', ')} } = await params;
+    ${hasBody ? 'const data = await request.json();' : ''}
+
+    // TODO: Implement ${description}
+    // Collection: ${collection}
+    // Example: await pb.collection(getCollectionName('${collection}')).getList(1, 50, { filter: \`field = "\${${pathParams[0]}}"\` });
+
+    return NextResponse.json({ message: 'Endpoint not yet implemented' }, { status: 501 });
+  } catch (error: any) {
+    console.error('[API] ${method} ${path} error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Request failed' },
+      { status: 500 }
+    );
+  }
+}`;
+  } else {
+    // Handler without path parameters
+    // Check if this is a search/filter endpoint
+    const isSearchEndpoint = path.includes('/search') || path.includes('/filter') || handler?.toLowerCase().includes('search') || handler?.toLowerCase().includes('filter');
+
+    if (isSearchEndpoint && collection && method === 'POST') {
+      // Generate working search implementation for POST
+      handlerCode = `export async function ${method}(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const { query, ...filters } = data;
+
+    // Build filter for search
+    let filter = '';
+    if (query) {
+      filter = \`name ~ "\${query}" || description ~ "\${query}"\`;
+    }
+
+    // Apply additional filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        const filterPart = \`\${key} = "\${value}"\`;
+        filter = filter ? \`(\${filter}) && \${filterPart}\` : filterPart;
+      }
+    });
+
+    const items = await pb.collection(getCollectionName('${collection}')).getFullList({
+      filter: filter || undefined,
+      sort: '-created',
+    });
+
+    return NextResponse.json(items);
+  } catch (error: any) {
+    console.error('[API] ${method} ${path} error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Search failed' },
+      { status: 500 }
+    );
+  }
+}`;
+    } else if (isSearchEndpoint && collection && method === 'GET') {
+      // Generate working search implementation for GET
+      handlerCode = `export async function ${method}(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('query');
+
+    // Build filter for search
+    let filter = '';
+    if (query) {
+      filter = \`name ~ "\${query}" || description ~ "\${query}"\`;
+    }
+
+    // Apply additional query params as filters
+    for (const [key, value] of searchParams.entries()) {
+      if (key !== 'query' && value) {
+        const filterPart = \`\${key} = "\${value}"\`;
+        filter = filter ? \`(\${filter}) && \${filterPart}\` : filterPart;
+      }
+    }
+
+    const items = await pb.collection(getCollectionName('${collection}')).getFullList({
+      filter: filter || undefined,
+      sort: '-created',
+    });
+
+    return NextResponse.json(items);
+  } catch (error: any) {
+    console.error('[API] ${method} ${path} error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Search failed' },
+      { status: 500 }
+    );
+  }
+}`;
+    } else {
+      // Generic stub for other custom endpoints
+      handlerCode = `export async function ${method}(request: NextRequest) {
+  try {
+    ${hasBody ? 'const data = await request.json();' : ''}
+    ${method === 'GET' ? 'const { searchParams } = new URL(request.url);' : ''}
+    ${method === 'GET' ? '// Extract query parameters: searchParams.get(\'query\')' : ''}
+
+    // TODO: Implement ${description}
+    // Collection: ${collection}
+    ${collection ? `// Example: await pb.collection(getCollectionName('${collection}')).getFullList();` : ''}
+
+    return NextResponse.json({ message: 'Endpoint not yet implemented' }, { status: 501 });
+  } catch (error: any) {
+    console.error('[API] ${method} ${path} error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Request failed' },
+      { status: 500 }
+    );
+  }
+}`;
+    }
+  }
+
+  const routeContent = `import { NextRequest, NextResponse } from 'next/server';
+import { pb, getCollectionName } from '@/lib/db';
+
+// ${method} ${path} - ${description}
+${handlerCode}
+`;
+
+  return {
+    content: routeContent,
+    path: routePath
+  };
+}
+
+/**
+ * Generate Next.js API auth routes
+ * Creates register, login, and me endpoints
+ */
+function generateNextAuthRoutes(projectId) {
+  const registerRoute = `import { NextRequest, NextResponse } from 'next/server';
+import { pb, getCollectionName } from '@/lib/db';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// POST /api/auth/register - Register new user
+export async function POST(request: NextRequest) {
+  try {
+    const { email, password, name } = await request.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user in PocketBase
+    const user = await pb.collection(getCollectionName('users')).create({
+      email,
+      password: hashedPassword,
+      name: name || email.split('@')[0],
+    });
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return NextResponse.json({
+      user: { id: user.id, email: user.email, name: user.name },
+      token,
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error('[API] POST /api/auth/register error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Registration failed' },
+      { status: 400 }
+    );
+  }
+}
+`;
+
+  const loginRoute = `import { NextRequest, NextResponse } from 'next/server';
+import { pb, getCollectionName } from '@/lib/db';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// POST /api/auth/login - Login user
+export async function POST(request: NextRequest) {
+  try {
+    const { email, password } = await request.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Find user by email
+    const users = await pb.collection(getCollectionName('users')).getFullList({
+      filter: \`email = "\${email}"\`,
+    });
+
+    if (users.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+
+    const user = users[0];
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return NextResponse.json({
+      user: { id: user.id, email: user.email, name: user.name },
+      token,
+    });
+  } catch (error: any) {
+    console.error('[API] POST /api/auth/login error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Login failed' },
+      { status: 500 }
+    );
+  }
+}
+`;
+
+  const meRoute = `import { NextRequest, NextResponse } from 'next/server';
+import { pb, getCollectionName } from '@/lib/db';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// GET /api/auth/me - Get current user
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'No token provided' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+
+    // Get user from PocketBase
+    const user = await pb.collection(getCollectionName('users')).getOne(decoded.id);
+
+    return NextResponse.json({
+      user: { id: user.id, email: user.email, name: user.name },
+    });
+  } catch (error: any) {
+    console.error('[API] GET /api/auth/me error:', error);
+    return NextResponse.json(
+      { error: 'Invalid token' },
+      { status: 401 }
+    );
+  }
+}
+`;
+
+  return {
+    registerRoute,
+    loginRoute,
+    meRoute
+  };
+}
+
+/**
  * Calculate deterministic API port from projectId
- * IMPORTANT: This must match the algorithm in deployment-server/server.js and frontend-node.ts
+ * DEPRECATED: No longer needed with Next.js API routes
+ * Kept for backward compatibility during migration
  */
 function calculateApiPort(projectId) {
   const PORT_RANGE = { min: 5000, max: 6000 };
@@ -406,7 +868,8 @@ process.on('SIGTERM', () => {
 `;
 }
 
-function generateDbClient(projectId, backendConfig) {
+// DEPRECATED: Old Express DB client generator (no longer used)
+function generateExpressDbClient(projectId, backendConfig) {
   const collections = backendConfig.collections;
 
   return `const PocketBase = require('pocketbase/cjs');
@@ -594,10 +1057,158 @@ function generateApiPackageJson(projectId, hasAuth = false) {
  * Generate complete Next.js scaffold
  * Returns array of files to write
  */
+// Generate frontend API client (src/lib/api.ts)
+// CRITICAL: This file exports all handler functions so frontend can import from '@/lib/api'
+function generateFrontendApiClient(projectId, backendConfig) {
+  const apiEndpoints = backendConfig.apiEndpoints || [];
+  const collections = backendConfig.collections || [];
+
+  // ✅ CRITICAL FIX: Generate TypeScript interfaces for each collection
+  const typeInterfaces = collections.map(col => {
+    const typeName = col.name.charAt(0).toUpperCase() + col.name.slice(1);
+    const fields = col.fields || [];
+
+    const fieldDefinitions = fields.map(field => {
+      let tsType = 'any';
+
+      // Map PocketBase field types to TypeScript types
+      switch (field.type?.toLowerCase()) {
+        case 'text':
+        case 'email':
+        case 'url':
+        case 'editor':
+          tsType = 'string';
+          break;
+        case 'number':
+          tsType = 'number';
+          break;
+        case 'bool':
+        case 'boolean':
+          tsType = 'boolean';
+          break;
+        case 'date':
+        case 'datetime':
+          tsType = 'string'; // ISO date string
+          break;
+        case 'json':
+          tsType = 'any';
+          break;
+        case 'file':
+          tsType = 'string'; // File URL
+          break;
+        case 'relation':
+          tsType = 'string'; // Relation ID
+          break;
+        case 'select':
+          tsType = 'string';
+          break;
+        default:
+          tsType = 'any';
+      }
+
+      const optional = field.required === false ? '?' : '';
+      return `  ${field.name}${optional}: ${tsType};`;
+    }).join('\n');
+
+    return `export interface ${typeName} {
+  id?: string;
+  created?: string;
+  updated?: string;
+${fieldDefinitions}
+}`;
+  }).join('\n\n');
+
+  // Group endpoints by handler name to avoid duplicates
+  const uniqueHandlers = new Map();
+  apiEndpoints.forEach(ep => {
+    if (ep.handler && !uniqueHandlers.has(ep.handler)) {
+      uniqueHandlers.set(ep.handler, ep);
+    }
+  });
+
+  // Generate function for each unique handler
+  const functions = Array.from(uniqueHandlers.values()).map(ep => {
+    const params = ep.params || '';
+    const hasParams = params.trim().length > 0;
+
+    // Extract parameter names if provided
+    let paramList = '';
+    let paramUsage = '';
+
+    if (hasParams) {
+      // Parse params like "id: string" or "data: FormData"
+      const paramNames = params.split(',').map(p => p.split(':')[0].trim());
+      paramList = params; // Use full type annotations
+      paramUsage = paramNames.length === 1 ? paramNames[0] : `{ ${paramNames.join(', ')} }`;
+    }
+
+    // Determine if it's a mutation (POST, PUT, DELETE) or query (GET)
+    const isMutation = ['POST', 'PUT', 'DELETE'].includes(ep.method);
+
+    // Build URL with params - use relative paths (same-origin requests)
+    let urlBuilder = `\`\${endpoint || '${ep.path}'}\``;
+    if (ep.path.includes(':id') && hasParams) {
+      urlBuilder = `\`${ep.path.replace(':id', '${id}')}\``;
+    }
+
+    return `/**
+ * ${ep.description || ep.method + ' ' + ep.path}
+ * @endpoint ${ep.method} ${ep.path}
+ */
+export async function ${ep.handler}(${paramList}${hasParams ? ', ' : ''}endpoint?: string) {
+  try {
+    const response = await fetch(${urlBuilder}, {
+      method: '${ep.method}',${isMutation ? `
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(${paramUsage || '{}'}),` : ''}
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(error.error || error.message || 'Request failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[API] ${ep.handler} error:', error);
+    throw error;
+  }
+}`;
+  }).join('\n\n');
+
+  return `/**
+ * Frontend API Client
+ * Auto-generated from backend configuration
+ *
+ * This file exports all API handler functions for use in frontend components.
+ * Import like: import { ${uniqueHandlers.values().next().value?.handler || 'functionName'} } from '@/lib/api'
+ */
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TYPE DEFINITIONS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${typeInterfaces || '// No collections defined'}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// API FUNCTIONS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${functions}
+
+// Export all functions
+export default {
+  ${Array.from(uniqueHandlers.keys()).join(',\n  ')}
+};
+`;
+}
+
 function generateScaffold(projectId, backendConfig = null) {
+  const hasBackend = !!(backendConfig && backendConfig.collections && backendConfig.collections.length > 0);
+
   const files = [
     { path: 'package.json', content: generatePackageJson(projectId) },
-    { path: 'next.config.js', content: generateNextConfig(projectId) },
+    { path: 'next.config.js', content: generateNextConfig(projectId, hasBackend) },
     { path: 'tsconfig.json', content: generateTsConfig() },
     { path: 'tailwind.config.js', content: generateTailwindConfig() },
     { path: 'postcss.config.js', content: generatePostCssConfig() },
@@ -606,9 +1217,25 @@ function generateScaffold(projectId, backendConfig = null) {
     { path: 'src/app/globals.css', content: generateGlobalsCss() }
   ];
 
-  // Add backend files if config provided
+  // Add .env.local with project ID for backend projects
+  if (hasBackend) {
+    files.push({
+      path: '.env.local',
+      content: `# Project configuration (auto-generated)
+# PocketBase via Express proxy (relative URL avoids CORS)
+NEXT_PUBLIC_PROJECT_ID=${projectId}
+NEXT_PUBLIC_PB_URL=/pb-api
+
+# No JWT_SECRET needed - PocketBase handles authentication
+# For custom backend logic, use PocketBase hooks in deployment-server/pb_migrations/
+`
+    });
+    console.log(`[Scaffold] 🌍 Generated .env.local with PocketBase config`);
+  }
+
+  // Add backend files if config provided (Next.js API routes)
   if (backendConfig?.apiEndpoints && backendConfig.apiEndpoints.length > 0) {
-    console.log(`[Scaffold] 🔧 Generating backend files for ${projectId}...`);
+    console.log(`[Scaffold] 🔧 Generating Next.js API routes for ${projectId}...`);
     console.log(`[Scaffold]   Collections: ${backendConfig.collections.join(', ')}`);
     console.log(`[Scaffold]   Endpoints: ${backendConfig.apiEndpoints.length}`);
 
@@ -616,52 +1243,44 @@ function generateScaffold(projectId, backendConfig = null) {
     const hasAuthEndpoints = backendConfig.apiEndpoints.some(ep => ep.path.includes('/api/auth'));
     console.log(`[Scaffold]   Auth endpoints: ${hasAuthEndpoints ? 'YES' : 'NO'}`);
 
-    // Add Express server
+    // Generate shared PocketBase client
     files.push({
-      path: 'api/server.js',
-      content: generateExpressServer(projectId, backendConfig, hasAuthEndpoints)
+      path: 'src/lib/db.ts',
+      content: generateDbClient(projectId)
     });
+    console.log(`[Scaffold] 📦 Generated src/lib/db.ts (PocketBase client)`);
 
-    // Add database client
+    // Generate frontend API client
     files.push({
-      path: 'api/db.js',
-      content: generateDbClient(projectId, backendConfig)
+      path: 'src/lib/api.ts',
+      content: generateFrontendApiClient(projectId, backendConfig)
     });
+    console.log(`[Scaffold] ✅ Generated src/lib/api.ts with ${backendConfig.apiEndpoints.length} API functions`);
 
-    // Add auth routes if needed
-    if (hasAuthEndpoints) {
-      console.log(`[Scaffold] 🔐 Generating authentication routes...`);
-      files.push({
-        path: 'api/routes/auth.js',
-        content: generateAuthRoutes(projectId)
-      });
-      files.push({
-        path: 'api/middleware/auth.js',
-        content: generateAuthMiddleware()
-      });
-    }
+    // ========================================
+    // POCKETBASE DIRECT ARCHITECTURE
+    // ========================================
+    // NO Next.js API routes are generated!
+    // Frontend API client (src/lib/api.ts) calls PocketBase REST API directly:
+    //   GET    http://localhost:8090/api/collections/{collection}/records
+    //   POST   http://localhost:8090/api/collections/{collection}/records
+    //   GET    http://localhost:8090/api/collections/{collection}/records/:id
+    //   PATCH  http://localhost:8090/api/collections/{collection}/records/:id
+    //   DELETE http://localhost:8090/api/collections/{collection}/records/:id
+    //
+    // Benefits:
+    //   - Simpler deployment (static export, no Node.js server)
+    //   - Lower hosting costs (static files + PocketBase)
+    //   - Custom backend logic via PocketBase hooks (Stripe, OpenAI, etc.)
+    //   - Auto-generated admin UI for all collections
+    //
+    // Environment variable: NEXT_PUBLIC_PB_URL=http://localhost:8090
+    // ========================================
 
-    // Add route files (one per collection, except users if auth is enabled)
-    backendConfig.collections.forEach(collection => {
-      const collectionName = typeof collection === 'string' ? collection : collection.name;
-      // Skip users collection if auth is enabled (handled by auth routes)
-      if (collectionName === 'users' && hasAuthEndpoints) {
-        console.log(`[Scaffold]   Skipping 'users' routes (handled by auth)`);
-        return;
-      }
-      files.push({
-        path: `api/routes/${collectionName}.js`,
-        content: generateRouteFile(collectionName)
-      });
-    });
-
-    // Add package.json for API server
-    files.push({
-      path: 'api/package.json',
-      content: generateApiPackageJson(projectId, hasAuthEndpoints)
-    });
-
-    console.log(`[Scaffold] ✅ Generated ${files.filter(f => f.path.startsWith('api/')).length} backend files`);
+    console.log(`[Scaffold] ℹ️  Using PocketBase direct API (no Next.js API routes)`);
+    console.log(`[Scaffold] ℹ️  Collections: ${backendConfig.collections.map(c => typeof c === 'string' ? c : c.name).join(', ')}`);
+    console.log(`[Scaffold] ℹ️  API endpoints: ${backendConfig.apiEndpoints.length} functions in src/lib/api.ts`);
+    console.log(`[Scaffold] ℹ️  Frontend calls: ${process.env.NEXT_PUBLIC_PB_URL || 'http://localhost:8090'}/api/collections/{collection}/records`);
   }
 
   return files;

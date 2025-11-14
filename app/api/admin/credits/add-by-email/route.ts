@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/admin-middleware';
-import { getAdminPb } from '@/lib/pocketbase-admin';
+import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
 /**
  * Add credits to user by email address

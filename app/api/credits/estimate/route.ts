@@ -2,7 +2,7 @@
 // PHASE 3: API endpoint for estimating workflow credit cost
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokenEstimator } from '@/lib/credits/token-estimator';
-import { getAuthenticatedUser } from '@/lib/pocketbase-middleware';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 
 export async function POST(req: NextRequest) {
   try {

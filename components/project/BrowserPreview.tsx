@@ -74,8 +74,9 @@ export default function BrowserPreview({
     const routes: { path: string; label: string }[] = [];
 
     // Check for Next.js App Router (app directory structure)
+    // ✅ FIX: Support both 'app/' and 'src/app/' directory structures
     const appDirPages = files.filter(f =>
-      f.path.startsWith('app/') &&
+      (f.path.startsWith('app/') || f.path.startsWith('src/app/')) &&
       (f.path.endsWith('/page.tsx') || f.path.endsWith('/page.ts') || f.path.endsWith('/page.jsx') || f.path.endsWith('/page.js'))
     );
 
@@ -84,10 +85,13 @@ export default function BrowserPreview({
       appDirPages.forEach(file => {
         // Extract route from file path
         // app/page.tsx -> /
+        // src/app/page.tsx -> /
         // app/dashboard/page.tsx -> /dashboard
+        // src/app/dashboard/page.tsx -> /dashboard
         // app/blog/[id]/page.tsx -> /blog/[id]
         let route = file.path
-          .replace(/^app/, '')
+          .replace(/^src\/app/, '')  // ✅ FIX: Strip 'src/app' prefix
+          .replace(/^app/, '')       // Strip 'app' prefix (fallback)
           .replace(/\/page\.(tsx|ts|jsx|js)$/, '')
           .replace(/\\/g, '/');
 

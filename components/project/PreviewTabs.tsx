@@ -9,6 +9,7 @@ import PlanPreview from "./PlanPreview";
 import { useDeployment } from "@/lib/hooks/useDeployment";
 import { getContextualLoadingMessage, getMaybeRareMessage, getTimeBasedMessage } from "@/lib/loading-messages";
 import { generateScaffold } from "@/deployment-server/nextjs-scaffold";
+import { useUploadedFiles } from "@/lib/contexts/UploadedFilesContext";
 
 interface PreviewTabsProps {
   project: any;
@@ -22,27 +23,9 @@ export default function PreviewTabs({ project, onUpdateProject, activeView, onDe
   const deployment = useDeployment(project.id);
   const [planningMessage, setPlanningMessage] = useState<string>("");
   const [buildingMessage, setBuildingMessage] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
-  // Fetch uploaded files for the project
-  const fetchUploadedFiles = async () => {
-    if (!project?.id) return;
-
-    try {
-      const response = await fetch(`/api/files/list/${project.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUploadedFiles(data.files || []);
-      }
-    } catch (error) {
-      console.error('[PreviewTabs] Failed to fetch uploaded files:', error);
-    }
-  };
-
-  // Load uploaded files on mount
-  useEffect(() => {
-    fetchUploadedFiles();
-  }, [project?.id]);
+  // 🎯 SINGLE SOURCE OF TRUTH: Use centralized uploaded files context (no API call!)
+  const { files: uploadedFiles, refetch: fetchUploadedFiles } = useUploadedFiles();
 
   // Notify parent of deployment status changes
   useEffect(() => {
@@ -301,7 +284,7 @@ export default function PreviewTabs({ project, onUpdateProject, activeView, onDe
                   onFileSelect={(file) => setSelectedFile(file)}
                   selectedFile={selectedFile?.name || null}
                   projectId={project.id}
-                  uploadedFiles={uploadedFiles}
+                  uploadedFiles={uploadedFiles as any}
                   onRefreshUploadedFiles={fetchUploadedFiles}
                 />
               </div>

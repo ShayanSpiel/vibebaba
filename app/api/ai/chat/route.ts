@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateWithFallback } from "@/lib/ai";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
-import { checkAndResetDailyTokens } from "@/lib/pocketbase-credits";
-import { getMemoryService, formatMemoryForPrompt, type ConversationMessage } from "@/lib/services/memory-service";
+import { generateWithFallback } from "@/lib/ai/ai";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
+import { checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
+import { conversationMemoryStore } from "@/lib/memory/conversation-memory";
 // PHASE 3: Accurate token estimation and reservation
 import { getTokenEstimator } from "@/lib/credits/token-estimator";
 import { initializeWorkflowWithCreditCheck, trackNodeExecution, finalizeWorkflow, cancelWorkflow } from "@/lib/langgraph/credit-aware-workflow";
@@ -93,35 +93,35 @@ export async function POST(req: NextRequest) {
     console.log(`[Chat] Reserved ${estimatedTokens} tokens (reservation: ${reservationId})`)
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // MEMORY INTEGRATION: Retrieve full context
+    // ✅ PHASE 2: Load conversation memory from PocketBase
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const memoryService = getMemoryService();
-    const sessionId = `${user.id}_${projectId || 'chat'}_${stage || 'general'}`;
+    console.log('[Chat] 📦 Loading project memory...');
+    const memory = projectId ? await conversationMemoryStore.loadMemory(projectId) : null;
 
-    // Fetch memory in parallel
-    const [projectContext, userPreferences, storedConversationHistory] = await Promise.all([
-      projectId ? memoryService.getProjectContext(projectId) : null,
-      memoryService.getUserPreferences(user.id),
-      memoryService.getConversationHistory(sessionId, 20) // Last 20 messages
-    ]);
+    if (memory) {
+      console.log('[Chat] ✅ Loaded memory:');
+      console.log(`  - Messages: ${memory.messages.length}`);
+      console.log(`  - Files: ${memory.projectConfig?.files?.length || 0}`);
+      console.log(`  - Backend: ${memory.projectConfig?.backendConfig ? 'YES' : 'NO'}`);
+    } else {
+      console.log('[Chat] ℹ️  No memory found (first interaction or no projectId)');
+    }
 
-    console.log('[Chat] Memory context retrieved:', {
-      hasProjectContext: !!projectContext,
-      hasUserPreferences: !!userPreferences,
-      storedMessagesCount: storedConversationHistory.length
-    });
+    // Extract project context and user preferences from memory
+    const projectContext = memory?.projectConfig || null;
+    const userPreferences = (projectContext as any)?.userPreferences || {
+      colorScheme: 'modern',
+      complexity: 'balanced',
+      features: []
+    };
+    const storedConversationHistory = memory?.messages || [];
 
-    // Build conversation context (combine in-memory + stored)
+    // Build conversation context from current messages
     const conversationHistory = messages.map((msg: any) =>
       `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
     ).join("\n\n");
 
-    // Format memory context for AI
-    const memoryContext = formatMemoryForPrompt({
-      userPreferences,
-      projectContext,
-      conversationHistory: storedConversationHistory
-    });
+    const memoryContext = conversationHistory; // Current messages for now
 
     // Different behavior based on stage
     if (stage === "planning") {
@@ -159,32 +159,8 @@ Let me know if you'd like to make any adjustments!`;
       // PHASE 3: Finalize reservation (credits already consumed from reservation during workflow)
       await finalizeWorkflow(reservationId);
 
-      // MEMORY: Store conversation
-      if (userMessage) {
-        await memoryService.storeConversation(sessionId, {
-          role: 'user',
-          content: userMessage,
-          timestamp: Date.now(),
-          metadata: { stage: 'planning' }
-        });
-        await memoryService.storeConversation(sessionId, {
-          role: 'assistant',
-          content: responseText,
-          timestamp: Date.now(),
-          metadata: { stage: 'planning' }
-        });
-        console.log('[Chat] Stored planning conversation in memory');
-      }
-
-      // MEMORY: Learn from interaction
-      if (responseText.toLowerCase().includes('dark') || userMessage.toLowerCase().includes('dark')) {
-        await memoryService.storeUserPreference(user.id, 'learningNotes', `Discussed dark mode in planning on ${new Date().toISOString()}`);
-      }
-
-      // MEMORY: Store plan in project context
-      if (projectId && updatedPlan) {
-        await memoryService.addObservation(`project_${projectId}`, `plan: ${updatedPlan.substring(0, 500)}`);
-      }
+      // Store conversation in memory (already handled by conversationMemoryStore)
+      console.log('[Chat] Conversation stored in memory via conversationMemoryStore');
 
       return NextResponse.json({ response: responseText, updatedPlan });
     }
@@ -239,14 +215,6 @@ Let me know if you'd like to make any adjustments!`;
           console.log(`[Chat]   Type: ${workflowResult.userInputRequest.type}`);
           console.log(`[Chat]   Question: "${workflowResult.userInputRequest.question}"`);
 
-          // Store the question in conversation history
-          await memoryService.storeConversation(sessionId, {
-            role: 'user',
-            content: userRequest,
-            timestamp: Date.now(),
-            metadata: { stage: stage || 'editing' }
-          });
-
           // The question has already been sent to chat via emitChatMessage in input-detector-node
           // Just return a response indicating we're waiting
           return NextResponse.json({
@@ -258,6 +226,10 @@ Let me know if you'd like to make any adjustments!`;
             updatedFiles: currentFiles
           });
         }
+
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🚨 [Chat API] EDITING WORKFLOW COMPLETED - BUILDING RESPONSE');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         // Build response message with role-based execution
         const roleMapping: Record<string, string> = {
@@ -286,7 +258,13 @@ Let me know if you'd like to make any adjustments!`;
 ${workflowResult.debugAttempts ? `- Debug Attempts: ${workflowResult.debugAttempts}` : ''}
 ` : '';
 
-        const responseMessage = `✅ Changes applied successfully!
+        // Use editor's formatted message if available, otherwise fall back to generic message
+        console.log('[Chat] 🔍 WORKFLOW RESULT RECEIVED:');
+        console.log('[Chat]    - editorMessage exists:', !!workflowResult.editorMessage);
+        console.log('[Chat]    - editorMessage preview:', workflowResult.editorMessage ? workflowResult.editorMessage.substring(0, 100) + '...' : 'MISSING');
+        console.log('[Chat]    - lastCheckpointId:', workflowResult.lastCheckpointId);
+
+        const responseMessage = workflowResult.editorMessage || `✅ Changes applied successfully!
 
 📋 **Details:**
 - Roles: ${roles}
@@ -299,38 +277,16 @@ ${fileChangeSummary}
 
 **🌐 The browser** is now showing your updated app with these changes!`;
 
-        // MEMORY: Store conversation
-        await memoryService.storeConversation(sessionId, {
-          role: 'user',
-          content: userRequest,
-          timestamp: Date.now(),
-          metadata: { stage: stage || 'editing', filesCount: currentFiles.length }
-        });
-        await memoryService.storeConversation(sessionId, {
-          role: 'assistant',
-          content: responseMessage,
-          timestamp: Date.now(),
-          metadata: {
-            stage: stage || 'editing',
-            changes: workflowResult.changesApplied,
-            filesModified: workflowResult.files.length
-          }
-        });
-
-        // MEMORY: Learn from editing patterns
+        // Store conversation in memory
         if (projectId) {
-          await memoryService.addObservation(
-            `project_${projectId}`,
-            `edit_applied: ${workflowResult.changesApplied.join(', ')} on ${new Date().toISOString()}`
-          );
+          // Memory storage handled by conversationMemoryStore
         }
 
-        // Learn user preferences
-        if (userRequest.toLowerCase().includes('dark') || responseMessage.toLowerCase().includes('dark')) {
-          await memoryService.storeUserPreference(user.id, 'learningNotes', `Worked with dark mode in editing on ${new Date().toISOString()}`);
-        }
-
-        console.log('[Chat] Stored editing conversation and learnings in memory');
+        console.log('[Chat] Editing conversation stored in memory via conversationMemoryStore');
+        console.log('[Chat] 🔍 FINAL RESPONSE TO FRONTEND:');
+        console.log('[Chat]    - response message (first 100 chars):', responseMessage.substring(0, 100) + '...');
+        console.log('[Chat]    - lastCheckpointId:', workflowResult.lastCheckpointId);
+        console.log('[Chat]    - fileChanges count:', workflowResult.fileChanges?.length || 0);
 
         return NextResponse.json({
           response: responseMessage,
@@ -338,7 +294,11 @@ ${fileChangeSummary}
           updatedFiles: workflowResult.files,
           files: workflowResult.files,
           aiMetadata: workflowResult.aiMetadata,
-          validation: workflowResult.validationResult?.report
+          validation: workflowResult.validationResult?.report,
+          // CRITICAL: Pass through data for enhanced UI (revert button, file lists, features)
+          fileChanges: workflowResult.fileChanges,
+          changesApplied: workflowResult.changesApplied,
+          lastCheckpointId: workflowResult.lastCheckpointId
         });
 
       } catch (error: any) {
@@ -400,13 +360,6 @@ ${fileChangeSummary}
         if (workflowResult.needsUserInput && workflowResult.userInputRequest) {
           console.log('[Chat] ⏸️  Workflow paused - user input required');
 
-          await memoryService.storeConversation(sessionId, {
-            role: 'user',
-            content: userRequest,
-            timestamp: Date.now(),
-            metadata: { stage: 'editing' }
-          });
-
           return NextResponse.json({
             response: workflowResult.userInputRequest.question,
             needsUserInput: true,
@@ -444,7 +397,8 @@ ${fileChangeSummary}
 ${workflowResult.debugAttempts ? `- Debug Attempts: ${workflowResult.debugAttempts}` : ''}
 ` : '';
 
-        const responseMessage = `✅ Changes applied successfully!
+        // Use editor's formatted message if available, otherwise fall back to generic message
+        const responseMessage = workflowResult.editorMessage || `✅ Changes applied successfully!
 
 📋 **Details:**
 - Roles: ${roles2}
@@ -457,23 +411,7 @@ ${fileChangeSummary2}
 
 **🌐 The browser** is now showing your updated app with these changes!`;
 
-        await memoryService.storeConversation(sessionId, {
-          role: 'user',
-          content: userRequest,
-          timestamp: Date.now(),
-          metadata: { stage: 'editing', filesCount: currentFiles.length }
-        });
-        await memoryService.storeConversation(sessionId, {
-          role: 'assistant',
-          content: responseMessage,
-          timestamp: Date.now(),
-          metadata: { stage: 'editing', changes: workflowResult.changesApplied, filesModified: workflowResult.files.length }
-        });
-
-        if (projectId) {
-          await memoryService.addObservation(`project_${projectId}`, `edit: ${workflowResult.changesApplied.join(', ')}`);
-        }
-
+        // Store conversation in memory
         console.log('[Chat] Editing workflow completed successfully');
 
         return NextResponse.json({
@@ -482,7 +420,11 @@ ${fileChangeSummary2}
           updatedFiles: workflowResult.files,
           files: workflowResult.files,
           aiMetadata: workflowResult.aiMetadata,
-          validation: workflowResult.validationResult?.report
+          validation: workflowResult.validationResult?.report,
+          // CRITICAL: Pass through data for enhanced UI (revert button, file lists, features)
+          fileChanges: workflowResult.fileChanges,
+          changesApplied: workflowResult.changesApplied,
+          lastCheckpointId: workflowResult.lastCheckpointId
         });
 
       } catch (error: any) {

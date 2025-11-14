@@ -1,6 +1,6 @@
 // app/api/langgraph/status/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
 import { PocketBaseCheckpointer } from "@/lib/langgraph/checkpointer";
 import { updateProject } from "@/lib/project-helpers";
 

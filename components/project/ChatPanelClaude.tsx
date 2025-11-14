@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Markdown from "@/components/Markdown";
 import { useTranslations } from "next-intl";
 import { ChatBubble, ActionButton } from "@/components/chat/ChatBubble";
+import ThinkingBubble from "@/components/chat/ThinkingBubble";
 import CreditPurchaseModal from "@/components/payment/CreditPurchaseModal";
 import WorkflowProgress from "./WorkflowProgress";
 import { WorkflowLog } from "@/lib/hooks/useWorkflowLogs";
 import { getContextualLoadingMessage, getMaybeRareMessage, getTimeBasedMessage } from "@/lib/loading-messages";
-import { FileUploadButton, type UploadedFile } from "./FileUploadButton";
+import { FileUploadButton } from "./FileUploadButton";
+import { useUploadedFiles, type UploadedFile } from "@/lib/contexts/UploadedFilesContext";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -58,8 +60,13 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
   const [showInputNotification, setShowInputNotification] = useState(false);
   const [awaitingUserInput, setAwaitingUserInput] = useState(false);
   const [currentThinkingMessage, setCurrentThinkingMessage] = useState("Thinking");
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [lastCheckpointId, setLastCheckpointId] = useState<string | null>(null);
+  const [lastFileChanges, setLastFileChanges] = useState<string[] | null>(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 🎯 SINGLE SOURCE OF TRUTH: Use centralized uploaded files context (no API call!)
+  const { files: uploadedFiles, addFile: addUploadedFile } = useUploadedFiles();
 
   // Dynamic thinking messages that rotate
   const thinkingMessages = [
@@ -208,75 +215,118 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
 
     console.log('[Chat SSE] Connecting to stream for project:', projectId);
 
-    // Track connection state to prevent error loop
+    let eventSource: EventSource | null = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
     let connectionClosed = false;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
 
-    const eventSource = new EventSource(`/api/langgraph/stream?projectId=${projectId}`);
-
-    eventSource.addEventListener('message', (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        // Handle chat:message events
-        if (data.type === 'chat:message') {
-          console.log('[Chat SSE] Received chat message:', data.message);
-
-          // Add message to chat
-          const assistantMessage: Message = {
-            role: 'assistant',
-            content: data.message
-          };
-
-          setMessages(prev => {
-            // Avoid duplicates
-            const lastMsg = prev[prev.length - 1];
-            if (lastMsg?.content === data.message) return prev;
-            return [...prev, assistantMessage];
-          });
-
-          // If it's a question requiring response
-          if (data.metadata?.requiresResponse) {
-            console.log('[Chat SSE] Question requires user input');
-            setAwaitingUserInput(true);
-            setShowInputNotification(true);
-          }
-        }
-      } catch (error) {
-        console.error('[Chat SSE] Error parsing message:', error);
-      }
-    });
-
-    eventSource.onopen = () => {
-      console.log('[Chat SSE] Connection opened');
-      retryCount = 0; // Reset retry count on successful connection
+    // Exponential backoff calculator
+    const getBackoffDelay = (attempt: number) => {
+      return Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
     };
 
-    eventSource.onerror = (error) => {
-      // Prevent infinite error loops
+    const closeConnection = () => {
+      if (connectionClosed) return;
+      connectionClosed = true;
+
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
+
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+    };
+
+    const connect = () => {
       if (connectionClosed) return;
 
-      retryCount++;
+      eventSource = new EventSource(`/api/langgraph/stream?projectId=${projectId}`);
 
-      // Only log errors during active workflows and under retry limit
-      if (isGenerating && retryCount <= MAX_RETRIES) {
-        console.error(`[Chat SSE] Connection error (attempt ${retryCount}/${MAX_RETRIES}):`, error);
-      } else if (retryCount > MAX_RETRIES) {
-        console.error('[Chat SSE] Max retries exceeded, closing connection');
-        connectionClosed = true;
-        eventSource.close();
-      } else {
-        // Silent close if workflow isn't generating
-        connectionClosed = true;
-        eventSource.close();
-      }
+      eventSource.addEventListener('message', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Handle chat:message events
+          if (data.type === 'chat:message') {
+            console.log('[Chat SSE] Received chat message:', data.message);
+
+            // Add message to chat
+            const assistantMessage: Message = {
+              role: 'assistant',
+              content: data.message
+            };
+
+            setMessages(prev => {
+              // Avoid duplicates
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg?.content === data.message) return prev;
+              return [...prev, assistantMessage];
+            });
+
+            // If it's a question requiring response
+            if (data.metadata?.requiresResponse) {
+              console.log('[Chat SSE] Question requires user input');
+              setAwaitingUserInput(true);
+              setShowInputNotification(true);
+            }
+          }
+        } catch (error) {
+          console.error('[Chat SSE] Error parsing message:', error);
+        }
+      });
+
+      eventSource.onopen = () => {
+        console.log('[Chat SSE] Connection opened');
+        reconnectAttempts = 0; // Reset on successful connection
+      };
+
+      eventSource.onerror = (error) => {
+        // Only log errors that are unexpected (not normal disconnections)
+        const readyState = eventSource?.readyState;
+        if (readyState === EventSource.CONNECTING || readyState === EventSource.OPEN) {
+          console.warn('[Chat SSE] Connection error during active state:', readyState);
+        }
+        // Silent for CLOSED state - this is expected when workflow isn't running
+
+        // Close current connection
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+
+        // Only retry if not manually closed and under retry limit
+        if (!connectionClosed && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && isGenerating) {
+          reconnectAttempts++;
+          const delay = getBackoffDelay(reconnectAttempts);
+
+          console.log(`[Chat SSE] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
+          reconnectTimeout = setTimeout(() => {
+            if (!connectionClosed) {
+              connect(); // Retry connection
+            }
+          }, delay);
+        } else {
+          // Max retries exceeded or connection closed - silent, this is normal
+          if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            console.log('[Chat SSE] Connection closed after max retries (workflow likely not active)');
+          }
+          closeConnection();
+        }
+      };
     };
 
+    // Start initial connection
+    connect();
+
+    // Cleanup on unmount
     return () => {
       console.log('[Chat SSE] Cleaning up connection');
-      connectionClosed = true;
-      eventSource.close();
+      closeConnection();
     };
   }, [projectId, isGenerating]);
 
@@ -365,37 +415,14 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
   // FILE UPLOAD HANDLERS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  // Fetch uploaded files when component mounts
-  useEffect(() => {
-    fetchUploadedFiles();
-  }, [projectId]);
-
-  const fetchUploadedFiles = async () => {
-    try {
-      const authToken = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('pb_auth='))
-        ?.split('=')[1];
-
-      const response = await fetch(`/api/files/list/${projectId}`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUploadedFiles(data.files || []);
-      }
-    } catch (error) {
-      console.error('[Chat] Failed to fetch uploaded files:', error);
-    }
-  };
+  // 🎯 REMOVED: No longer fetching files here - context handles it!
 
   const handleUploadComplete = (file: UploadedFile) => {
-    setUploadedFiles(prev => [...prev, file]);
+    addUploadedFile(file); // Add to centralized context
     // Optionally add a message to chat indicating file was uploaded
     const fileMessage: Message = {
       role: "system",
-      content: `📎 Uploaded: **${file.fileName}** - Specify its purpose in your message (e.g., "use as logo" or "extract colors")`
+      content: `📎 Uploaded: **${file.name}** - Specify its purpose in your message (e.g., "use as logo" or "extract colors")`
     };
     setMessages(prev => [...prev, fileMessage]);
   };
@@ -403,18 +430,75 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
   const handleSelectFile = (file: UploadedFile) => {
     // Add file reference to input
     setInput(prev => {
-      const mention = `[File: ${file.fileName}]`;
+      const mention = `[File: ${file.name}]`;
       return prev ? `${prev} ${mention}` : mention;
     });
   };
 
-  const handleDeleteFile = async (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  const handleDeleteFile = async (filePath: string) => {
+    // File deletion not implemented in context yet - stub for now
+    console.log('[ChatPanel] File deletion not yet implemented:', filePath);
   };
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // END FILE UPLOAD HANDLERS
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  // 🔄 ROLLBACK HANDLER: Undo last edit changes
+  const handleRollback = async () => {
+    if (!lastCheckpointId || isRollingBack) return;
+
+    try {
+      setIsRollingBack(true);
+      console.log('[Chat] 🔄 Rolling back to checkpoint:', lastCheckpointId);
+
+      const response = await fetch("/api/ai/rollback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: project.id,
+          checkpointId: lastCheckpointId
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('[Chat] ✅ Rollback successful');
+
+        // Build detailed rollback success message
+        const fileCount = data.files?.length || 0;
+        const rollbackMessage = `✅ **Success!** Your app has been rolled back to the previous checkpoint.
+
+📋 **Restored:**
+   • ${fileCount} file${fileCount !== 1 ? 's' : ''} reverted to previous state
+
+🎉 **Your app is ready to preview!**`;
+
+        // Update project with restored files and success message
+        const updates: any = {
+          files: data.files,
+          messages: [...messages, {
+            role: 'assistant',
+            content: rollbackMessage,
+            bubbleType: 'assistant' // This will get green success styling
+          }]
+        };
+
+        onUpdateProject(updates);
+        setMessages(updates.messages);
+        setLastCheckpointId(null);
+        setLastFileChanges(null);
+      } else {
+        throw new Error(data.error || 'Rollback failed');
+      }
+    } catch (error: any) {
+      console.error('[Chat] ❌ Rollback failed:', error);
+      alert('Failed to rollback changes: ' + error.message);
+    } finally {
+      setIsRollingBack(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -500,6 +584,13 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
       if (response.ok) {
         let responseContent = data.response;
 
+        // 🔄 ROLLBACK SUPPORT: Capture checkpoint data for undo functionality
+        if (data.lastCheckpointId) {
+          console.log('[Chat] 💾 Checkpoint available for rollback:', data.lastCheckpointId);
+          setLastCheckpointId(data.lastCheckpointId);
+          setLastFileChanges(data.fileChanges || data.changesApplied || null);
+        }
+
         // Add conversational summary header (browser notice already in API response)
         const conversationalResponse = data.updatedCode || data.updatedFiles
           ? `**Here's what I changed:**\n\n${responseContent}`
@@ -530,6 +621,30 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
           console.log('[Chat] 📝 File paths:', newFiles.map((f: any) => f.path).join(', '));
           console.log('[Chat] 🔄 Triggering re-deployment with updated files...');
           console.log('[Chat] 🔍 CRITICAL: Files being saved to project:', JSON.stringify(newFiles.slice(0, 2), null, 2));
+
+          // 🔍 DEBUG: Verify content is actually different
+          const currentFiles = project.files || [];
+          console.log('[Chat] 🔍 COMPARING FILES:');
+          console.log('[Chat]   - Current files count:', currentFiles.length);
+          console.log('[Chat]   - New files count:', newFiles.length);
+          if (currentFiles.length > 0 && newFiles.length > 0) {
+            const firstCurrentFile = currentFiles[0];
+            const firstNewFile = newFiles[0];
+            console.log('[Chat]   - First current file path:', firstCurrentFile?.path);
+            console.log('[Chat]   - First new file path:', firstNewFile?.path);
+            if (firstCurrentFile && firstNewFile && firstCurrentFile.path === firstNewFile.path) {
+              const contentChanged = firstCurrentFile.content !== firstNewFile.content;
+              console.log('[Chat]   - Content changed:', contentChanged);
+              if (contentChanged) {
+                console.log('[Chat]   - Old content length:', firstCurrentFile.content?.length || 0);
+                console.log('[Chat]   - New content length:', firstNewFile.content?.length || 0);
+                console.log('[Chat]   - Old content preview:', firstCurrentFile.content?.substring(0, 100));
+                console.log('[Chat]   - New content preview:', firstNewFile.content?.substring(0, 100));
+              } else {
+                console.log('[Chat]   ⚠️  WARNING: Files are identical! Edit may not have been applied!');
+              }
+            }
+          }
         }
 
         if (data.updatedCode) {
@@ -583,7 +698,7 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold mb-1 text-text-secondary" style={{ fontSize: '0.95rem' }}>{t("yourIdea")}</p>
-                <p className="text-sm leading-relaxed text-text-primary">{project.description}</p>
+                <p className="text-sm leading-relaxed text-text-primary">{project.userDescription || project.initialPrompt || project.description}</p>
               </div>
             </div>
           </div>
@@ -610,6 +725,60 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
               content={msg.content}
               animate={false}
             />
+
+            {/* 🔄 ROLLBACK BUTTON: Show after successful edits - Matching feature +Add button style */}
+            {lastCheckpointId && idx === messages.length - 1 && msg.role === 'assistant' && (msg.content.includes('**Success!**') || msg.content.includes('I updated') || msg.content.includes('I created') || msg.content.includes('I removed')) && (
+              <div className="mt-3 ml-12">
+                <button
+                  onClick={handleRollback}
+                  disabled={isRollingBack}
+                  className={`
+                    flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-left w-full
+                    transition-all shadow-sm hover:shadow-md
+                    ${isRollingBack
+                      ? 'bg-background-subtle border border-border-light text-text-tertiary cursor-not-allowed opacity-60'
+                      : 'bg-background-raised border border-border-light text-text-primary hover:border-amber-400/50'
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* Status indicator dot */}
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      isRollingBack ? 'bg-gray-400' : 'bg-blue-500'
+                    }`} />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold">
+                        {isRollingBack ? 'Rolling back changes...' : 'Rollback to previous checkpoint'}
+                      </div>
+                      <div className="text-xs text-text-secondary truncate">
+                        {isRollingBack
+                          ? 'Please wait while we restore your files'
+                          : lastFileChanges && lastFileChanges.length > 0
+                            ? `Undo changes to ${lastFileChanges.length} ${lastFileChanges.length === 1 ? 'file' : 'files'}`
+                            : 'Restore your code to the previous state'
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rollback icon with golden gradient - animated on click */}
+                  {!isRollingBack ? (
+                    <div className="w-7 h-7 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="w-7 h-7 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <svg className="w-4 h-4 text-white animate-spin-reverse" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* NEW: Feature Action Buttons */}
             {msg.actions && msg.actions.length > 0 && (
@@ -660,15 +829,19 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
           </div>
         ))}
 
-        {isLoading && (
-          <div className="mb-4">
-            <ChatBubble
-              type="thinking"
-              content={project.stage === "building" ? loadingMessage : currentThinkingMessage}
-              animate={true}
+        {isLoading && (() => {
+          // Extract the latest thinking process from workflow logs
+          const latestThinking = workflowLogs
+            .filter(log => log.type === 'node:start' && log.thinkingProcess)
+            .slice(-1)[0]?.thinkingProcess;
+
+          return (
+            <ThinkingBubble
+              isAnimating={true}
+              thinkingProcess={latestThinking}
             />
-          </div>
-        )}
+          );
+        })()}
 
         <div ref={messagesEndRef} />
       </div>
@@ -710,13 +883,13 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
       {showInputNotification && (
         <div className="px-4 pb-2 relative">
           {/* Matching brand guidelines Information Modal - Subsidiary Golden */}
-          <div className="relative bg-background-raised backdrop-blur-sm border-2 border-amber-400/20 rounded-2xl shadow-2xl p-4 overflow-hidden">
+          <div className="relative bg-background-raised backdrop-blur-sm border border-amber-400/20 rounded-2xl shadow-2xl p-4 overflow-hidden">
             {/* Gradient background overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-yellow-600/10" />
 
             <div className="relative z-10 flex items-start gap-3">
               {/* Icon matching brand guidelines */}
-              <div className="w-9 h-9 bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border-2 border-amber-400/30 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border border-amber-400/30 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -777,9 +950,9 @@ export default function ChatPanelClaude({ projectId, project, onUpdateProject, w
             <FileUploadButton
               projectId={projectId}
               userId={project.userId}
-              uploadedFiles={uploadedFiles}
-              onUploadComplete={handleUploadComplete}
-              onSelectFile={handleSelectFile}
+              uploadedFiles={uploadedFiles as any}
+              onUploadComplete={handleUploadComplete as any}
+              onSelectFile={handleSelectFile as any}
               onDeleteFile={handleDeleteFile}
             />
 

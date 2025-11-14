@@ -14,14 +14,14 @@
  */
 
 import type { AppGenState } from '../types';
-import { inputDetectorNode } from '../nodes/input-detector-node';
-import { contextAnalyzerNode } from '../nodes/context-analyzer-node';
-import { editorNode } from '../nodes/editor-node';
-import { qaNode } from '../nodes/qa-node';
-import { emitNodeStart, emitNodeComplete, emitWorkflowStart, emitWorkflowComplete } from '../events';
-import { createVirtualFileSystem, logFileOperation } from '@/lib/file-operations';
-import { validateFileOperation, filterOperations } from '@/lib/file-operation-guards';
-import type { FileOperation } from '@/lib/file-operation-guards';
+import { inputDetectorNode } from '../nodes/input-detector';
+import { contextAnalyzerNode } from '../nodes/context-analyzer';
+import { editorNode } from '../nodes/editor';
+import { qaNode } from '../nodes/qa';
+import { emitNodeStart, emitNodeComplete, emitWorkflowStart, emitWorkflowComplete } from '../utils/logging/events';
+import { createVirtualFileSystem, logFileOperation } from '@/lib/files/file-operations';
+import { validateFileOperation, filterOperations } from '@/lib/files/file-operation-guards';
+import type { FileOperation } from '@/lib/files/file-operation-guards';
 
 export interface EditingRequest {
   files: Array<{ path: string; content: string }>;
@@ -46,6 +46,8 @@ export interface EditingResult {
   debugAttempts?: number;
   changesApplied: string[];
   fileChanges?: Array<{ path: string; changeType: 'modified' | 'added' | 'deleted' }>; // NEW: Detailed file changes
+  lastCheckpointId?: string; // NEW: Checkpoint ID for reverting changes
+  editorMessage?: string; // NEW: Formatted message from editor node
   error?: string;
   partialResult?: boolean;
   failedAtNode?: string;
@@ -175,6 +177,7 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
       conversationHistory: (request.conversationHistory || []).slice(-10), // Last 10 messages only
       changeScope: 'unknown', // Will be determined by context analyzer
       preservedSections: new Map(), // Sections to never touch
+      filesToModify: [] // Will be determined by context analyzer
     }
   };
 
@@ -285,9 +288,19 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
     console.log(`[LangGraph Editing] Nodes: ${state.completedNodes.join(' → ')}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+    // 🔍 DEBUG: Verify files being returned
+    console.log('[LangGraph Editing] 🔍 RETURNING TO API:');
+    console.log('[LangGraph Editing]   - Files count:', state.files?.length || 0);
+    console.log('[LangGraph Editing]   - File paths:', state.files?.map(f => f.path).join(', '));
+    if (state.files && state.files.length > 0) {
+      console.log('[LangGraph Editing]   - First file path:', state.files[0].path);
+      console.log('[LangGraph Editing]   - First file content length:', state.files[0].content?.length || 0);
+      console.log('[LangGraph Editing]   - First file content preview:', state.files[0].content?.substring(0, 150));
+    }
+
     emitWorkflowComplete(state, totalDuration);
 
-    return {
+    const result = {
       success: true,
       files: state.files || [],
       updatedCode: mainFile?.content || '',
@@ -295,6 +308,8 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
       debugAttempts: state.debugAttempts,
       changesApplied: state.editingSession?.changesApplied || [],
       fileChanges: state.editingSession?.fileChanges || [], // NEW: Include file change details
+      lastCheckpointId: state.lastCheckpointId, // For revert functionality
+      editorMessage: (state as any).editorMessage, // NEW: Pass through editor's formatted message
       aiMetadata: {
         model: state.artifacts?.get('editorMetadata')?.model || 'unknown',
         provider: state.artifacts?.get('editorMetadata')?.provider || 'unknown',
@@ -302,6 +317,11 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
         totalDuration
       }
     };
+
+    console.log('[LangGraph Editing] 🔍 RESULT OBJECT FILES:', result.files.length, 'files');
+    console.log('[LangGraph Editing] 🔍 RESULT CHECKPOINT ID:', result.lastCheckpointId);
+    console.log('[LangGraph Editing] 🔍 RESULT EDITOR MESSAGE:', result.editorMessage ? result.editorMessage.substring(0, 100) + '...' : 'MISSING!');
+    return result;
 
   } catch (error: any) {
     console.error('[LangGraph Editing] ❌ Workflow failed:', error);

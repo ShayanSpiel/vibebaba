@@ -3,8 +3,8 @@
  * Automatically detects missing or insufficient design examples
  */
 
-import { pb, type DesignExample, type ExampleCategory, type ExampleGenerationQueue } from './pocketbase';
-import { STYLE_VARIANTS, INDUSTRY_CONTEXTS } from './example-categories';
+import { pb, type DesignExample, type ExampleCategory, type ExampleGenerationQueue } from './database/pocketbase';
+import { STYLE_VARIANTS, INDUSTRY_CONTEXTS } from './examples/example-categories';
 
 export interface Gap {
   categoryId: string;

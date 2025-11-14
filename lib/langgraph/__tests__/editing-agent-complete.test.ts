@@ -6,10 +6,10 @@
  */
 
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
-import { detectFileCreation, detectFileRename, detectFileType } from '../nodes/editor-node';
-import { intelligentFallback, getFileSample } from '../nodes/context-analyzer-node';
+import { detectFileCreation, detectFileRename, detectFileType } from '../nodes/editor';
+import { intelligentFallback, getFileSample } from '../nodes/context-analyzer';
 import { editingWorkflow, quickEditWorkflow } from '../workflows/editing-workflow';
-import { createVirtualFileSystem, validateContent, normalizePath } from '@/lib/file-operations';
+import { createVirtualFileSystem, validateContent, normalizePath } from '@/lib/files/file-operations';
 import { shouldUseQuickEdit } from '@/app/api/ai/chat/route';
 
 describe('Editing Agent - Complete Test Suite', () => {

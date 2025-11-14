@@ -1,7 +1,7 @@
 // lib/services/org-auto-create.ts
 
-import { pb } from '../pocketbase';
-import type { Organization, OrgMember } from '../pocketbase';
+import { pb } from '../database/pocketbase';
+import type { Organization, OrgMember } from '../database/pocketbase';
 
 /**
  * Auto-create organization for new user

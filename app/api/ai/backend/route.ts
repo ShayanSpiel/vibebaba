@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateWithFallback } from "@/lib/ai";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/pocketbase-credits";
+import { generateWithFallback } from "@/lib/ai/ai";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
+import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
 
 export async function POST(req: NextRequest) {
   try {

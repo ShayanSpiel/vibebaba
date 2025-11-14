@@ -73,7 +73,7 @@ export default function ProjectsPage() {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this project?")) {
       try {
-        const { pb } = await import('@/lib/pocketbase');
+        const { pb } = await import('@/lib/database/pocketbase');
         await pb.collection('projects').delete(projectId);
 
         // Also remove from localStorage

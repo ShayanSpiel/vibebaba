@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/pocketbase-middleware';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 import PocketBase from 'pocketbase';
-import { RateLimiter, sanitizeError } from '@/lib/pocketbase-utils';
+import { RateLimiter, sanitizeError } from '@/lib/database/pocketbase-utils';
 
 // Rate limiter: 20 file uploads per minute per user
 const uploadRateLimiter = new RateLimiter(60000, 20);

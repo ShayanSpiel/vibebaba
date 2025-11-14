@@ -1,9 +1,9 @@
 // app/api/admin/pricing/exchange-rates/route.ts
 // Admin API for managing exchange rates
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAdminAccess } from '@/lib/admin-auth';
+import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getPricingConfig } from '@/lib/config/pricing-config';
-import { getAdminPb } from '@/lib/pocketbase-admin';
+import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
 /**
  * PATCH /api/admin/pricing/exchange-rates

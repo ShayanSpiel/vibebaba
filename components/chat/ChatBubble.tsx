@@ -39,7 +39,26 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
     const getContextualIconAndBg = () => {
       const lowerContent = content.toLowerCase();
 
-      // Error/Failure related - RED (Check FIRST - highest priority to avoid misclassification)
+      // CRITICAL: Check for edit success messages FIRST - always show as success (green)
+      if (
+        lowerContent.includes("here's what i changed") ||
+        lowerContent.includes("here's what changed") ||
+        (lowerContent.includes("edited files") || lowerContent.includes("added features"))
+      ) {
+        return {
+          icon: (
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          ),
+          bgClass: "bg-gradient-success",
+          isSuccess: true,
+          isError: false,
+          isInfo: false
+        };
+      }
+
+      // Error/Failure related - RED (Check AFTER edit success is ruled out)
       if (
         lowerContent.includes("error") ||
         lowerContent.includes("failed") ||
@@ -63,14 +82,13 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
         };
       }
 
-      // Success/Completion related - GREEN (Check SECOND after errors are ruled out)
+      // Success/Completion related - GREEN
       if (
         lowerContent.includes("done") ||
         lowerContent.includes("completed") ||
         lowerContent.includes("ready") ||
         lowerContent.includes("successfully") ||
-        lowerContent.includes("here's what changed") ||
-        lowerContent.includes("here's what i changed") ||
+        lowerContent.includes("success!") ||
         lowerContent.includes("applied") ||
         lowerContent.includes("finished") ||
         lowerContent.includes("all set")
@@ -85,6 +103,36 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
           isSuccess: true,
           isError: false,
           isInfo: false
+        };
+      }
+
+      // Questions/Clarification needed - YELLOW/AMBER (Check BEFORE generic warnings)
+      if (
+        lowerContent.includes("question") ||
+        lowerContent.includes("clarify") ||
+        lowerContent.includes("clarification") ||
+        lowerContent.includes("which ") ||
+        lowerContent.includes("what ") ||
+        lowerContent.includes("please provide") ||
+        lowerContent.includes("please share") ||
+        lowerContent.includes("could you") ||
+        lowerContent.includes("can you") ||
+        lowerContent.includes("would you like") ||
+        lowerContent.includes("??") ||
+        (lowerContent.includes("need") && lowerContent.includes("?")) ||
+        (lowerContent.includes("require") && lowerContent.includes("?"))
+      ) {
+        return {
+          icon: (
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          ),
+          bgClass: "bg-gradient-to-br from-amber-500 to-yellow-600",
+          isSuccess: false,
+          isError: false,
+          isInfo: false,
+          isWarning: true
         };
       }
 
@@ -104,7 +152,8 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
           bgClass: "bg-gradient-to-br from-amber-500 to-yellow-600",
           isSuccess: false,
           isError: false,
-          isInfo: false
+          isInfo: false,
+          isWarning: true
         };
       }
 
@@ -219,7 +268,7 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
       };
     };
 
-    const { icon, bgClass, isSuccess, isError, isInfo } = getContextualIconAndBg();
+    const { icon, bgClass, isSuccess, isError, isInfo, isWarning } = getContextualIconAndBg();
 
     return (
       <div className={`flex justify-start ${animate ? "animate-slideUp" : ""}`}>
@@ -228,8 +277,10 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
             ? "bg-red-50/80 dark:bg-red-950/30 border border-red-500/30"
             : isSuccess
             ? "bg-success/10 border border-success/40"
-            : isInfo
+            : isWarning
             ? "bg-amber-50/80 dark:bg-amber-950/30 border border-amber-500/30"
+            : isInfo
+            ? "bg-blue-50/80 dark:bg-blue-950/30 border border-blue-500/30"
             : "bg-background-raised border border-light"
         }`}>
           <div className="flex items-start gap-3">
@@ -237,7 +288,7 @@ export function ChatBubble({ type, content, children, animate = true }: ChatBubb
               {icon}
             </div>
             <div className={`flex-1 min-w-0 text-sm leading-relaxed prose prose-sm max-w-none break-words overflow-wrap-anywhere ${
-              isError ? "text-red-900 dark:text-red-300" : isInfo ? "text-amber-900 dark:text-amber-300" : "text-text-primary"
+              isError ? "text-red-900 dark:text-red-300" : isWarning ? "text-amber-900 dark:text-amber-300" : isInfo ? "text-blue-900 dark:text-blue-300" : "text-text-primary"
             }`}>
               <Markdown content={content} />
             </div>

@@ -10,7 +10,7 @@ import {
   formatExamplesForPrompt,
   trackExampleUsage,
   type SelectionContext,
-} from '@/lib/example-selector';
+} from '@/lib/examples/example-selector';
 
 export async function POST(request: NextRequest) {
   try {

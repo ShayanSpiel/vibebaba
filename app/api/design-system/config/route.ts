@@ -14,7 +14,7 @@ import {
   toggleLibraryCategory,
   applyPreset,
   PRESETS,
-} from '@/lib/component-library-config';
+} from '@/lib/components/component-library-config';
 
 // GET - Get current configuration
 export async function GET(request: NextRequest) {

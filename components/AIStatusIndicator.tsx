@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCurrentAIConfig, AI_MODE, getCachedWorkingModel } from "@/lib/ai-config";
+import { getCurrentAIConfig, AI_MODE, getCachedWorkingModel } from "@/lib/ai/ai-config";
 
 interface AIInfo {
   mode: string;

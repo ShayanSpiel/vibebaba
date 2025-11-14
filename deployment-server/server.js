@@ -104,19 +104,48 @@ function releasePort(port) {
   }
 }
 
-function startApiServer(projectId, buildPath) {
+async function startApiServer(projectId, buildPath) {
   console.log(`\n[API Manager] 🚀 Starting API server for ${projectId}...`);
   console.log(`[API Manager] 📂 Build path: ${buildPath}`);
 
-  const port = allocatePort(projectId);
   const apiServerPath = path.join(buildPath, 'api');
 
-  // Check if API server exists
+  // Check if API server exists (optional - PocketBase-direct architecture doesn't need it)
   if (!fs.existsSync(path.join(apiServerPath, 'server.js'))) {
-    console.error(`[API Manager] ❌ No API server found at ${apiServerPath}/server.js`);
+    console.log(`[API Manager] ℹ️  No API server found - using PocketBase-direct architecture`);
+    console.log(`[API Manager] ℹ️  Frontend will call PocketBase API directly via /pb-api proxy`);
+    return null; // Return null without allocating port (not an error)
+  }
+
+  const port = allocatePort(projectId);
+
+  // ✅ FIX: Install dependencies before starting server
+  console.log(`[API Manager] 📦 Installing API dependencies for ${projectId}...`);
+  const npmInstall = spawn('npm', ['install'], {
+    cwd: apiServerPath,
+    stdio: 'inherit'
+  });
+
+  await new Promise((resolve, reject) => {
+    npmInstall.on('exit', (code) => {
+      if (code === 0) {
+        console.log(`[API Manager] ✅ Dependencies installed for ${projectId}`);
+        resolve();
+      } else {
+        console.error(`[API Manager] ❌ npm install failed for ${projectId} (exit code: ${code})`);
+        reject(new Error('npm install failed'));
+      }
+    });
+
+    npmInstall.on('error', (err) => {
+      console.error(`[API Manager] ❌ npm install error for ${projectId}:`, err);
+      reject(err);
+    });
+  }).catch((err) => {
+    console.error(`[API Manager] ❌ Failed to install dependencies: ${err.message}`);
     releasePort(port);
     return null;
-  }
+  });
 
   const apiProcess = spawn('node', ['server.js'], {
     cwd: apiServerPath,
@@ -144,9 +173,9 @@ function startApiServer(projectId, buildPath) {
     if (server && server.restartCount < MAX_RESTART_ATTEMPTS) {
       console.log(`[API ${projectId}:${port}] 🔄 Auto-restarting (attempt ${server.restartCount + 1}/${MAX_RESTART_ATTEMPTS})...`);
 
-      setTimeout(() => {
+      setTimeout(async () => {
         try {
-          startApiServer(projectId, buildPath);
+          await startApiServer(projectId, buildPath);
         } catch (error) {
           console.error(`[API ${projectId}:${port}] ❌ Restart failed: ${error.message}`);
         }
@@ -211,6 +240,42 @@ fs.ensureDirSync(BUILD_DIR);
 // Import database routes
 const dbRoutes = require('./db-routes');
 app.use('/api', dbRoutes);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POCKETBASE PROXY
+// Proxy /pb-api/* to PocketBase at localhost:8090/*
+// PocketBase SDK adds /api prefix automatically, so req.url already contains it
+// This avoids Chrome's Private Network Access blocking for localhost cross-port requests
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.use('/pb-api', async (req, res) => {
+  const pbUrl = `http://localhost:8090${req.url}`;
+  try {
+    const response = await fetch(pbUrl, {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: 'localhost:8090',
+      },
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+    });
+
+    // Forward status and headers
+    res.status(response.status);
+    response.headers.forEach((value, key) => {
+      // Don't forward certain headers
+      if (!['content-encoding', 'transfer-encoding', 'connection'].includes(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
+
+    // Forward response body
+    const data = await response.text();
+    res.send(data);
+  } catch (error) {
+    console.error('[PocketBase Proxy] Error:', error.message);
+    res.status(502).json({ error: 'Proxy error', message: error.message });
+  }
+});
 
 // Deploy endpoint - Next.js with Static Export
 app.post('/deploy/:projectId', async (req, res) => {
@@ -390,13 +455,13 @@ app.post('/deploy/:projectId', async (req, res) => {
         }
 
         // Start new API server
-        apiPort = startApiServer(projectId, buildPath);
+        apiPort = await startApiServer(projectId, buildPath);
 
         if (apiPort) {
           apiUrl = `http://localhost:${apiPort}`;
           console.log(`[Deployment] ✅ API server started on port ${apiPort}\n`);
         } else {
-          console.log(`[Deployment] ⚠️  API server not started (no server files found)\n`);
+          console.log(`[Deployment] ℹ️  API server not started (using PocketBase-direct architecture)\n`);
         }
       } catch (error) {
         console.error('[Deployment] ❌ Failed to start API server:', error.message);
@@ -566,24 +631,71 @@ app.use('/apps/:projectId', (req, res, next) => {
     return res.status(404).send('Project not found');
   }
 
-  // Serve static files from project directory
-  express.static(projectPath, {
-    index: ['index.html'],
-    extensions: ['html'],
-    setHeaders: (res) => {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      // Permissive CSP for deployed apps (they're user-generated)
-      res.setHeader('Content-Security-Policy',
-        "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
-        "script-src * 'unsafe-inline' 'unsafe-eval'; " +
-        "style-src * 'unsafe-inline'; " +
-        "img-src * data: blob:; " +
-        "font-src * data:; " +
-        "connect-src *; " +
-        "frame-src *;"
-      );
+  // Set permissive headers for all responses
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Content-Security-Policy',
+    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+    "script-src * 'unsafe-inline' 'unsafe-eval'; " +
+    "style-src * 'unsafe-inline'; " +
+    "img-src * data: blob:; " +
+    "font-src * data:; " +
+    "connect-src *; " +
+    "frame-src *;"
+  );
+
+  // Next.js static export structure: HTML in /server/app/, assets at root
+  // Handle static assets (_next/static/* OR static/*) from root
+  // Note: req.path already has /apps/project-xxx stripped by Express router
+  if (req.path.startsWith('/_next/')) {
+    // Map /_next/static/ to /static/ (Next.js build output structure)
+    const mappedPath = req.path.replace('/_next/', '/');
+    const staticPath = path.join(projectPath, mappedPath);
+    if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+      return res.sendFile(staticPath);
     }
-  })(req, res, next);
+  } else if (req.path.startsWith('/static/')) {
+    // Direct /static/ access
+    const staticPath = path.join(projectPath, req.path);
+    if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+      return res.sendFile(staticPath);
+    }
+  }
+
+  // Handle app HTML from /server/app/
+  const appPath = path.join(projectPath, 'server', 'app');
+
+  // Strip trailing slash for route lookups (Next.js trailingSlash: true compatibility)
+  // e.g., /basket/ → /basket, but keep / as is
+  const routePath = req.path === '/' ? req.path : req.path.replace(/\/$/, '');
+
+  // Try to serve HTML file from app directory
+  const filePath = path.join(appPath, routePath);
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    return res.sendFile(filePath);
+  }
+
+  // For SPA routing: Try HTML file for the route (e.g., /basket → basket.html)
+  const htmlPath = path.join(appPath, routePath + '.html');
+  if (fs.existsSync(htmlPath)) {
+    return res.sendFile(htmlPath);
+  }
+
+  // Try route as directory with index.html (e.g., /basket → basket/index.html)
+  if (routePath !== '/') {
+    const dirIndexPath = path.join(appPath, routePath, 'index.html');
+    if (fs.existsSync(dirIndexPath)) {
+      return res.sendFile(dirIndexPath);
+    }
+  }
+
+  // Fallback to index.html for SPA client-side routing
+  const indexPath = path.join(appPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+
+  // Nothing found
+  return res.status(404).send('Not found');
 });
 
 // Health check

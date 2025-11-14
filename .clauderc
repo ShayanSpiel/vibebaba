@@ -1,0 +1,35 @@
+# VibeBaba Project Rules
+
+## Rules of Making Changes to the App Generation Workflow
+
+- **Never make a change without knowing how entire flow and dependencies work** - If you don't know something, ASK.
+- **Always find the most efficient and cleanest approach**
+- **ALWAYS find and fix the ROOT cause** - No band-aids, no fixing symptoms
+
+## Rules of Prompting and AI
+
+### Short Prompts
+- **USE SHORT PROMPTS! 1 to 3 LINES!**
+- AVOID LONG PROMPTS!
+
+### Enable AI, Don't Constrain
+- **No Constraints** - Enable AI, Not Limit it (unless absolutely necessary)
+- **Don't give examples to AI** - It's not stupid and ought to know the usual things
+- **EQUIP AI WITH TOOLS** - Give it Awareness and Context Memory, then validate
+
+### Core Philosophy
+**Awareness → Context Memory → Enabling with Tools → Validate**
+
+Instead of limiting, enable and trust with AWARENESS and CONTEXT, but Validate.
+
+### Consistency Checks
+- **ALWAYS ensure prompts/instructions are CONSISTENT** with the rest of the flow nodes
+- **No contradictions and duplications**
+- **ALWAYS ensure data flow is complete and connected**
+
+## Workflow Understanding
+
+This is a LangGraph multi-node AI code generation system:
+- **Flow**: Input Detector → PM → UX → Backend → Frontend → Editor → DevOps
+- **Philosophy**: Enable AI with context, validate output (not constrain input)
+- **Target**: Next.js 14 App Router + TypeScript + PocketBase

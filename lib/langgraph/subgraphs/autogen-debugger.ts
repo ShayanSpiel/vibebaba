@@ -1,21 +1,21 @@
 // lib/langgraph/subgraphs/autogen-debugger.ts
-import { validateCode } from '@/lib/validation';
-import { detectPlaceholders } from '@/lib/validation/placeholder-detector';
-import { generateWithFallback } from '@/lib/ai';
-import type { FileOperation } from '@/lib/file-operation-guards';
+import { validateCode } from '@/lib/langgraph/validation/post-gen';
+import { detectPlaceholders } from '@/lib/langgraph/validation/post-gen/placeholder-detector';
+import { generateWithFallback } from '@/lib/ai/ai';
+import type { FileOperation } from '@/lib/files/file-operation-guards';
 import {
   validateFileOperation,
   filterOperations,
   logFileOperation,
-} from '@/lib/file-operation-guards';
+} from '@/lib/files/file-operation-guards';
 import {
   emitAutoGenAttemptStart,
   emitAutoGenAgentStart,
   emitAutoGenAgentComplete,
   emitAutoGenErrorDiff,
   emitProgress
-} from '../events';
-import { generateWithLogging, estimateTokens } from '../ai-with-logging';
+} from '../utils/logging/events';
+import { generateWithLogging, estimateTokens } from '../utils/logging/ai-with-logging';
 import { getConversationContext, addAssistantMessage } from '@/lib/memory/conversation-memory';
 
 interface DebugContext {
@@ -131,7 +131,8 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       `Fixing ${errorCount} code issue${errorCount > 1 ? 's' : ''}...`
     );
 
-    const fixPrompt = buildFixPrompt(currentFiles, analysis, context.projectContext);
+    // ✅ CRITICAL FIX: Pass conversationContext to prevent repeating rejected fixes
+    const fixPrompt = buildFixPrompt(currentFiles, analysis, context.projectContext, conversationContext);
     const fixedCodeText = await generateWithLogging({
       prompt: fixPrompt,
       projectId: context.projectContext.projectId,
@@ -354,6 +355,23 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
     const errorReduction = context.validationResult.report.errors.length - newValidation.report.errors.length;
     if (errorReduction > 0) {
       console.log(`[AutoGen Debugger] Progress: Reduced errors by ${errorReduction}`);
+    } else if (errorReduction === 0 && attempt > 1) {
+      // No progress made - same error count as before
+      console.log(`[AutoGen Debugger] ⚠️  No progress in attempt ${attempt} - stopping to avoid infinite loop`);
+      console.log(`[AutoGen Debugger] 💡 Same errors persisting suggest false positives or structural issues`);
+      collaborationLog.push(`[Attempt ${attempt}] STOPPED: No progress made - likely false positives or unfixable errors`);
+
+      // CONVERSATION MEMORY: Track stopped debugging
+      addAssistantMessage(context.projectContext.projectId, `Stopped debugging after ${attempt} attempts - no progress made (likely false positives)`, 'autogen-debugger');
+
+      return {
+        success: false,
+        files: currentFiles,
+        validationResult: currentValidation,
+        attempts: attempt,
+        collaborationLog,
+        fileOperations: allFileOperations
+      };
     }
   }
 
@@ -399,8 +417,10 @@ Root cause + fix strategy (50 words max):`;
 /**
  * SIMPLIFIED FIX PROMPT
  * Trust AI to fix HTML/CSS/JS errors without 200 lines of rules
+ *
+ * ✅ NOW INCLUDES: Validation context to prevent repeating rejected fixes
  */
-function buildFixPrompt(files: any[], analysis: string, context: any): string {
+function buildFixPrompt(files: any[], analysis: string, context: any, conversationContext?: any): string {
   // Detect framework
   const isNextJS = files.some(f =>
     f.path.startsWith('src/app/') ||
@@ -424,10 +444,63 @@ function buildFixPrompt(files: any[], analysis: string, context: any): string {
     return f;
   });
 
+  // ✅ BUILD VALIDATION CONTEXT SECTION
+  let validationContextSection = '';
+  if (conversationContext?.validationContext) {
+    const { iconReplacements, importFixes, contrastFixes } = conversationContext.validationContext;
+
+    if (iconReplacements?.length > 0) {
+      const rejectedIcons = iconReplacements.filter((r: any) => !r.to || r.to === '');
+      const replacedIcons = iconReplacements.filter((r: any) => r.to && r.to !== '');
+
+      if (rejectedIcons.length > 0 || replacedIcons.length > 0) {
+        validationContextSection += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ VALIDATION HISTORY - DO NOT REPEAT THESE MISTAKES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+        if (rejectedIcons.length > 0) {
+          validationContextSection += `
+🚫 INVALID LUCIDE ICONS (already rejected - DO NOT add these):
+${rejectedIcons.map((r: any) =>
+  `   ❌ '${r.from}' in ${r.files.join(', ')} - NOT a valid lucide-react icon
+      → This is likely a TYPE or COMPONENT, not an icon
+      → DO NOT import from lucide-react
+      → Either define it locally or remove it completely`
+).join('\n')}
+`;
+        }
+
+        if (replacedIcons.length > 0) {
+          validationContextSection += `
+✅ ICON REPLACEMENTS (already applied):
+${replacedIcons.map((r: any) =>
+  `   '${r.from}' → '${r.to}' in ${r.files.join(', ')}`
+).join('\n')}
+`;
+        }
+
+        validationContextSection += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+      }
+    }
+
+    if (importFixes?.length > 0) {
+      validationContextSection += `
+IMPORTS ALREADY FIXED:
+${importFixes.map((f: any) =>
+  `✅ ${f.file}: ${f.fix} - ${f.imports.join(', ')}`
+).join('\n')}
+`;
+    }
+  }
+
   if (isNextJS) {
     // Next.js specific prompt - NO HTML conversion
     return `Fix the errors in this Next.js app.
-
+${validationContextSection}
 ANALYSIS:
 ${analysis}
 
@@ -828,5 +901,5 @@ function compareValidationResults(before: any, after: any): {
 
 /**
  * DEPRECATED: checkForPlaceholderContent() has been removed.
- * Use detectPlaceholders() from '@/lib/validation/placeholder-detector' instead.
+ * Use detectPlaceholders() from '@/lib/langgraph/validation/post-gen/placeholder-detector' instead.
  */

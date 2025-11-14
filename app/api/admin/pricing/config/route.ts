@@ -1,9 +1,9 @@
 // app/api/admin/pricing/config/route.ts
 // Admin API for managing pricing configuration
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAdminAccess } from '@/lib/admin-auth';
+import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getPricingConfig, reloadPricingConfig } from '@/lib/config/pricing-config';
-import { getAdminPb } from '@/lib/pocketbase-admin';
+import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
 /**
  * GET /api/admin/pricing/config

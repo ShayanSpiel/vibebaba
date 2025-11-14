@@ -1,6 +1,6 @@
 {
   "mode": "server",
-  "cachedModel": "mistral-small-latest",
+  "cachedModel": "codestral-latest",
   "cachedProvider": "mistral",
-  "cachedTimestamp": 1762382700504
+  "cachedTimestamp": 1763077649652
 }

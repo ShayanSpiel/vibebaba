@@ -5,8 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/admin-middleware';
-import { getAdminPb } from '@/lib/pocketbase-admin';
+import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
 // Helper to get timeframe filter
 function getTimeframeFilter(timeframe: string): string {

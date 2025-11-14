@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pb } from "@/lib/pocketbase";
+import { pb } from "@/lib/database/pocketbase";
 import { PRICING_PACKAGES } from "@/lib/credits";
 
 export async function GET(req: NextRequest) {

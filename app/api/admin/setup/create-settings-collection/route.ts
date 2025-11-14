@@ -1,8 +1,8 @@
 // app/api/admin/setup/create-settings-collection/route.ts
 // One-time setup endpoint to create settings collection
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAdminAccess } from '@/lib/admin-auth';
-import { getAdminPb } from '@/lib/pocketbase-admin';
+import { checkAdminAccess } from '@/lib/auth/admin-auth';
+import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
 /**
  * POST /api/admin/setup/create-settings-collection

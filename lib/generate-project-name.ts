@@ -1,4 +1,4 @@
-import { generateWithFallback } from './ai';
+import { generateWithFallback } from './ai/ai';
 
 /**
  * Generate a URL-friendly project name from a description using AI

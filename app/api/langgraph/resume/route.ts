@@ -1,9 +1,9 @@
 // app/api/langgraph/resume/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
 import { createAppGenWorkflow } from "@/lib/langgraph/workflow";
 import { PocketBaseCheckpointer } from "@/lib/langgraph/checkpointer";
-import { emitWorkflowStart, emitWorkflowComplete } from "@/lib/langgraph/events";
+import { emitWorkflowStart, emitWorkflowComplete } from "@/lib/langgraph/utils/logging/events";
 import type { AppGenState } from "@/lib/langgraph/types";
 
 /**

@@ -10,7 +10,7 @@ import {
   getConfigSummary,
   clearCachedWorkingModel,
   type AIMode
-} from '@/lib/ai-config-store';
+} from '@/lib/ai/ai-config-store';
 
 // GET /api/admin/ai-config - Get current configuration
 export async function GET() {

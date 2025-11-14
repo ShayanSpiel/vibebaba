@@ -1,6 +1,6 @@
 // app/api/langgraph/stream/route.ts
 import { NextRequest } from "next/server";
-import { workflowEvents } from "@/lib/langgraph/events";
+import { workflowEvents } from "@/lib/langgraph/utils/logging/events";
 
 // Track active connections per project to prevent duplicates
 const activeConnections = new Map<string, number>();

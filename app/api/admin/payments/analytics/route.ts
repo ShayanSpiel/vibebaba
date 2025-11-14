@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/admin-middleware';
+import { requireAdmin } from '@/lib/auth/admin-middleware';
 import PocketBase from 'pocketbase';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';

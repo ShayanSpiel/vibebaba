@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pb, ensureAuth } from '@/lib/pocketbase';
+import { pb, ensureAuth } from '@/lib/database/pocketbase';
 
 // Helper to get file path
 const getFilePath = (collection: string) => `database/${collection}.json`;

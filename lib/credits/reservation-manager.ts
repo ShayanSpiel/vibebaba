@@ -1,8 +1,8 @@
 // lib/credits/reservation-manager.ts
 // PHASE 3: Credit Reservation System
-import { getAvailableTokens, consumeTokens } from '../pocketbase-credits';
+import { getAvailableTokens, consumeTokens } from '../database/pocketbase-credits';
 import { creditsCache } from '../credits-cache';
-import { pb, User } from '../pocketbase';
+import { pb, User } from '../database/pocketbase';
 
 interface CreditReservation {
   id: string;

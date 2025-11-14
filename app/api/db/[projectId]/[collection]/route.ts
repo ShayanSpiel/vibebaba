@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pb, ensureAuth } from '@/lib/pocketbase';
+import { pb, ensureAuth } from '@/lib/database/pocketbase';
 
 // Helper to get localStorage key (server-side can't access it, but we use PocketBase)
 const getFilePath = (collection: string) => `database/${collection}.json`;

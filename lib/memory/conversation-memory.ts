@@ -1,6 +1,6 @@
 // lib/memory/conversation-memory.ts
 
-import { pb } from '../pocketbase';
+import { pb } from '../database/pocketbase';
 
 /**
  * Conversation Memory Manager
@@ -26,6 +26,11 @@ export interface ConversationMemory {
   projectConfig?: ProjectConfig;      // Complete project configuration
   userPreferences?: UserPreferences;  // User preferences
   workflowMetadata?: WorkflowMetadata; // Workflow execution data
+
+  // ✅ NEW: Full context awareness for AutoGen
+  validationContext?: ValidationContext;    // All validation fixes applied
+  techStackContext?: TechStackContext;      // Tech stack constraints
+  fileMetadata?: Record<string, FileMetadata>; // Per-file metadata
 }
 
 export interface EntityMemory {
@@ -120,6 +125,98 @@ export interface WorkflowMetadata {
 }
 
 /**
+ * ✅ NEW: Validation Context
+ *
+ * Tracks all validation fixes applied during workflow
+ * Critical for AutoGen to know what's already been fixed
+ */
+export interface ValidationContext {
+  iconReplacements: Array<{
+    from: string;           // Invalid icon name (e.g., 'CreditCard')
+    to: string;             // Valid replacement (e.g., 'Square')
+    files: string[];        // Which files were affected
+    timestamp: Date;
+  }>;
+
+  importFixes: Array<{
+    file: string;           // File path
+    fix: 'added' | 'removed' | 'deduplicated';
+    imports: string[];      // Which imports were affected
+    timestamp: Date;
+  }>;
+
+  contrastFixes: Array<{
+    file: string;
+    issue: string;          // Description of contrast issue
+    fix: string;            // What was changed
+    timestamp: Date;
+  }>;
+
+  typeScriptFixes: Array<{
+    file: string;
+    error: string;
+    fix: string;
+    timestamp: Date;
+  }>;
+}
+
+/**
+ * ✅ NEW: Tech Stack Context
+ *
+ * Full awareness of tech stack constraints
+ */
+export interface TechStackContext {
+  framework: 'Next.js';
+  version: '14' | '15';
+  typescript: boolean;
+  styling: 'Tailwind CSS';
+  icons: 'lucide-react';
+  validIcons: string[];              // List of valid icon names
+  backend?: {
+    type: 'PocketBase';
+    collections: Array<{
+      name: string;
+      fields: Array<{ name: string; type: string }>;
+    }>;
+    apiEndpoints: Array<{
+      method: string;
+      path: string;
+      description: string;
+    }>;
+  };
+  stateManagement?: 'zustand' | 'context';
+  dataFetching?: 'direct' | 'react-query';
+}
+
+/**
+ * ✅ NEW: File Metadata
+ *
+ * Track imports, validations, modifications per file
+ */
+export interface FileMetadata {
+  path: string;
+  size: number;
+  purpose?: string;
+
+  validations: Array<{
+    type: 'icon' | 'import' | 'typescript' | 'contrast';
+    passed: boolean;
+    issues?: string[];
+    fixes?: string[];
+    timestamp: Date;
+  }>;
+
+  imports: {
+    icons: string[];        // Which icons this file uses
+    hooks: string[];        // Which React hooks
+    types: string[];        // Which TypeScript types
+  };
+
+  lastModified: Date;
+  modifiedBy: 'frontend' | 'qa' | 'autogen' | 'user';
+}
+
+/**
  * Conversation Memory Store
  *
  * Stores conversation history per project
@@ -129,32 +226,57 @@ class ConversationMemoryStore {
   private memories: Map<string, ConversationMemory> = new Map();
 
   /**
-   * Get conversation memory for a project
+   * Get conversation memory for a project (async - loads from DB if not in cache)
    */
-  getMemory(projectId: string): ConversationMemory {
-    if (!this.memories.has(projectId)) {
-      this.memories.set(projectId, {
-        projectId,
-        messages: [],
-        entities: {
-          components: [],
-          features: [],
-          techStack: [],
-          designDecisions: []
-        },
-        projectConfig: undefined,
-        userPreferences: undefined,
-        workflowMetadata: undefined
-      });
+  async getMemory(projectId: string): Promise<ConversationMemory> {
+    // Check in-memory cache first
+    if (this.memories.has(projectId)) {
+      return this.memories.get(projectId)!;
     }
-    return this.memories.get(projectId)!;
+
+    // Try loading from PocketBase
+    console.log(`[Memory] Loading from database: ${projectId}`);
+    const loaded = await this.loadMemory(projectId);
+
+    if (loaded) {
+      console.log(`[Memory] ✅ Loaded from DB: ${loaded.messages.length} messages, ${loaded.projectConfig?.files?.length || 0} files`);
+      return loaded;
+    }
+
+    // Create new memory if doesn't exist
+    console.log(`[Memory] Creating new memory for: ${projectId}`);
+    const newMemory: ConversationMemory = {
+      projectId,
+      messages: [],
+      entities: {
+        components: [],
+        features: [],
+        techStack: [],
+        designDecisions: []
+      },
+      projectConfig: undefined,
+      userPreferences: undefined,
+      workflowMetadata: undefined,
+      // ✅ NEW: Initialize validation context
+      validationContext: {
+        iconReplacements: [],
+        importFixes: [],
+        contrastFixes: [],
+        typeScriptFixes: []
+      },
+      techStackContext: undefined,
+      fileMetadata: {}
+    };
+
+    this.memories.set(projectId, newMemory);
+    return newMemory;
   }
 
   /**
    * Add user message to memory
    */
-  addUserMessage(projectId: string, content: string): void {
-    const memory = this.getMemory(projectId);
+  async addUserMessage(projectId: string, content: string): Promise<void> {
+    const memory = await this.getMemory(projectId);
     memory.messages.push({
       role: 'user',
       content,
@@ -168,8 +290,8 @@ class ConversationMemoryStore {
   /**
    * Add assistant message to memory
    */
-  addAssistantMessage(projectId: string, content: string, nodeId?: string): void {
-    const memory = this.getMemory(projectId);
+  async addAssistantMessage(projectId: string, content: string, nodeId?: string): Promise<void> {
+    const memory = await this.getMemory(projectId);
     memory.messages.push({
       role: 'assistant',
       content,
@@ -181,8 +303,8 @@ class ConversationMemoryStore {
   /**
    * ✅ NEW: Store full project configuration
    */
-  storeProjectConfig(projectId: string, config: ProjectConfig): void {
-    const memory = this.getMemory(projectId);
+  async storeProjectConfig(projectId: string, config: ProjectConfig): Promise<void> {
+    const memory = await this.getMemory(projectId);
     memory.projectConfig = config;
     console.log(`[Memory] Stored project config for ${projectId}`);
   }
@@ -190,8 +312,8 @@ class ConversationMemoryStore {
   /**
    * ✅ NEW: Store user preferences
    */
-  storeUserPreferences(projectId: string, preferences: UserPreferences): void {
-    const memory = this.getMemory(projectId);
+  async storeUserPreferences(projectId: string, preferences: UserPreferences): Promise<void> {
+    const memory = await this.getMemory(projectId);
     memory.userPreferences = preferences;
     console.log(`[Memory] Stored user preferences for ${projectId}`);
   }
@@ -199,8 +321,8 @@ class ConversationMemoryStore {
   /**
    * ✅ NEW: Store workflow metadata
    */
-  storeWorkflowMetadata(projectId: string, metadata: WorkflowMetadata): void {
-    const memory = this.getMemory(projectId);
+  async storeWorkflowMetadata(projectId: string, metadata: WorkflowMetadata): Promise<void> {
+    const memory = await this.getMemory(projectId);
     memory.workflowMetadata = metadata;
     console.log(`[Memory] Stored workflow metadata for ${projectId}`);
   }
@@ -253,12 +375,12 @@ class ConversationMemoryStore {
    * - window: Last N messages
    * - summary: Summarized version
    */
-  getFormattedHistory(
+  async getFormattedHistory(
     projectId: string,
     mode: 'full' | 'window' | 'summary' = 'window',
     windowSize: number = 5
-  ): string {
-    const memory = this.getMemory(projectId);
+  ): Promise<string> {
+    const memory = await this.getMemory(projectId);
 
     if (memory.messages.length === 0) {
       return '';
@@ -285,8 +407,8 @@ class ConversationMemoryStore {
   /**
    * Get entities summary for AI prompt
    */
-  getEntitiesSummary(projectId: string): string {
-    const memory = this.getMemory(projectId);
+  async getEntitiesSummary(projectId: string): Promise<string> {
+    const memory = await this.getMemory(projectId);
     const entities = memory.entities;
 
     if (
@@ -322,7 +444,7 @@ class ConversationMemoryStore {
    * Useful when conversation gets too long (> 10 messages)
    */
   async generateSummary(projectId: string): Promise<string> {
-    const memory = this.getMemory(projectId);
+    const memory = await this.getMemory(projectId);
 
     if (memory.messages.length < 3) {
       return ''; // Not enough context to summarize
@@ -350,7 +472,7 @@ class ConversationMemoryStore {
    * ✅ UPDATED: Now saves full project config, user preferences, and workflow metadata
    */
   async saveMemory(projectId: string): Promise<void> {
-    const memory = this.getMemory(projectId);
+    const memory = await this.getMemory(projectId);
 
     try {
       // Check if memory record exists
@@ -367,6 +489,10 @@ class ConversationMemoryStore {
         projectConfig: memory.projectConfig ? JSON.stringify(memory.projectConfig) : null,
         userPreferences: memory.userPreferences ? JSON.stringify(memory.userPreferences) : null,
         workflowMetadata: memory.workflowMetadata ? JSON.stringify(memory.workflowMetadata) : null,
+        // ✅ NEW: Save validation and tech stack context
+        validationContext: memory.validationContext ? JSON.stringify(memory.validationContext) : null,
+        techStackContext: memory.techStackContext ? JSON.stringify(memory.techStackContext) : null,
+        fileMetadata: memory.fileMetadata ? JSON.stringify(memory.fileMetadata) : null,
         updatedAt: new Date().toISOString()
       };
 
@@ -374,6 +500,25 @@ class ConversationMemoryStore {
         await pb.collection('conversation_memory').update(existing[0].id, data);
         console.log(`[Memory] ✅ Updated memory for project ${projectId}`);
       } else {
+        // Validate data before creating
+        const requiredFields = ['projectId', 'messages', 'projectConfig', 'workflowMetadata', 'entities', 'summary'];
+        const missingFields = requiredFields.filter(field => !(field in data));
+
+        if (missingFields.length > 0) {
+          console.error(`[Memory] ❌ Missing required fields: ${missingFields.join(', ')}`);
+          console.error('[Memory] Data:', JSON.stringify(data, null, 2));
+          throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+        }
+
+        // Check for oversized fields (PocketBase has limits)
+        const jsonFields = ['messages', 'projectConfig', 'workflowMetadata', 'entities'];
+        for (const field of jsonFields) {
+          const size = data[field as keyof typeof data]?.length || 0;
+          if (size > 5_000_000) { // 5MB limit
+            console.warn(`[Memory] ⚠️  Field ${field} is very large (${(size / 1_000_000).toFixed(2)}MB)`);
+          }
+        }
+
         await pb.collection('conversation_memory').create(data);
         console.log(`[Memory] ✅ Created memory for project ${projectId}`);
       }
@@ -381,9 +526,13 @@ class ConversationMemoryStore {
       // Log what was saved
       console.log(`[Memory] 💾 Saved: ${memory.messages.length} messages, ${Object.keys(memory.entities).length} entity types`);
       if (memory.projectConfig) console.log(`[Memory] 💾 Project config: ${memory.projectConfig.files?.length || 0} files, backend=${!!memory.projectConfig.backendConfig}`);
-      if (memory.workflowMetadata) console.log(`[Memory] 💾 Workflow: ${memory.workflowMetadata.completedNodes.length} nodes, ${memory.workflowMetadata.totalDuration}ms`);
-    } catch (error) {
+      if (memory.workflowMetadata) console.log(`[Memory] 💾 Workflow: ${memory.workflowMetadata.completedNodes?.length || 0} nodes, ${memory.workflowMetadata.totalDuration}ms`);
+    } catch (error: any) {
       console.error('[Memory] Failed to save:', error);
+      if (error.response) {
+        console.error('[Memory] Error details:', JSON.stringify(error.response, null, 2));
+      }
+      // Don't throw - allow workflow to continue even if memory save fails
     }
   }
 
@@ -401,15 +550,39 @@ class ConversationMemoryStore {
       }
 
       const record = records[0];
+
+      // Helper to safely parse JSON (handles both string and object)
+      const safeParse = (value: any, fallback: any = null) => {
+        if (!value) return fallback;
+        if (typeof value === 'string') {
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            console.error('[Memory] Failed to parse JSON:', value?.substring(0, 100));
+            return fallback;
+          }
+        }
+        return value; // Already an object
+      };
+
       const memory: ConversationMemory = {
         projectId,
-        messages: JSON.parse(record.messages),
+        messages: safeParse(record.messages, []),
         summary: record.summary,
-        entities: JSON.parse(record.entities),
+        entities: safeParse(record.entities, {}),
         // ✅ NEW: Load full project state
-        projectConfig: record.projectConfig ? JSON.parse(record.projectConfig) : undefined,
-        userPreferences: record.userPreferences ? JSON.parse(record.userPreferences) : undefined,
-        workflowMetadata: record.workflowMetadata ? JSON.parse(record.workflowMetadata) : undefined
+        projectConfig: safeParse(record.projectConfig, undefined),
+        userPreferences: safeParse(record.userPreferences, undefined),
+        workflowMetadata: safeParse(record.workflowMetadata, undefined),
+        // ✅ NEW: Load validation and tech stack context
+        validationContext: safeParse(record.validationContext, {
+          iconReplacements: [],
+          importFixes: [],
+          contrastFixes: [],
+          typeScriptFixes: []
+        }),
+        techStackContext: safeParse(record.techStackContext, undefined),
+        fileMetadata: safeParse(record.fileMetadata, {})
       };
 
       this.memories.set(projectId, memory);
@@ -432,18 +605,125 @@ export const conversationMemoryStore = new ConversationMemoryStore();
  * Convenience functions
  */
 
-export function addUserMessage(projectId: string, content: string): void {
-  conversationMemoryStore.addUserMessage(projectId, content);
+export async function addUserMessage(projectId: string, content: string): Promise<void> {
+  await conversationMemoryStore.addUserMessage(projectId, content);
 }
 
-export function addAssistantMessage(projectId: string, content: string, nodeId?: string): void {
-  conversationMemoryStore.addAssistantMessage(projectId, content, nodeId);
+export async function addAssistantMessage(projectId: string, content: string, nodeId?: string): Promise<void> {
+  await conversationMemoryStore.addAssistantMessage(projectId, content, nodeId);
 }
 
-export function getConversationContext(projectId: string): string {
-  const history = conversationMemoryStore.getFormattedHistory(projectId, 'window', 5);
-  const entities = conversationMemoryStore.getEntitiesSummary(projectId);
-  return history + entities;
+/**
+ * ✅ ENHANCED: Get full project context for AutoGen
+ *
+ * Returns comprehensive context including:
+ * - Tech stack constraints
+ * - Validation history (icon replacements, import fixes)
+ * - Backend API structure
+ * - File metadata
+ * - Conversation history
+ */
+export async function getConversationContext(projectId: string): Promise<string> {
+  const memory = await conversationMemoryStore.getMemory(projectId);
+  let context = '';
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 1. TECH STACK CONTEXT
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (memory.techStackContext) {
+    context += '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    context += 'TECH STACK CONTEXT\n';
+    context += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    context += `Framework: ${memory.techStackContext.framework} ${memory.techStackContext.version}\n`;
+    context += `TypeScript: ${memory.techStackContext.typescript ? 'Yes' : 'No'}\n`;
+    context += `Styling: ${memory.techStackContext.styling}\n`;
+    context += `Icons: ${memory.techStackContext.icons}\n`;
+    if (memory.techStackContext.validIcons && memory.techStackContext.validIcons.length > 0) {
+      context += `Valid Icons: ${memory.techStackContext.validIcons.join(', ')}\n`;
+    }
+    if (memory.techStackContext.backend) {
+      context += `Backend: ${memory.techStackContext.backend.type}\n`;
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 2. VALIDATION HISTORY
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (memory.validationContext) {
+    context += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    context += 'RECENT VALIDATIONS\n';
+    context += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+
+    // Icon Replacements
+    if (memory.validationContext.iconReplacements.length > 0) {
+      context += '\n✅ Icon Replacements (frontend):\n';
+      memory.validationContext.iconReplacements.forEach(r => {
+        context += `  - Replaced ${r.from} → ${r.to} in ${r.files.join(', ')} (invalid icon)\n`;
+      });
+    }
+
+    // Import Fixes
+    if (memory.validationContext.importFixes.length > 0) {
+      context += '\n✅ Import Fixes:\n';
+      memory.validationContext.importFixes.forEach(f => {
+        const action = f.fix === 'added' ? 'Added' : f.fix === 'removed' ? 'Removed' : 'De-duplicated';
+        context += `  - ${action} ${f.imports.join(', ')} in ${f.file}\n`;
+      });
+    }
+
+    // Contrast Fixes
+    if (memory.validationContext.contrastFixes.length > 0) {
+      context += '\n✅ Contrast Fixes:\n';
+      memory.validationContext.contrastFixes.forEach(f => {
+        context += `  - ${f.file}: ${f.fix}\n`;
+      });
+    }
+
+    // TypeScript Fixes
+    if (memory.validationContext.typeScriptFixes.length > 0) {
+      context += '\n✅ TypeScript Fixes:\n';
+      memory.validationContext.typeScriptFixes.forEach(f => {
+        context += `  - ${f.file}: ${f.fix}\n`;
+      });
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 3. BACKEND API
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (memory.projectConfig?.backendConfig?.apiEndpoints && memory.projectConfig.backendConfig.apiEndpoints.length > 0) {
+    context += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    context += 'BACKEND API\n';
+    context += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    memory.projectConfig.backendConfig.apiEndpoints.forEach(e => {
+      context += `- ${e.method} ${e.path}: ${e.description}\n`;
+    });
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 4. FILE METADATA
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (memory.fileMetadata && Object.keys(memory.fileMetadata).length > 0) {
+    context += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    context += 'GENERATED FILES\n';
+    context += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    Object.entries(memory.fileMetadata).forEach(([path, meta]) => {
+      const iconCount = meta.imports.icons.length;
+      const validationCount = meta.validations.length;
+      context += `- ${path}: ${iconCount} icons, ${validationCount} validations\n`;
+    });
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 5. CONVERSATION HISTORY (last 5 messages)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const history = await conversationMemoryStore.getFormattedHistory(projectId, 'window', 5);
+  const entities = await conversationMemoryStore.getEntitiesSummary(projectId);
+
+  context += history;
+  context += entities;
+
+  return context;
 }
 
 export function clearConversationMemory(projectId: string): void {
@@ -453,7 +733,7 @@ export function clearConversationMemory(projectId: string): void {
 /**
  * ✅ NEW: Convenience functions for unified memory storage
  */
-export function storeProjectConfig(projectId: string, config: ProjectConfig): void {
+export async function storeProjectConfig(projectId: string, config: ProjectConfig): Promise<void> {
   // 🔍 DEBUG: Log what config we're receiving
   console.log('[ConversationMemory] 📦 storeProjectConfig called');
   console.log('[ConversationMemory] 📦   - projectId:', projectId);
@@ -464,13 +744,79 @@ export function storeProjectConfig(projectId: string, config: ProjectConfig): vo
     console.log('[ConversationMemory] 📦   - has enhancedColors?', !!config.stylingConfig.enhancedColors);
     console.log('[ConversationMemory] 📦   - has components?', !!config.stylingConfig.components);
   }
-  conversationMemoryStore.storeProjectConfig(projectId, config);
+  await conversationMemoryStore.storeProjectConfig(projectId, config);
 }
 
-export function storeUserPreferences(projectId: string, preferences: UserPreferences): void {
-  conversationMemoryStore.storeUserPreferences(projectId, preferences);
+export async function storeUserPreferences(projectId: string, preferences: UserPreferences): Promise<void> {
+  await conversationMemoryStore.storeUserPreferences(projectId, preferences);
 }
 
-export function storeWorkflowMetadata(projectId: string, metadata: WorkflowMetadata): void {
-  conversationMemoryStore.storeWorkflowMetadata(projectId, metadata);
+export async function storeWorkflowMetadata(projectId: string, metadata: WorkflowMetadata): Promise<void> {
+  await conversationMemoryStore.storeWorkflowMetadata(projectId, metadata);
+}
+
+/**
+ * ✅ NEW: Store validation context (icon replacements, import fixes, etc.)
+ */
+export async function storeValidationContext(
+  projectId: string,
+  context: Partial<ValidationContext>
+): Promise<void> {
+  const memory = await conversationMemoryStore.getMemory(projectId);
+
+  if (!memory.validationContext) {
+    memory.validationContext = {
+      iconReplacements: [],
+      importFixes: [],
+      contrastFixes: [],
+      typeScriptFixes: []
+    };
+  }
+
+  // Append new context to existing
+  if (context.iconReplacements) {
+    memory.validationContext.iconReplacements.push(...context.iconReplacements);
+  }
+  if (context.importFixes) {
+    memory.validationContext.importFixes.push(...context.importFixes);
+  }
+  if (context.contrastFixes) {
+    memory.validationContext.contrastFixes.push(...context.contrastFixes);
+  }
+  if (context.typeScriptFixes) {
+    memory.validationContext.typeScriptFixes.push(...context.typeScriptFixes);
+  }
+
+  console.log(`[Memory] ✅ Stored validation context for ${projectId}`);
+  console.log(`[Memory] 📊 Total validations: ${memory.validationContext.iconReplacements.length} icons, ${memory.validationContext.importFixes.length} imports`);
+}
+
+/**
+ * ✅ NEW: Store tech stack context
+ */
+export async function storeTechStackContext(
+  projectId: string,
+  context: TechStackContext
+): Promise<void> {
+  const memory = await conversationMemoryStore.getMemory(projectId);
+  memory.techStackContext = context;
+  console.log(`[Memory] ✅ Stored tech stack context for ${projectId}`);
+}
+
+/**
+ * ✅ NEW: Store file metadata
+ */
+export async function storeFileMetadata(
+  projectId: string,
+  filePath: string,
+  metadata: FileMetadata
+): Promise<void> {
+  const memory = await conversationMemoryStore.getMemory(projectId);
+
+  if (!memory.fileMetadata) {
+    memory.fileMetadata = {};
+  }
+
+  memory.fileMetadata[filePath] = metadata;
+  console.log(`[Memory] ✅ Stored metadata for ${filePath}`);
 }

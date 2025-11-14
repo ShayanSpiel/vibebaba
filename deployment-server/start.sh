@@ -41,7 +41,7 @@ fi
 
 # Start PocketBase in background
 echo "🗄️  Starting PocketBase on http://localhost:8090..."
-./pocketbase serve --http="localhost:8090" > pocketbase.log 2>&1 &
+./pocketbase serve --http="0.0.0.0:8090" --origins="*" > pocketbase.log 2>&1 &
 POCKETBASE_PID=$!
 
 # Wait for PocketBase to start

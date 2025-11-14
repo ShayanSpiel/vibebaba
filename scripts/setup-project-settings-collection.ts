@@ -53,8 +53,8 @@ async function setupCollection() {
           type: 'text',
           required: true,
           options: {
-            min: null,
-            max: null,
+            min: 1,
+            max: 100,
             pattern: '',
           },
         },

@@ -9,9 +9,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/pocketbase-middleware';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 import { getActionRunner } from '@/lib/action-runner';
-import { globalRateLimiter, globalExecutionGuard } from '@/lib/error-prevention';
+import { globalRateLimiter, globalExecutionGuard } from '@/lib/monitoring/error-prevention';
 
 export const maxDuration = 60;
 

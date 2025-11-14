@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { pb } from '@/lib/pocketbase';
+import { pb } from '@/lib/database/pocketbase';
 import { autoCreateOrganization } from '@/lib/services/org-auto-create';
 
 export default function GoogleCallbackPage() {

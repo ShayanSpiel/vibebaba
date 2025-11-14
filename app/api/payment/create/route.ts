@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/pocketbase-middleware";
+import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
 import { getPaymentProvider } from "@/lib/payment-providers";
-import { createTransaction } from "@/lib/pocketbase-credits";
+import { createTransaction } from "@/lib/database/pocketbase-credits";
 import { getPackage, getCustomCreditPrice, getExchangeRateToRials, tomanToRials } from "@/lib/config/pricing-config";
-import { RateLimiter, sanitizeError } from "@/lib/pocketbase-utils";
+import { RateLimiter, sanitizeError } from "@/lib/database/pocketbase-utils";
 
 // Rate limiter: 5 payment requests per minute per user
 const paymentRateLimiter = new RateLimiter(60000, 5);
@@ -49,7 +49,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid purchase type" }, { status: 400 });
     }
 
-    // Create transaction record
+    // 🔒 SECURITY: Generate verify token BEFORE creating transaction
+    const crypto = require('crypto');
+    const verifyToken = crypto
+      .createHash('sha256')
+      .update(`${user.id}:${Date.now()}:${Math.random()}`)
+      .digest('hex');
+
+    // Create transaction record with verify token
     const transactionId = await createTransaction(
       user.id,
       packageId ? "subscription" : "purchase",
@@ -57,12 +64,16 @@ export async function POST(req: NextRequest) {
       tokens,
       currency,
       packageId,
-      "zarinpal"
+      "zarinpal",
+      undefined, // paymentId (not known yet)
+      verifyToken // Store for verification on callback
     );
 
     // Create payment with Zarinpal
     const provider = getPaymentProvider("zarinpal");
-    const callbackUrl = `${req.nextUrl.origin}/api/payment/verify?transactionId=${transactionId}`;
+
+    // 🔒 SECURITY: Use verify token in callback URL (will be validated on return)
+    const callbackUrl = `${req.nextUrl.origin}/api/payment/verify?transactionId=${transactionId}&token=${verifyToken}`;
 
     // PHASE 2: Convert to Rials using centralized exchange rate
     // Zarinpal uses Rials, so convert from Toman or USD

@@ -1,8 +1,8 @@
 // app/api/admin/credits/stats/route.ts
 // Admin API for credit system statistics and monitoring
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAdminAccess } from '@/lib/admin-auth';
-import { getAdminPb } from '@/lib/pocketbase-admin';
+import { checkAdminAccess } from '@/lib/auth/admin-auth';
+import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
 /**
  * GET /api/admin/credits/stats

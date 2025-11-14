@@ -1,5 +1,5 @@
 // lib/langgraph/checkpointer.ts
-import { pb } from '@/lib/pocketbase';
+import { pb } from '@/lib/database/pocketbase';
 import type { AppGenState } from './types';
 
 export class PocketBaseCheckpointer {

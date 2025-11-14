@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { pb, ensureAuth } from "@/lib/pocketbase";
+import { pb, ensureAuth } from "@/lib/database/pocketbase";
 
 interface DatabaseViewerProProps {
   backendConfig: any;

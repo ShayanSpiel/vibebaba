@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/admin-middleware';
-import { activatePackage } from '@/lib/pocketbase-credits';
+import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { activatePackage } from '@/lib/database/pocketbase-credits';
 
 /**
  * Manually assign package to user (admin override)

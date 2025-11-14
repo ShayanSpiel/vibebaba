@@ -8,8 +8,8 @@
  * - Promise chaining to prevent race conditions
  */
 
-import { VirtualFileSystem, createVirtualFileSystem } from './file-operations';
-import { retryWithBackoff, globalCircuitBreaker, globalErrorDeduplicator } from './error-prevention';
+import { VirtualFileSystem, createVirtualFileSystem } from './files/file-operations';
+import { retryWithBackoff, globalCircuitBreaker, globalErrorDeduplicator } from './monitoring/error-prevention';
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
 

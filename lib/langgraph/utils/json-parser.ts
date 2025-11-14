@@ -47,8 +47,15 @@ export function safeJsonParse<T = any>(jsonString: string, fallback: T = {} as T
         console.log('[JSON Parser] ⚠️  Aggressive sanitization...');
 
         const aggressivelyCleaned = jsonString
+          // Fix unescaped newlines in string values (common AI error)
+          .replace(/"([^"]*?)(\r?\n)([^"]*?)"/g, (match, before, newline, after) => {
+            return `"${before}\\n${after}"`;
+          })
           // Remove ALL control characters
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+          // Remove comments (both // and /* */ styles)
+          .replace(/\/\/[^\n]*/g, '')        // Remove // comments
+          .replace(/\/\*[\s\S]*?\*\//g, '')  // Remove /* */ comments
           // Fix common JSON issues
           .replace(/,\s*}/g, '}')    // Trailing commas
           .replace(/,\s*]/g, ']')    // Trailing commas in arrays
@@ -81,18 +88,98 @@ export function safeJsonParse<T = any>(jsonString: string, fallback: T = {} as T
  * @returns Parsed JSON object
  */
 export function extractAndParseJson<T = any>(text: string, fallback: T = {} as T): T {
-  // Try to find JSON object first
-  const objectMatch = text.match(/\{[\s\S]*\}/);
+  // First, try to extract JSON from markdown code blocks
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (codeBlockMatch) {
+    const result = safeJsonParse<T>(codeBlockMatch[1], null as any);
+    if (result !== null) return result;
+  }
+
+  // Try to find balanced JSON object (handles nested objects properly)
+  const objectMatch = findBalancedJson(text, '{', '}');
   if (objectMatch) {
-    return safeJsonParse<T>(objectMatch[0], fallback);
+    // Detect if there's significant text after the JSON (markdown contamination)
+    const jsonEndIndex = text.indexOf(objectMatch) + objectMatch.length;
+    const afterJson = text.slice(jsonEndIndex).trim();
+
+    if (afterJson.length > 50) {
+      console.warn('[JSON Parser] ⚠️  Detected text after JSON (markdown contamination)');
+      console.warn('[JSON Parser] After JSON:', afterJson.substring(0, 100) + '...');
+      console.warn('[JSON Parser] This suggests AI returned markdown instead of pure JSON');
+    }
+
+    const result = safeJsonParse<T>(objectMatch, null as any);
+    if (result !== null) return result;
   }
 
-  // Try to find JSON array
-  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  // Try to find balanced JSON array
+  const arrayMatch = findBalancedJson(text, '[', ']');
   if (arrayMatch) {
-    return safeJsonParse<T>(arrayMatch[0], fallback);
+    // Check for text after array
+    const jsonEndIndex = text.indexOf(arrayMatch) + arrayMatch.length;
+    const afterJson = text.slice(jsonEndIndex).trim();
+
+    if (afterJson.length > 50) {
+      console.warn('[JSON Parser] ⚠️  Detected text after JSON array');
+      console.warn('[JSON Parser] After JSON:', afterJson.substring(0, 100) + '...');
+    }
+
+    const result = safeJsonParse<T>(arrayMatch, null as any);
+    if (result !== null) return result;
   }
 
-  console.warn('[JSON Parser] ⚠️  No JSON found in text');
+  // Fallback: try simple regex (for backwards compatibility)
+  const simpleObjectMatch = text.match(/\{[\s\S]*?\}/);
+  if (simpleObjectMatch) {
+    const result = safeJsonParse<T>(simpleObjectMatch[0], null as any);
+    if (result !== null) return result;
+  }
+
+  console.warn('[JSON Parser] ⚠️  No valid JSON found in text');
+  console.warn('[JSON Parser] Text preview:', text.substring(0, 200));
   return fallback;
+}
+
+/**
+ * Find balanced JSON in text (handles nested brackets properly)
+ */
+function findBalancedJson(text: string, openChar: string, closeChar: string): string | null {
+  const startIndex = text.indexOf(openChar);
+  if (startIndex === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = startIndex; i < text.length; i++) {
+    const char = text[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"' && !escapeNext) {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (char === openChar) {
+      depth++;
+    } else if (char === closeChar) {
+      depth--;
+      if (depth === 0) {
+        return text.substring(startIndex, i + 1);
+      }
+    }
+  }
+
+  return null;
 }

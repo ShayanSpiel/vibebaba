@@ -5,7 +5,7 @@
  * Also maintains in-memory cache for faster access
  */
 
-import type { ValidationError } from '@/lib/validation/types';
+import type { ValidationError } from '@/lib/langgraph/validation/post-gen/types';
 import PocketBase from 'pocketbase';
 
 // Use the deployment server PocketBase instance

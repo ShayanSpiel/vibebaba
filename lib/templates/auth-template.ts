@@ -11,7 +11,7 @@
  * - JWT: Token-based authentication with refresh tokens
  */
 
-import type { FileToValidate } from '../validation/types';
+import type { FileToValidate } from '../langgraph/validation/post-gen/types';
 
 /**
  * PocketBase User Collection Schema

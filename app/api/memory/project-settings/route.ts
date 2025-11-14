@@ -1,8 +1,8 @@
 // app/api/memory/project-settings/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/pocketbase-middleware';
-import { pb } from '@/lib/pocketbase';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { pb } from '@/lib/database/pocketbase';
 
 /**
  * Store project settings in LangChain memory
@@ -32,10 +32,10 @@ export async function POST(req: NextRequest) {
 
     // Store project settings in memory collection
     try {
-      // Check if settings already exist for this project
-      const existing = await pb.collection('project_settings_memory').getFullList({
-        filter: `projectId = "${projectId}"`
-      });
+      // ✅ OPTIMIZED: Check if settings already exist using getFirstListItem
+      const existing = await pb.collection('project_settings_memory').getFirstListItem(
+        `projectId = "${projectId}"`
+      ).catch(() => null);
 
       const data = {
         projectId,
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date().toISOString()
       };
 
-      if (existing.length > 0) {
+      if (existing) {
         // Update existing record
-        await pb.collection('project_settings_memory').update(existing[0].id, data);
+        await pb.collection('project_settings_memory').update(existing.id, data);
         console.log(`[Memory] ✅ Updated project settings for ${projectId}`);
       } else {
         // Create new record
@@ -99,15 +99,16 @@ export async function GET(req: NextRequest) {
     try {
       console.log('[Memory] 🔍 Fetching settings for projectId:', projectId, 'userId:', user.id);
 
-      const records = await pb.collection('project_settings_memory').getFullList({
-        filter: `projectId = "${projectId}" && userId = "${user.id}"`
-      });
+      // ✅ OPTIMIZED: Use getFirstListItem instead of getFullList for single record lookup
+      // This is much faster as it stops after finding the first match
+      const record = await pb.collection('project_settings_memory').getFirstListItem(
+        `projectId = "${projectId}" && userId = "${user.id}"`
+      ).catch(() => null);  // Return null if not found instead of throwing
 
-      console.log('[Memory] 📦 Found', records.length, 'record(s)');
+      console.log('[Memory] 📦 Found:', record ? '1 record' : 'no records');
 
-      if (records.length === 0) {
+      if (!record) {
         // Return 200 with null data instead of 404 to avoid error logs
-        // 404 is semantically correct, but causes unnecessary error spam in logs
         console.log('[Memory] ℹ️ No settings found for this project');
         return NextResponse.json({
           success: true,
@@ -116,7 +117,6 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      const record = records[0];
       console.log('[Memory] 📄 Record found, parsing stylingConfig...');
 
       // Safely parse stylingConfig

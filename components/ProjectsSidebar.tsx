@@ -199,7 +199,7 @@ export function ProjectsSidebar() {
     e.stopPropagation();
     if (confirm(t("deleteConfirm"))) {
       try {
-        const { pb, ensureAuth } = await import('@/lib/pocketbase');
+        const { pb, ensureAuth } = await import('@/lib/database/pocketbase');
 
         // Ensure auth is loaded before making request
         ensureAuth();

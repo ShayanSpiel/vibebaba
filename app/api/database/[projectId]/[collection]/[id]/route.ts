@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pb } from "@/lib/pocketbase";
+import { pb } from "@/lib/database/pocketbase";
 
 /**
  * PATCH /api/database/[projectId]/[collection]/[id]

@@ -82,11 +82,15 @@ async function restoreCachedDependencies(projectPath) {
     // Check multiple critical paths to ensure complete Next.js installation
     const criticalPaths = [
       path.join(nodeModulesTarget, '.bin', 'next'),
-      path.join(nodeModulesTarget, 'next', 'dist', 'server', 'require-hook.js'),  // The missing module from error
+      path.join(nodeModulesTarget, 'next', 'dist', 'server', 'require-hook.js'),
       path.join(nodeModulesTarget, 'next', 'dist', 'server', 'next-server.js'),
+      path.join(nodeModulesTarget, 'next', 'dist', 'trace', 'shared.js'),  // Missing in error logs
+      path.join(nodeModulesTarget, 'next', 'dist', 'telemetry', 'flush-and-exit.js'),
+      path.join(nodeModulesTarget, 'tailwindcss', 'lib', 'util', 'hashConfig.js'),  // Missing in error logs
+      path.join(nodeModulesTarget, 'tailwindcss', 'lib', 'lib', 'setupTrackingContext.js'),
       path.join(nodeModulesTarget, 'react', 'index.js'),
       path.join(nodeModulesTarget, 'react-dom', 'index.js'),
-      path.join(nodeModulesTarget, 'caniuse-lite', 'data', 'browsers.js')  // FIX 45: Validate caniuse-lite data
+      path.join(nodeModulesTarget, 'caniuse-lite', 'data', 'browsers.js')
     ];
 
     console.log('[Build] 🔍 Validating cache integrity...');
@@ -113,13 +117,15 @@ async function restoreCachedDependencies(projectPath) {
  * Cache node_modules for future builds
  */
 async function cacheDependencies(projectPath, packageJsonHash) {
+  // Define paths outside try block so they're accessible in catch
+  const nodeModulesSource = path.join(projectPath, 'node_modules');
+  const nodeModulesCache = path.join(CACHE_DIR, 'node_modules');
+  // FIX: Use system tmp to avoid macOS path length limits
+  const nodeModulesCacheTmp = path.join(require('os').tmpdir(), `nm-${process.pid}-${Date.now()}`);
+  const cacheInfoPath = path.join(CACHE_DIR, 'cache-info.json');
+
   try {
     await fs.mkdir(CACHE_DIR, { recursive: true });
-
-    const nodeModulesSource = path.join(projectPath, 'node_modules');
-    const nodeModulesCache = path.join(CACHE_DIR, 'node_modules');
-    const nodeModulesCacheTmp = path.join(CACHE_DIR, 'node_modules.tmp');
-    const cacheInfoPath = path.join(CACHE_DIR, 'cache-info.json');
 
     console.log('[Build] 💾 Caching dependencies for future builds...');
 
@@ -169,7 +175,6 @@ async function cacheDependencies(projectPath, packageJsonHash) {
 
     // Clean up temp directory if it exists
     try {
-      const nodeModulesCacheTmp = path.join(CACHE_DIR, 'node_modules.tmp');
       await fs.rm(nodeModulesCacheTmp, { recursive: true, force: true });
     } catch (e) {
       // Ignore cleanup errors
@@ -330,17 +335,27 @@ async function buildAndExport(projectPath, onProgress = () => {}) {
       };
     }
 
-    // Step 3: Verify output directory exists
-    const outputDir = path.join(projectPath, 'out');
+    // Step 3: Verify build output exists (.next for standard builds, out for static export)
+    const nextDir = path.join(projectPath, '.next');
+    const outDir = path.join(projectPath, 'out');
+
+    let outputDir;
     try {
-      await fs.access(outputDir);
-      console.log('[Build] ✅ Output directory verified:', outputDir);
-    } catch (error) {
-      console.error('[Build] ❌ Output directory not found:', outputDir);
-      return {
-        success: false,
-        error: 'Build completed but no output directory was generated'
-      };
+      await fs.access(nextDir);
+      outputDir = nextDir;
+      console.log('[Build] ✅ Standard build verified (.next directory):', outputDir);
+    } catch {
+      try {
+        await fs.access(outDir);
+        outputDir = outDir;
+        console.log('[Build] ✅ Static export verified (out directory):', outputDir);
+      } catch (error) {
+        console.error('[Build] ❌ No build output found (checked .next and out directories)');
+        return {
+          success: false,
+          error: 'Build completed but no output directory was generated'
+        };
+      }
     }
 
     onProgress('complete', 'Build successful');

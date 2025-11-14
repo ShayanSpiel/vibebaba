@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
-import { PRICING_PACKAGES } from '@/lib/pocketbase-credits';
+import { PRICING_PACKAGES } from '@/lib/database/pocketbase-credits';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 

@@ -10,7 +10,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Button, Input } from "@/components/ui";
 import { useState, useEffect } from "react";
 import { getUserOrganization } from "@/lib/services/org-auto-create";
-import type { Organization } from "@/lib/pocketbase";
+import type { Organization } from "@/lib/database/pocketbase";
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();

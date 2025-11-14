@@ -13,12 +13,12 @@ import {
   qaNode,
   devopsNode
 } from './nodes';
-import { frontendRouter } from './nodes/frontend-router'; // ✅ USE ROUTER INSTEAD OF DIRECT FRONTEND NODE
+import { frontendRouter } from './nodes/frontend/router'; // ✅ USE ROUTER INSTEAD OF DIRECT FRONTEND NODE
 
 // PHASE 3: Conversational editor nodes
-import { inputDetectorNode } from './nodes/input-detector-node';
-import { contextAnalyzerNode } from './nodes/context-analyzer-node';
-import { editorNode } from './nodes/editor-node';
+import { inputDetectorNode } from './nodes/input-detector';
+import { contextAnalyzerNode } from './nodes/context-analyzer';
+import { editorNode } from './nodes/editor';
 
 // Workflow health logging
 import { logNodeExecution, logNodeError } from '@/lib/services/workflow-logger';
@@ -303,7 +303,35 @@ export function createAppGenWorkflow() {
     return 'context-analyzer';
   });
 
-  (workflow as any).addEdge('context-analyzer', 'editor');  // Determine scope & files to modify
+  // CRITICAL ROUTING: Context Analyzer decides between editor workflow or full generation workflow
+  (workflow as any).addConditionalEdges('context-analyzer', (state: AppGenState) => {
+    const session = state.editingSession;
+
+    // Question answered, end workflow
+    if (session?.isQuestion && session?.questionAnswered) {
+      console.log('🔀 [Workflow] Question answered - ending workflow');
+      return '__end__';
+    }
+
+    // Feature request - route through full generation workflow (PM → UX → Backend → Frontend)
+    if (session?.requestType === 'feature' && session?.requiresFullWorkflow) {
+      console.log('🔀 [Workflow] Feature detected - routing to PM node for full workflow');
+      console.log(`🔀 [Workflow]   Feature: ${session.suggestedFeatureName || 'unknown'}`);
+      console.log(`🔀 [Workflow]   Complexity: ${session.estimatedComplexity || 'moderate'}`);
+
+      // Clear editing session (no longer in edit mode)
+      // userDescription is already set by context-analyzer
+
+      return 'pm';  // PM → UX → Backend → Frontend → QA → DevOps
+    }
+
+    // Simple edit - go directly to editor
+    console.log('🔀 [Workflow] Edit request - routing to Editor node');
+    console.log(`🔀 [Workflow]   Scope: ${session?.changeScope || 'moderate'}`);
+    console.log(`🔀 [Workflow]   Files: ${session?.filesToModify?.length || 0}`);
+    return 'editor';  // Editor → QA → DevOps
+  });
+
   (workflow as any).addEdge('editor', 'qa');                // Apply edits & validate
 
   // SHARED PATH: Both generation and editing paths merge at QA → DevOps → END
