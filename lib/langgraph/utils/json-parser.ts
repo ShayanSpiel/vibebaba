@@ -33,10 +33,14 @@ export function safeJsonParse<T = any>(jsonString: string, fallback: T = {} as T
         // Remove all control characters except those already escaped
         .replace(/[\u0000-\u001F]/g, (char) => {
           switch (char) {
-            case '\n': return '\\n';
-            case '\r': return '\\r';
-            case '\t': return '\\t';
-            default: return ''; // Remove other control chars
+            case '\n':
+              return '\\n';
+            case '\r':
+              return '\\r';
+            case '\t':
+              return '\\t';
+            default:
+              return ''; // Remove other control chars
           }
         });
 
@@ -54,15 +58,15 @@ export function safeJsonParse<T = any>(jsonString: string, fallback: T = {} as T
           // Remove ALL control characters
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
           // Remove comments (both // and /* */ styles)
-          .replace(/\/\/[^\n]*/g, '')        // Remove // comments
-          .replace(/\/\*[\s\S]*?\*\//g, '')  // Remove /* */ comments
+          .replace(/\/\/[^\n]*/g, '') // Remove // comments
+          .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
           // Fix common JSON issues
-          .replace(/,\s*}/g, '}')    // Trailing commas
-          .replace(/,\s*]/g, ']')    // Trailing commas in arrays
-          .replace(/'/g, '"')        // Single quotes to double quotes
+          .replace(/,\s*}/g, '}') // Trailing commas
+          .replace(/,\s*]/g, ']') // Trailing commas in arrays
+          .replace(/'/g, '"') // Single quotes to double quotes
           // Remove markdown formatting from within strings
-          .replace(/\*\*/g, '')      // Bold markers
-          .replace(/\*/g, '')        // Italic markers
+          .replace(/\*\*/g, '') // Bold markers
+          .replace(/\*/g, '') // Italic markers
           // Fix common escape issues
           .replace(/\\(?!["\\/bfnrtu])/g, '\\\\'); // Escape unescaped backslashes
 
@@ -71,7 +75,9 @@ export function safeJsonParse<T = any>(jsonString: string, fallback: T = {} as T
         console.error('[JSON Parser] ❌ Failed to parse JSON after all sanitization attempts');
         console.error('[JSON Parser] Original error:', (firstError as Error).message);
         console.error('[JSON Parser] JSON snippet:', jsonString.substring(0, 200));
-        console.error('[JSON Parser] Tip: Ensure AI returns valid JSON with properly escaped strings');
+        console.error(
+          '[JSON Parser] Tip: Ensure AI returns valid JSON with properly escaped strings'
+        );
         return fallback;
       }
     }

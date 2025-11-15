@@ -394,13 +394,36 @@ export const AVAILABLE_SHADCN_COMPONENTS = {
   input: ['Input'],
   card: ['Card', 'CardHeader', 'CardTitle', 'CardDescription', 'CardContent', 'CardFooter'],
   badge: ['Badge'],
-  dialog: ['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle', 'DialogTrigger', 'DialogFooter'],
-  select: ['Select', 'SelectContent', 'SelectItem', 'SelectTrigger', 'SelectValue', 'SelectGroup', 'SelectLabel'],
+  dialog: [
+    'Dialog',
+    'DialogContent',
+    'DialogDescription',
+    'DialogHeader',
+    'DialogTitle',
+    'DialogTrigger',
+    'DialogFooter',
+  ],
+  select: [
+    'Select',
+    'SelectContent',
+    'SelectItem',
+    'SelectTrigger',
+    'SelectValue',
+    'SelectGroup',
+    'SelectLabel',
+  ],
   table: ['Table', 'TableBody', 'TableCell', 'TableHead', 'TableHeader', 'TableRow'],
   textarea: ['Textarea'],
   label: ['Label'],
   tabs: ['Tabs', 'TabsContent', 'TabsList', 'TabsTrigger'],
-  'dropdown-menu': ['DropdownMenu', 'DropdownMenuContent', 'DropdownMenuItem', 'DropdownMenuTrigger', 'DropdownMenuLabel', 'DropdownMenuSeparator']
+  'dropdown-menu': [
+    'DropdownMenu',
+    'DropdownMenuContent',
+    'DropdownMenuItem',
+    'DropdownMenuTrigger',
+    'DropdownMenuLabel',
+    'DropdownMenuSeparator',
+  ],
 } as const;
 
 /**
@@ -412,7 +435,7 @@ export function addShadcnImports(code: string): string {
 
   // Check which components are used
   for (const [file, components] of Object.entries(AVAILABLE_SHADCN_COMPONENTS)) {
-    const usedComponents = components.filter(comp => {
+    const usedComponents = components.filter((comp) => {
       const regex = new RegExp(`<${comp}[\\s>]`, 'g');
       return regex.test(code);
     });
@@ -430,11 +453,13 @@ export function addShadcnImports(code: string): string {
 
   // Find where to insert (after 'use client' and existing imports)
   const useClientMatch = code.match(/^['"]use client['"];?\s*\n/m);
-  const lastImportIndex = existingImports.length > 0
-    ? code.lastIndexOf(existingImports[existingImports.length - 1]) + existingImports[existingImports.length - 1].length
-    : useClientMatch
-      ? useClientMatch.index! + useClientMatch[0].length
-      : 0;
+  const lastImportIndex =
+    existingImports.length > 0
+      ? code.lastIndexOf(existingImports[existingImports.length - 1]) +
+        existingImports[existingImports.length - 1].length
+      : useClientMatch
+        ? useClientMatch.index! + useClientMatch[0].length
+        : 0;
 
   // Insert new imports
   const importBlock = '\n' + imports.join('\n') + '\n';

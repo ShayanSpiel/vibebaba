@@ -24,11 +24,13 @@ export type AIMetadata = z.infer<typeof AIMetadataSchema>;
 // Validation result
 export const ValidationResultSchema = z.object({
   isValid: z.boolean(),
-  errors: z.array(z.object({
-    file: z.string(),
-    line: z.number().optional(),
-    message: z.string(),
-  })),
+  errors: z.array(
+    z.object({
+      file: z.string(),
+      line: z.number().optional(),
+      message: z.string(),
+    })
+  ),
 });
 
 export type ValidationResult = z.infer<typeof ValidationResultSchema>;
@@ -66,16 +68,20 @@ export type AIResponse = z.infer<typeof AIResponseSchema>;
 export const APIResponseSchema = z.object({
   success: z.boolean(),
   data: z.any().optional(),
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    details: z.any().optional(),
-  }).optional(),
-  metadata: z.object({
-    timestamp: z.string(),
-    requestId: z.string(),
-    version: z.string(),
-  }).optional(),
+  error: z
+    .object({
+      code: z.string(),
+      message: z.string(),
+      details: z.any().optional(),
+    })
+    .optional(),
+  metadata: z
+    .object({
+      timestamp: z.string(),
+      requestId: z.string(),
+      version: z.string(),
+    })
+    .optional(),
 });
 
 export type APIResponse<T = any> = {

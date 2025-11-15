@@ -266,7 +266,9 @@ export class VirtualFileSystem {
   /**
    * Read file from virtual file system
    */
-  async readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
+  async readFile(
+    filePath: string
+  ): Promise<{ success: boolean; content?: string; error?: string }> {
     try {
       const normalized = normalizePath(filePath);
       const projectData = this.getProjectData();
@@ -363,7 +365,9 @@ export class VirtualFileSystem {
   /**
    * List files in directory
    */
-  async listFiles(directory: string = '.'): Promise<{ success: boolean; files?: string[]; error?: string }> {
+  async listFiles(
+    directory: string = '.'
+  ): Promise<{ success: boolean; files?: string[]; error?: string }> {
     try {
       const normalized = directory === '.' ? '' : normalizePath(directory);
       const projectData = this.getProjectData();
@@ -372,7 +376,7 @@ export class VirtualFileSystem {
         return { success: true, files: [] };
       }
 
-      const files = Object.keys(projectData.files).filter(filePath => {
+      const files = Object.keys(projectData.files).filter((filePath) => {
         if (!normalized) return true; // Root directory
         return filePath.startsWith(normalized + '/');
       });
@@ -466,7 +470,9 @@ export function logFileOperation(
       console.log(`${logPrefix}    Reason: ${operation.reason}`);
     }
   } else {
-    console.error(`${logPrefix} ${status} ${operation.type.toUpperCase()} FAILED: ${operation.path}`);
+    console.error(
+      `${logPrefix} ${status} ${operation.type.toUpperCase()} FAILED: ${operation.path}`
+    );
     if (error) {
       console.error(`${logPrefix}    Error: ${error}`);
     }

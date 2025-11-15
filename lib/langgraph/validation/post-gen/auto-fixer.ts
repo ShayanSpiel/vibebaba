@@ -4,7 +4,7 @@
  * Automatically fixes common code errors when possible
  */
 
-import type { ValidationError, FileToValidate } from './types';
+import type { FileToValidate, ValidationError } from './types';
 
 /**
  * Auto-fix errors in files
@@ -13,7 +13,7 @@ export function autoFixErrors(
   files: FileToValidate[],
   errors: ValidationError[]
 ): { files: FileToValidate[]; fixed: string[] } {
-  const fixedFiles = files.map(file => ({ ...file }));
+  const fixedFiles = files.map((file) => ({ ...file }));
   const fixed: string[] = [];
 
   // Group errors by file
@@ -29,7 +29,7 @@ export function autoFixErrors(
 
   // Fix each file
   for (const [filePath, fileErrors] of errorsByFile.entries()) {
-    const fileIndex = fixedFiles.findIndex(f => f.path === filePath);
+    const fileIndex = fixedFiles.findIndex((f) => f.path === filePath);
     if (fileIndex === -1) continue;
 
     let content = fixedFiles[fileIndex].content;
@@ -52,7 +52,7 @@ export function autoFixErrors(
   }
 
   // Convert rule IDs to readable descriptions
-  const fixedDescriptions = fixed.map(rule => getFixDescription(rule));
+  const fixedDescriptions = fixed.map((rule) => getFixDescription(rule));
 
   return { files: fixedFiles, fixed: fixedDescriptions };
 }
@@ -73,7 +73,7 @@ function applyFix(content: string, error: ValidationError): { content: string; f
       }
       break;
 
-    case 'html-extension-required':
+    case 'html-extension-required': {
       // Add .html extension to links
       // Extract the href value from error context
       const hrefMatch = error.context?.match(/href=["']([a-z-]+)["']/i);
@@ -86,6 +86,7 @@ function applyFix(content: string, error: ValidationError): { content: string; f
         fixed = true;
       }
       break;
+    }
 
     case 'require-await':
       // Add await before window.db calls
@@ -96,7 +97,7 @@ function applyFix(content: string, error: ValidationError): { content: string; f
       fixed = true;
       break;
 
-    case 'property-no-unknown':
+    case 'property-no-unknown': {
       // Fix common CSS typos
       const cssTypos = [
         { wrong: 'colour', right: 'color' },
@@ -105,14 +106,12 @@ function applyFix(content: string, error: ValidationError): { content: string; f
 
       for (const { wrong, right } of cssTypos) {
         if (newContent.includes(`${wrong}:`)) {
-          newContent = newContent.replace(
-            new RegExp(`\\b${wrong}\\s*:`, 'gi'),
-            `${right}:`
-          );
+          newContent = newContent.replace(new RegExp(`\\b${wrong}\\s*:`, 'gi'), `${right}:`);
           fixed = true;
         }
       }
       break;
+    }
 
     case 'unit-no-unknown':
       // Add px to numeric values (conservative approach)
@@ -142,32 +141,27 @@ function applyFix(content: string, error: ValidationError): { content: string; f
 
     case 'attr-value-double-quotes':
       // Convert single quotes to double quotes in HTML attributes
-      newContent = newContent.replace(
-        /(<[^>]+\s+\w+)='([^']*)'/g,
-        '$1="$2"'
-      );
+      newContent = newContent.replace(/(<[^>]+\s+\w+)='([^']*)'/g, '$1="$2"');
       fixed = true;
       break;
 
     case 'tagname-lowercase':
       // Convert tag names to lowercase
-      newContent = newContent.replace(
-        /<\/?([A-Z][A-Z0-9]*)/g,
-        (match, tagName) => match.replace(tagName, tagName.toLowerCase())
+      newContent = newContent.replace(/<\/?([A-Z][A-Z0-9]*)/g, (match, tagName) =>
+        match.replace(tagName, tagName.toLowerCase())
       );
       fixed = true;
       break;
 
     case 'attr-lowercase':
       // Convert attribute names to lowercase
-      newContent = newContent.replace(
-        /\s([A-Z][A-Z0-9-]*)=/g,
-        (match, attrName) => match.replace(attrName, attrName.toLowerCase())
+      newContent = newContent.replace(/\s([A-Z][A-Z0-9-]*)=/g, (match, attrName) =>
+        match.replace(attrName, attrName.toLowerCase())
       );
       fixed = true;
       break;
 
-    case 'id-unique':
+    case 'id-unique': {
       // Fix duplicate IDs by appending numbers
       const idMatch = error.message?.match(/duplicate\s+id\s+['"]([^'"]+)['"]/i);
       if (idMatch) {
@@ -184,21 +178,25 @@ function applyFix(content: string, error: ValidationError): { content: string; f
         fixed = true;
       }
       break;
+    }
 
     case 'src-not-empty':
       // Remove elements with empty src attributes
-      newContent = newContent.replace(/<img[^>]*src=["']["'][^>]*>/gi, '<!-- Empty src removed -->');
-      newContent = newContent.replace(/<script[^>]*src=["']["'][^>]*><\/script>/gi, '<!-- Empty src removed -->');
+      newContent = newContent.replace(
+        /<img[^>]*src=["']["'][^>]*>/gi,
+        '<!-- Empty src removed -->'
+      );
+      newContent = newContent.replace(
+        /<script[^>]*src=["']["'][^>]*><\/script>/gi,
+        '<!-- Empty src removed -->'
+      );
       fixed = true;
       break;
 
     case 'title-require':
       // Add missing <title> tag in <head>
       if (!newContent.match(/<title>/i)) {
-        newContent = newContent.replace(
-          /(<head[^>]*>)/i,
-          '$1\n  <title>Generated App</title>'
-        );
+        newContent = newContent.replace(/(<head[^>]*>)/i, '$1\n  <title>Generated App</title>');
         fixed = true;
       }
       break;
@@ -207,24 +205,22 @@ function applyFix(content: string, error: ValidationError): { content: string; f
       // Auto-fix special character escaping in text content
       // Only escape < > & when they appear in text content (between tags)
       // This is safe because we only match text between > and <
-      newContent = newContent.replace(
-        />([^<]*)</g,
-        (match, textContent) => {
-          let escapedText = textContent;
-          // Only escape if there are actual special chars that need escaping
-          if (textContent.includes('<') || textContent.includes('>') ||
-              /&(?![a-zA-Z]+;|#\d+;|#x[0-9a-fA-F]+;)/.test(textContent)) {
-            // Escape < and >
-            escapedText = escapedText
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
-            // Escape standalone & (not part of an entity)
-            escapedText = escapedText.replace(/&(?![a-zA-Z]+;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
-            fixed = true;
-          }
-          return `>${escapedText}<`;
+      newContent = newContent.replace(/>([^<]*)</g, (match, textContent) => {
+        let escapedText = textContent;
+        // Only escape if there are actual special chars that need escaping
+        if (
+          textContent.includes('<') ||
+          textContent.includes('>') ||
+          /&(?![a-zA-Z]+;|#\d+;|#x[0-9a-fA-F]+;)/.test(textContent)
+        ) {
+          // Escape < and >
+          escapedText = escapedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          // Escape standalone & (not part of an entity)
+          escapedText = escapedText.replace(/&(?![a-zA-Z]+;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
+          fixed = true;
         }
-      );
+        return `>${escapedText}<`;
+      });
       break;
 
     default:

@@ -43,12 +43,12 @@ async function forceSetAdmin() {
     }
 
     // Find xhayan@gmail.com
-    const targetUser = users.find(u => u.email === 'xhayan@gmail.com');
+    const targetUser = users.find((u) => u.email === 'xhayan@gmail.com');
 
     if (!targetUser) {
       console.log('❌ User xhayan@gmail.com not found!');
       console.log('\nExisting users:');
-      users.forEach(u => console.log(`   - ${u.email} (role: ${u.role || 'none'})`));
+      users.forEach((u) => console.log(`   - ${u.email} (role: ${u.role || 'none'})`));
       return;
     }
 
@@ -71,7 +71,7 @@ async function forceSetAdmin() {
     // Update to admin
     console.log('🔄 Updating role to admin...');
     const updated = await pb.collection('users').update(targetUser.id, {
-      role: 'admin'
+      role: 'admin',
     });
 
     console.log('✅ Successfully updated!');
@@ -81,7 +81,6 @@ async function forceSetAdmin() {
     console.log('   1. Logout from your app');
     console.log('   2. Login again with xhayan@gmail.com');
     console.log('   3. Try accessing http://localhost:3000/admin');
-
   } catch (error: any) {
     console.error('❌ Error:', error.message);
 

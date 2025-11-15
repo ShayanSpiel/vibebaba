@@ -2,9 +2,9 @@
  * Minimal script to create workflow_checkpoints collection
  */
 
-import PocketBase from 'pocketbase';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import PocketBase from 'pocketbase';
 
 config({ path: resolve(process.cwd(), '.env.local') });
 
@@ -30,14 +30,14 @@ async function createCheckpointCollection() {
           {
             name: 'projectId',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'description',
             type: 'text',
-            required: false
-          }
-        ]
+            required: false,
+          },
+        ],
       });
 
       console.log('✅ Created minimal collection:', collection.name);
@@ -49,21 +49,25 @@ async function createCheckpointCollection() {
           { name: 'userId', type: 'text', required: false },
           { name: 'userRequest', type: 'text', required: false },
           { name: 'filesSnapshot', type: 'json', required: false, options: { maxSize: 2000000 } }, // 2MB limit
-          { name: 'previousFilesSnapshot', type: 'json', required: false, options: { maxSize: 2000000 } }, // 2MB limit
+          {
+            name: 'previousFilesSnapshot',
+            type: 'json',
+            required: false,
+            options: { maxSize: 2000000 },
+          }, // 2MB limit
           { name: 'changeScope', type: 'text', required: false },
-          { name: 'description', type: 'text', required: false }
-        ]
+          { name: 'description', type: 'text', required: false },
+        ],
       });
 
       console.log('✅ Updated collection with full schema');
       console.log('\n🎉 Checkpoint collection ready!\n');
-
     } catch (error: any) {
       if (error.status === 400) {
         console.log('⚠️  Collection might already exist. Trying to update instead...');
 
         const collections = await pb.collections.getFullList();
-        const existing = collections.find(c => c.name === 'workflow_checkpoints');
+        const existing = collections.find((c) => c.name === 'workflow_checkpoints');
 
         if (existing) {
           console.log('Found existing collection, updating schema...');
@@ -72,11 +76,21 @@ async function createCheckpointCollection() {
               { name: 'projectId', type: 'text', required: true },
               { name: 'userId', type: 'text', required: false },
               { name: 'userRequest', type: 'text', required: false },
-              { name: 'filesSnapshot', type: 'json', required: false, options: { maxSize: 2000000 } }, // 2MB limit
-              { name: 'previousFilesSnapshot', type: 'json', required: false, options: { maxSize: 2000000 } }, // 2MB limit
+              {
+                name: 'filesSnapshot',
+                type: 'json',
+                required: false,
+                options: { maxSize: 2000000 },
+              }, // 2MB limit
+              {
+                name: 'previousFilesSnapshot',
+                type: 'json',
+                required: false,
+                options: { maxSize: 2000000 },
+              }, // 2MB limit
               { name: 'changeScope', type: 'text', required: false },
-              { name: 'description', type: 'text', required: false }
-            ]
+              { name: 'description', type: 'text', required: false },
+            ],
           });
           console.log('✅ Updated existing collection');
         } else {
@@ -86,7 +100,6 @@ async function createCheckpointCollection() {
         throw error;
       }
     }
-
   } catch (error: any) {
     console.error('❌ Failed:', error.message);
     if (error.data) {

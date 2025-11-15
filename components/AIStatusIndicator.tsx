@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { getCurrentAIConfig, AI_MODE, getCachedWorkingModel } from "@/lib/ai/ai-config";
+import { useEffect, useState } from 'react';
+import { AI_MODE, getCachedWorkingModel, getCurrentAIConfig } from '@/lib/ai/ai-config';
 
 interface AIInfo {
   mode: string;
@@ -51,10 +51,7 @@ export function AIStatusIndicator() {
       <div
         className={`
           bg-gradient-to-r shadow-lg rounded-lg overflow-hidden transition-all duration-300
-          ${isServerMode
-            ? 'from-green-600 to-teal-600'
-            : 'from-purple-600 to-blue-600'
-          }
+          ${isServerMode ? 'from-green-600 to-teal-600' : 'from-purple-600 to-blue-600'}
           ${isExpanded ? 'w-80' : 'w-auto'}
         `}
       >
@@ -92,9 +89,7 @@ export function AIStatusIndicator() {
             <div>
               <p className="text-xs text-gray-500 font-semibold uppercase">Model</p>
               <p className="font-mono text-xs break-all">{aiInfo.model}</p>
-              <p className="text-green-600 font-semibold text-xs mt-1">
-                ✅ Active
-              </p>
+              <p className="text-green-600 font-semibold text-xs mt-1">✅ Active</p>
             </div>
 
             <div>

@@ -1,5 +1,5 @@
 // app/api/project/revert/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { pb } from '@/lib/database/pocketbase';
 
 export async function POST(request: NextRequest) {
@@ -7,10 +7,7 @@ export async function POST(request: NextRequest) {
     const { projectId, checkpointId } = await request.json();
 
     if (!projectId || !checkpointId) {
-      return NextResponse.json(
-        { error: 'Missing projectId or checkpointId' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing projectId or checkpointId' }, { status: 400 });
     }
 
     console.log(`[Revert] Reverting project ${projectId} to checkpoint ${checkpointId}`);
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
     // 3. Update project with previous files
     await pb.collection('projects').update(projectId, {
       files: previousFiles,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     console.log(`[Revert] ✅ Project ${projectId} reverted successfully`);
@@ -50,9 +47,8 @@ export async function POST(request: NextRequest) {
       success: true,
       files: previousFiles,
       message: 'Changes reverted successfully',
-      checkpointDescription: checkpoint.description
+      checkpointDescription: checkpoint.description,
     });
-
   } catch (error: any) {
     console.error('[Revert] Error:', error);
     return NextResponse.json(

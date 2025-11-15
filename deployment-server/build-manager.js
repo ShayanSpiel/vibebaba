@@ -204,7 +204,11 @@ async function buildAndExport(projectPath, onProgress = () => {}) {
       onProgress('install', 'Using cached dependencies...');
       const restored = await restoreCachedDependencies(projectPath);
       if (!restored) {
+        console.log('[Build] ⚠️  Cache restoration failed - will run npm install');
         needsInstall = true;
+      } else {
+        console.log('[Build] ✅ Cache validated - SKIPPING npm install entirely');
+        needsInstall = false;
       }
     }
 
@@ -259,7 +263,9 @@ async function buildAndExport(projectPath, onProgress = () => {}) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // OPTIMIZATION 2: Restore .next cache for incremental builds
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const nextCachePath = path.join(CACHE_DIR, '.next');
+    // ✅ FIX: Per-project .next cache to support parallel deployments
+    const projectId = path.basename(projectPath).replace('project-', '');
+    const nextCachePath = path.join(CACHE_DIR, 'next-cache', projectId);
     const projectNextPath = path.join(projectPath, '.next');
 
     try {
@@ -302,14 +308,15 @@ async function buildAndExport(projectPath, onProgress = () => {}) {
       // OPTIMIZATION 3: Cache .next for future incremental builds
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       try {
-        await fs.mkdir(CACHE_DIR, { recursive: true });
+        // ✅ FIX: Ensure per-project cache directory exists
+        await fs.mkdir(path.join(CACHE_DIR, 'next-cache'), { recursive: true });
         await fs.rm(nextCachePath, { recursive: true, force: true });
         await fs.mkdir(nextCachePath, { recursive: true });
-        console.log('[Build] 💾 Caching .next for future incremental builds...');
+        console.log(`[Build] 💾 Caching .next for project ${projectId}...`);
         // ✅ OPTIMIZATION: Use rsync for faster cache saving
         // NOTE: --delete is unnecessary here since we removed the old cache above
         await execAsync(`rsync -a "${projectNextPath}/" "${nextCachePath}/"`, { timeout: 60000 });
-        console.log('[Build] ✅ .next cache saved');
+        console.log(`[Build] ✅ .next cache saved for project ${projectId}`);
       } catch (cacheError) {
         console.log('[Build] ⚠️  Could not cache .next:', cacheError.message);
       }

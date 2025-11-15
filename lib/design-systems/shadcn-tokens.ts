@@ -48,7 +48,7 @@ export const SHADCN_TOKENS = {
       border: '217.2 32.6% 17.5%',
       input: '217.2 32.6% 17.5%',
       ring: '224.3 76.3% 48%',
-    }
+    },
   },
 
   borderRadius: {
@@ -58,16 +58,17 @@ export const SHADCN_TOKENS = {
   },
 
   typography: {
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     fontSize: {
-      xs: '0.75rem',    // 12px
-      sm: '0.875rem',   // 14px
-      base: '1rem',     // 16px
-      lg: '1.125rem',   // 18px
-      xl: '1.25rem',    // 20px
-      '2xl': '1.5rem',  // 24px
+      xs: '0.75rem', // 12px
+      sm: '0.875rem', // 14px
+      base: '1rem', // 16px
+      lg: '1.125rem', // 18px
+      xl: '1.25rem', // 20px
+      '2xl': '1.5rem', // 24px
       '3xl': '1.875rem', // 30px
-      '4xl': '2.25rem',  // 36px
+      '4xl': '2.25rem', // 36px
     },
     fontWeight: {
       normal: '400',
@@ -79,17 +80,17 @@ export const SHADCN_TOKENS = {
       tight: '1.25',
       normal: '1.5',
       relaxed: '1.75',
-    }
+    },
   },
 
   spacing: {
     // Standard Tailwind spacing scale
-    xs: '0.5rem',   // 8px
-    sm: '0.75rem',  // 12px
-    md: '1rem',     // 16px
-    lg: '1.5rem',   // 24px
-    xl: '2rem',     // 32px
-    '2xl': '3rem',  // 48px
+    xs: '0.5rem', // 8px
+    sm: '0.75rem', // 12px
+    md: '1rem', // 16px
+    lg: '1.5rem', // 24px
+    xl: '2rem', // 32px
+    '2xl': '3rem', // 48px
   },
 
   shadows: {
@@ -110,8 +111,8 @@ export const SHADCN_TOKENS = {
       in: 'cubic-bezier(0.4, 0, 1, 1)',
       out: 'cubic-bezier(0, 0, 0.2, 1)',
       inOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    }
-  }
+    },
+  },
 };
 
 /**

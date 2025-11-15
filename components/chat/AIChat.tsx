@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/auth/PocketBaseAuthProvider";
-import { createProject } from "@/lib/project-helpers";
-import { customAlphabet } from "nanoid";
-import { toast } from "sonner";
+import { customAlphabet } from 'nanoid';
+import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/components/auth/PocketBaseAuthProvider';
+import { createProject } from '@/lib/project-helpers';
 
 interface UploadedFile {
   id: string;
@@ -15,9 +15,9 @@ interface UploadedFile {
 }
 
 export default function AIChat() {
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("Auto");
+  const [selectedModel, setSelectedModel] = useState('Auto');
   const [showCofounderTags, setShowCofounderTags] = useState(false);
   const [planningEnabled, setPlanningEnabled] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -28,16 +28,16 @@ export default function AIChat() {
   const { user } = useAuth();
 
   const models = [
-    "Auto",
-    "Gemini 2.0 Flash Exp",
-    "Gemini 2.5 Flash",
-    "Gemini 2.0 Flash",
-    "Gemini 1.5 Flash",
-    "Gemini 1.5 Pro",
-    "Gemini 2.0 (OpenRouter)",
-    "Llama 3.2 3B",
-    "Llama 3.1 8B",
-    "Mistral 7B",
+    'Auto',
+    'Gemini 2.0 Flash Exp',
+    'Gemini 2.5 Flash',
+    'Gemini 2.0 Flash',
+    'Gemini 1.5 Flash',
+    'Gemini 1.5 Pro',
+    'Gemini 2.0 (OpenRouter)',
+    'Llama 3.2 3B',
+    'Llama 3.1 8B',
+    'Mistral 7B',
   ];
 
   const handleCofounderClick = () => {
@@ -88,7 +88,7 @@ export default function AIChat() {
       const response = await fetch('/api/files/upload', {
         method: 'POST',
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-        body: formData
+        body: formData,
       });
 
       clearInterval(progressInterval);
@@ -104,7 +104,7 @@ export default function AIChat() {
 
       toast.success('File uploaded successfully!', {
         description: `${file.name} is ready to use in your project`,
-        duration: 3000
+        duration: 3000,
       });
 
       // Reset progress after a delay
@@ -132,7 +132,7 @@ export default function AIChat() {
 
       toast.error(errorMessage, {
         duration: 5000,
-        description: 'Please check your file and try again'
+        description: 'Please check your file and try again',
       });
       setUploadProgress(0);
     } finally {
@@ -144,10 +144,10 @@ export default function AIChat() {
   };
 
   const removeFile = (fileId: string) => {
-    const file = uploadedFiles.find(f => f.id === fileId);
+    const file = uploadedFiles.find((f) => f.id === fileId);
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
     toast.success('File removed', {
-      description: file ? `${file.fileName} removed from upload list` : undefined
+      description: file ? `${file.fileName} removed from upload list` : undefined,
     });
   };
 
@@ -160,8 +160,11 @@ export default function AIChat() {
     try {
       // Use custom alphabet (no hyphens for PocketBase compatibility)
       // Use only alphanumeric chars (no hyphens!) - PocketBase collection name requirements
-      const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 15);
-      const projectId = nanoid();  // Exactly 15 chars, alphanumeric only
+      const nanoid = customAlphabet(
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+        15
+      );
+      const projectId = nanoid(); // Exactly 15 chars, alphanumeric only
       const userId = user?.id;
 
       // Append uploaded file information to description
@@ -171,7 +174,8 @@ export default function AIChat() {
         uploadedFiles.forEach((file) => {
           finalDescription += `\nFile: ${file.fileName}\nURL: ${file.fileUrl}\nType: ${file.fileType}\n`;
         });
-        finalDescription += '\nPlease analyze the design references and incorporate their design patterns, layout, and styling into the application.';
+        finalDescription +=
+          '\nPlease analyze the design references and incorporate their design patterns, layout, and styling into the application.';
       }
 
       // Use the createProject helper to save to both localStorage and PocketBase
@@ -179,28 +183,33 @@ export default function AIChat() {
       await createProject({
         id: projectId,
         description: finalDescription,
-        stage: planningEnabled ? "planning" : "building",
+        stage: planningEnabled ? 'planning' : 'building',
         userId: userId || null,
       });
 
       // Dispatch event to update sidebar
-      window.dispatchEvent(new Event("projectCreated"));
+      window.dispatchEvent(new Event('projectCreated'));
 
       router.push(`/project/${projectId}`);
     } catch (error: any) {
-      console.error("Error creating project:", error);
+      console.error('Error creating project:', error);
 
       // FIXED: Provide specific error messages based on the error type
-      let errorMessage = "Failed to create project. ";
+      let errorMessage = 'Failed to create project. ';
 
-      if (error?.status === 0 || error?.message?.includes('fetch') || error?.message?.includes('network')) {
-        errorMessage += "Database connection failed. Make sure PocketBase is running on localhost:8090.";
+      if (
+        error?.status === 0 ||
+        error?.message?.includes('fetch') ||
+        error?.message?.includes('network')
+      ) {
+        errorMessage +=
+          'Database connection failed. Make sure PocketBase is running on localhost:8090.';
       } else if (error?.status === 401 || error?.status === 403) {
-        errorMessage += "Authentication error. Please log in and try again.";
+        errorMessage += 'Authentication error. Please log in and try again.';
       } else if (error?.message) {
         errorMessage += error.message;
       } else {
-        errorMessage += "Please try again.";
+        errorMessage += 'Please try again.';
       }
 
       alert(errorMessage);
@@ -218,7 +227,7 @@ export default function AIChat() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSubmit(e);
             }
@@ -246,23 +255,40 @@ export default function AIChat() {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+              />
             </svg>
           </button>
 
           {/* Animated Tags */}
           {showCofounderTags && (
             <div className="flex items-center gap-2 animate-slideIn">
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-brand text-white shadow-lg animate-fadeIn" style={{ animationDelay: '0ms' }}>
+              <span
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-brand text-white shadow-lg animate-fadeIn"
+                style={{ animationDelay: '0ms' }}
+              >
                 Startup
               </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-info text-white shadow-lg animate-fadeIn" style={{ animationDelay: '100ms' }}>
+              <span
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-info text-white shadow-lg animate-fadeIn"
+                style={{ animationDelay: '100ms' }}
+              >
                 Magic
               </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-success text-white shadow-lg animate-fadeIn" style={{ animationDelay: '200ms' }}>
+              <span
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-success text-white shadow-lg animate-fadeIn"
+                style={{ animationDelay: '200ms' }}
+              >
                 Coming
               </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-error text-white shadow-lg animate-fadeIn" style={{ animationDelay: '300ms' }}>
+              <span
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-error text-white shadow-lg animate-fadeIn"
+                style={{ animationDelay: '300ms' }}
+              >
                 Soon
               </span>
             </div>
@@ -286,7 +312,12 @@ export default function AIChat() {
               Plan First
             </span>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
             </svg>
           </button>
 
@@ -307,8 +338,18 @@ export default function AIChat() {
             </span>
             <div className="relative w-5 h-5 overflow-hidden">
               {/* Background icon - always visible */}
-              <svg className={`w-5 h-5 absolute inset-0 transition-colors ${uploading ? 'text-gray-300 dark:text-gray-600' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              <svg
+                className={`w-5 h-5 absolute inset-0 transition-colors ${uploading ? 'text-gray-300 dark:text-gray-600' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                />
               </svg>
 
               {/* Water fill effect - fills from bottom to top */}
@@ -316,18 +357,28 @@ export default function AIChat() {
                 <div
                   className="absolute inset-0 overflow-hidden transition-all duration-300 ease-out"
                   style={{
-                    clipPath: `inset(${100 - uploadProgress}% 0 0 0)`
+                    clipPath: `inset(${100 - uploadProgress}% 0 0 0)`,
                   }}
                 >
-                  <svg className="w-5 h-5 absolute inset-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  <svg
+                    className="w-5 h-5 absolute inset-0 text-amber-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                    />
                   </svg>
                   {/* Subtle wave animation at the top of fill */}
                   <div
                     className="absolute left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 animate-pulse"
                     style={{
                       top: `${100 - uploadProgress}%`,
-                      opacity: 0.6
+                      opacity: 0.6,
                     }}
                   />
                 </div>
@@ -349,17 +400,38 @@ export default function AIChat() {
             type="submit"
             disabled={!description.trim() || isLoading}
             className="p-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-text-inverse rounded-lg hover:from-amber-500 hover:to-yellow-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            title={isLoading ? "Creating..." : "Submit"}
+            title={isLoading ? 'Creating...' : 'Submit'}
             aria-label="Submit"
           >
             {isLoading ? (
-              <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="w-5 h-5 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
             ) : (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 10l7-7m0 0l7 7m-7-7v18"
+                />
               </svg>
             )}
           </button>
@@ -376,12 +448,32 @@ export default function AIChat() {
             >
               <div className="w-8 h-8 rounded bg-gradient-to-r from-amber-400 to-yellow-600 flex items-center justify-center flex-shrink-0">
                 {file.fileType.startsWith('image/') ? (
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
                   </svg>
                 )}
               </div>
@@ -389,9 +481,7 @@ export default function AIChat() {
                 <div className="text-sm font-medium text-text-primary truncate">
                   {file.fileName}
                 </div>
-                <div className="text-xs text-text-tertiary">
-                  Design Reference
-                </div>
+                <div className="text-xs text-text-tertiary">Design Reference</div>
               </div>
               <button
                 type="button"
@@ -400,7 +490,12 @@ export default function AIChat() {
                 title="Remove file"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>

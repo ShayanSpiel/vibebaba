@@ -18,13 +18,13 @@ async function createAdmin() {
     // Check if user already exists
     console.log(`📋 Checking if ${adminEmail} exists...`);
     const existing = await pb.collection('users').getFullList({
-      filter: `email = "${adminEmail}"`
+      filter: `email = "${adminEmail}"`,
     });
 
     if (existing.length > 0) {
       console.log('⚠️  User already exists. Updating to admin role...');
       const updated = await pb.collection('users').update(existing[0].id, {
-        role: 'admin'
+        role: 'admin',
       });
       console.log('✅ User updated to admin!');
       console.log(`   Email: ${updated.email}`);
@@ -42,7 +42,7 @@ async function createAdmin() {
         totalTokens: 100000,
         usedTokens: 0,
         dailyTokens: 10000,
-        role: 'admin'
+        role: 'admin',
       });
 
       console.log('✅ Admin user created successfully!');
@@ -56,7 +56,6 @@ async function createAdmin() {
     console.log(`   Email: ${adminEmail}`);
     console.log(`   Password: ${adminPassword}`);
     console.log('\n🚀 Access admin panel at: http://localhost:3000/admin');
-
   } catch (error: any) {
     console.error('❌ Failed to create admin:', error.message);
 

@@ -42,14 +42,7 @@ const PROTECTED_FILES = [
 /**
  * Critical directories that should NEVER be deleted
  */
-const PROTECTED_DIRECTORIES = [
-  'node_modules',
-  '.git',
-  '.next',
-  'dist',
-  'build',
-  '.vercel',
-];
+const PROTECTED_DIRECTORIES = ['node_modules', '.git', '.next', 'dist', 'build', '.vercel'];
 
 /**
  * Allowed file extensions for operations
@@ -320,7 +313,9 @@ export function logFileOperation(operation: FileOperation, success: boolean, err
   const timestamp = new Date().toISOString();
   const status = success ? '✅ SUCCESS' : '❌ FAILED';
 
-  console.log(`[FILE-OP] ${timestamp} ${status} ${operation.type.toUpperCase()}: ${operation.path}`);
+  console.log(
+    `[FILE-OP] ${timestamp} ${status} ${operation.type.toUpperCase()}: ${operation.path}`
+  );
   if (operation.reason) {
     console.log(`[FILE-OP]   Reason: ${operation.reason}`);
   }

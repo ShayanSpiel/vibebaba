@@ -127,7 +127,7 @@ export function createErrorListener(
   onError: (error: RuntimeError) => void,
   onLoad?: () => void
 ): (event: MessageEvent) => void {
-  return function (event: MessageEvent) {
+  return (event: MessageEvent) => {
     // Only handle messages from our iframe
     if (!event.data || typeof event.data !== 'object') {
       return;

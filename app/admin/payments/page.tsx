@@ -6,10 +6,18 @@
  * Comprehensive payment tracking, analytics, and refund management
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertCircle, DollarSign, Package, RefreshCw, TrendingUp, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -18,15 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DollarSign, TrendingUp, Users, Package, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -141,10 +141,10 @@ export default function PaymentsPage() {
 
   const stats = {
     total: transactions.length,
-    completed: transactions.filter(t => t.status === 'completed').length,
-    pending: transactions.filter(t => t.status === 'pending').length,
+    completed: transactions.filter((t) => t.status === 'completed').length,
+    pending: transactions.filter((t) => t.status === 'pending').length,
     totalRevenue: transactions
-      .filter(t => t.status === 'completed')
+      .filter((t) => t.status === 'completed')
       .reduce((sum, t) => {
         const amount = t.currency === 'IRT' ? t.amount / 70000 : t.amount;
         return sum + amount;
@@ -214,24 +214,27 @@ export default function PaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.slice(0, 10).map(tx => (
+                  {transactions.slice(0, 10).map((tx) => (
                     <TableRow key={tx.id}>
                       <TableCell>{new Date(tx.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{tx.email || tx.userId.slice(0, 8)}</TableCell>
+                      <TableCell className="font-medium">
+                        {tx.email || tx.userId.slice(0, 8)}
+                      </TableCell>
                       <TableCell>{tx.type}</TableCell>
                       <TableCell>
                         {tx.currency === 'IRT'
                           ? `${tx.amount.toLocaleString()} Toman`
-                          : `$${tx.amount.toFixed(2)}`
-                        }
+                          : `$${tx.amount.toFixed(2)}`}
                       </TableCell>
                       <TableCell>{tx.tokens.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            tx.status === 'completed' ? 'default' :
-                            tx.status === 'pending' ? 'secondary' :
-                            'destructive'
+                            tx.status === 'completed'
+                              ? 'default'
+                              : tx.status === 'pending'
+                                ? 'secondary'
+                                : 'destructive'
                           }
                         >
                           {tx.status}
@@ -281,25 +284,28 @@ export default function PaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.map(tx => (
+                  {transactions.map((tx) => (
                     <TableRow key={tx.id}>
                       <TableCell>{new Date(tx.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{tx.email || tx.userId.slice(0, 8)}</TableCell>
+                      <TableCell className="font-medium">
+                        {tx.email || tx.userId.slice(0, 8)}
+                      </TableCell>
                       <TableCell>{tx.type}</TableCell>
                       <TableCell>
                         {tx.currency === 'IRT'
                           ? `${tx.amount.toLocaleString()} Toman`
-                          : `$${tx.amount.toFixed(2)}`
-                        }
+                          : `$${tx.amount.toFixed(2)}`}
                       </TableCell>
                       <TableCell>{tx.tokens.toLocaleString()}</TableCell>
                       <TableCell>{tx.packageId || 'Custom'}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            tx.status === 'completed' ? 'default' :
-                            tx.status === 'pending' ? 'secondary' :
-                            'destructive'
+                            tx.status === 'completed'
+                              ? 'default'
+                              : tx.status === 'pending'
+                                ? 'secondary'
+                                : 'destructive'
                           }
                         >
                           {tx.status}
@@ -347,7 +353,9 @@ export default function PaymentsPage() {
                       <TrendingUp className="h-5 w-5 text-text-secondary" />
                       <CardDescription>Total Tokens Sold</CardDescription>
                     </div>
-                    <CardTitle className="text-3xl">{analytics.tokens.totalTokensSold.toLocaleString()}</CardTitle>
+                    <CardTitle className="text-3xl">
+                      {analytics.tokens.totalTokensSold.toLocaleString()}
+                    </CardTitle>
                   </CardHeader>
                 </Card>
                 <Card>
@@ -356,7 +364,9 @@ export default function PaymentsPage() {
                       <DollarSign className="h-5 w-5 text-text-secondary" />
                       <CardDescription>Total Revenue (USD)</CardDescription>
                     </div>
-                    <CardTitle className="text-3xl">${analytics.revenue.totalRevenue.toFixed(2)}</CardTitle>
+                    <CardTitle className="text-3xl">
+                      ${analytics.revenue.totalRevenue.toFixed(2)}
+                    </CardTitle>
                   </CardHeader>
                 </Card>
               </div>
@@ -370,23 +380,33 @@ export default function PaymentsPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="p-4 border rounded-lg">
                       <div className="text-sm text-text-secondary mb-1">Completed</div>
-                      <div className="text-2xl font-bold text-success">{analytics.overview.completedTransactions}</div>
+                      <div className="text-2xl font-bold text-success">
+                        {analytics.overview.completedTransactions}
+                      </div>
                     </div>
                     <div className="p-4 border rounded-lg">
                       <div className="text-sm text-text-secondary mb-1">Pending</div>
-                      <div className="text-2xl font-bold text-warning">{analytics.overview.pendingTransactions}</div>
+                      <div className="text-2xl font-bold text-warning">
+                        {analytics.overview.pendingTransactions}
+                      </div>
                     </div>
                     <div className="p-4 border rounded-lg">
                       <div className="text-sm text-text-secondary mb-1">Failed</div>
-                      <div className="text-2xl font-bold text-error">{analytics.overview.failedTransactions}</div>
+                      <div className="text-2xl font-bold text-error">
+                        {analytics.overview.failedTransactions}
+                      </div>
                     </div>
                     <div className="p-4 border rounded-lg">
                       <div className="text-sm text-text-secondary mb-1">Cancelled</div>
-                      <div className="text-2xl font-bold text-text-secondary">{analytics.overview.cancelledTransactions}</div>
+                      <div className="text-2xl font-bold text-text-secondary">
+                        {analytics.overview.cancelledTransactions}
+                      </div>
                     </div>
                     <div className="p-4 border rounded-lg">
                       <div className="text-sm text-text-secondary mb-1">Refunded</div>
-                      <div className="text-2xl font-bold text-info">{analytics.overview.refundedTransactions}</div>
+                      <div className="text-2xl font-bold text-info">
+                        {analytics.overview.refundedTransactions}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -400,7 +420,10 @@ export default function PaymentsPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {Object.entries(analytics.revenue.revenueByPackage).map(([pkg, revenue]) => (
-                      <div key={pkg} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={pkg}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-text-secondary" />
                           <span className="font-medium capitalize">{pkg}</span>
@@ -422,7 +445,10 @@ export default function PaymentsPage() {
                     {Object.entries(analytics.revenue.revenueByMonth)
                       .sort(([a], [b]) => b.localeCompare(a))
                       .map(([month, revenue]) => (
-                        <div key={month} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={month}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <span className="font-medium">{month}</span>
                           <span className="text-lg font-bold">${revenue.toFixed(2)}</span>
                         </div>
@@ -444,7 +470,9 @@ export default function PaymentsPage() {
                     </div>
                     <div className="p-4 border rounded-lg">
                       <div className="text-sm text-text-secondary mb-1">One-time Purchases</div>
-                      <div className="text-2xl font-bold">{analytics.users.oneTimePurchaseUsers}</div>
+                      <div className="text-2xl font-bold">
+                        {analytics.users.oneTimePurchaseUsers}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -490,13 +518,14 @@ export default function PaymentsPage() {
                   <span className="font-medium">
                     {selectedTransaction?.currency === 'IRT'
                       ? `${selectedTransaction.amount.toLocaleString()} Toman`
-                      : `$${selectedTransaction?.amount.toFixed(2)}`
-                    }
+                      : `$${selectedTransaction?.amount.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Tokens:</span>
-                  <span className="font-medium">{selectedTransaction?.tokens.toLocaleString()}</span>
+                  <span className="font-medium">
+                    {selectedTransaction?.tokens.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Package:</span>
@@ -516,7 +545,9 @@ export default function PaymentsPage() {
                     onChange={(e) => setRemoveTokens(e.target.checked)}
                     className="rounded"
                   />
-                  <span>Remove {selectedTransaction?.tokens.toLocaleString()} tokens from user's account</span>
+                  <span>
+                    Remove {selectedTransaction?.tokens.toLocaleString()} tokens from user's account
+                  </span>
                 </label>
               </div>
             </div>
@@ -528,7 +559,10 @@ export default function PaymentsPage() {
               <Button
                 variant="destructive"
                 onClick={() => {
-                  if (selectedTransaction && confirm('Are you sure you want to process this refund?')) {
+                  if (
+                    selectedTransaction &&
+                    confirm('Are you sure you want to process this refund?')
+                  ) {
                     processRefund(selectedTransaction.id, removeTokens);
                   }
                 }}

@@ -1,4 +1,4 @@
-import { getMCPManager } from "./client";
+import { getMCPManager } from './client';
 
 /**
  * Smart search function that tries multiple search providers with fallback
@@ -15,55 +15,55 @@ export async function searchWeb(query: string): Promise<{
   // Try 1: Brave Search (requires API key)
   if (process.env.BRAVE_API_KEY) {
     try {
-      console.log("[Search] Trying Brave Search...");
-      const result = await mcpManager.callTool("brave", "search", { query });
-      console.log("[Search] ✅ Brave Search succeeded");
+      console.log('[Search] Trying Brave Search...');
+      const result = await mcpManager.callTool('brave', 'search', { query });
+      console.log('[Search] ✅ Brave Search succeeded');
       return {
         success: true,
         results: result,
-        provider: "brave",
+        provider: 'brave',
       };
     } catch (error: any) {
-      console.warn("[Search] Brave Search failed:", error.message);
+      console.warn('[Search] Brave Search failed:', error.message);
     }
   }
 
   // Try 2: Exa Search (alternative search API)
   try {
-    console.log("[Search] Trying Exa Search...");
-    const result = await mcpManager.callTool("exa", "search", { query });
-    console.log("[Search] ✅ Exa Search succeeded");
+    console.log('[Search] Trying Exa Search...');
+    const result = await mcpManager.callTool('exa', 'search', { query });
+    console.log('[Search] ✅ Exa Search succeeded');
     return {
       success: true,
       results: result,
-      provider: "exa",
+      provider: 'exa',
     };
   } catch (error: any) {
-    console.warn("[Search] Exa Search failed:", error.message);
+    console.warn('[Search] Exa Search failed:', error.message);
   }
 
   // Try 3: Fetch with DuckDuckGo HTML API (no API key needed)
   try {
-    console.log("[Search] Trying DuckDuckGo (via Fetch)...");
+    console.log('[Search] Trying DuckDuckGo (via Fetch)...');
     const duckduckgoUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    const result = await mcpManager.callTool("fetch", "get", { url: duckduckgoUrl });
-    console.log("[Search] ✅ DuckDuckGo succeeded");
+    const result = await mcpManager.callTool('fetch', 'get', { url: duckduckgoUrl });
+    console.log('[Search] ✅ DuckDuckGo succeeded');
     return {
       success: true,
       results: result,
-      provider: "duckduckgo",
+      provider: 'duckduckgo',
     };
   } catch (error: any) {
-    console.warn("[Search] DuckDuckGo failed:", error.message);
+    console.warn('[Search] DuckDuckGo failed:', error.message);
   }
 
   // All providers failed
-  console.error("[Search] ❌ All search providers failed");
+  console.error('[Search] ❌ All search providers failed');
   return {
     success: false,
     results: null,
-    provider: "none",
-    error: "All search providers are currently unavailable",
+    provider: 'none',
+    error: 'All search providers are currently unavailable',
   };
 }
 
@@ -72,7 +72,7 @@ export async function searchWeb(query: string): Promise<{
  */
 export async function searchGitHub(
   query: string,
-  options: { type?: "repositories" | "code" | "issues" } = {}
+  options: { type?: 'repositories' | 'code' | 'issues' } = {}
 ): Promise<{
   success: boolean;
   results: any;
@@ -82,7 +82,7 @@ export async function searchGitHub(
     return {
       success: false,
       results: null,
-      error: "GitHub token not configured",
+      error: 'GitHub token not configured',
     };
   }
 
@@ -90,16 +90,16 @@ export async function searchGitHub(
 
   try {
     console.log(`[GitHub] Searching for: ${query}`);
-    const result = await mcpManager.callTool("github", "search_repositories", {
+    const result = await mcpManager.callTool('github', 'search_repositories', {
       query,
     });
-    console.log("[GitHub] ✅ Search succeeded");
+    console.log('[GitHub] ✅ Search succeeded');
     return {
       success: true,
       results: result,
     };
   } catch (error: any) {
-    console.error("[GitHub] ❌ Search failed:", error.message);
+    console.error('[GitHub] ❌ Search failed:', error.message);
     return {
       success: false,
       results: null,
@@ -114,7 +114,7 @@ export async function searchGitHub(
 export async function getGitHubFile(
   repo: string,
   path: string,
-  ref: string = "main"
+  ref: string = 'main'
 ): Promise<{
   success: boolean;
   content: string | null;
@@ -124,7 +124,7 @@ export async function getGitHubFile(
     return {
       success: false,
       content: null,
-      error: "GitHub token not configured",
+      error: 'GitHub token not configured',
     };
   }
 
@@ -132,18 +132,18 @@ export async function getGitHubFile(
 
   try {
     console.log(`[GitHub] Reading file: ${repo}/${path}`);
-    const result = await mcpManager.callTool("github", "read_file", {
+    const result = await mcpManager.callTool('github', 'read_file', {
       repo,
       path,
       ref,
     });
-    console.log("[GitHub] ✅ File read succeeded");
+    console.log('[GitHub] ✅ File read succeeded');
     return {
       success: true,
       content: typeof result === 'string' ? result : JSON.stringify(result),
     };
   } catch (error: any) {
-    console.error("[GitHub] ❌ File read failed:", error.message);
+    console.error('[GitHub] ❌ File read failed:', error.message);
     return {
       success: false,
       content: null,
@@ -167,7 +167,7 @@ export async function searchCodeExamples(query: string): Promise<{
     return {
       success: true,
       results: githubResult.results,
-      source: "github",
+      source: 'github',
     };
   }
 

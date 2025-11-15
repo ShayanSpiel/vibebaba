@@ -6,7 +6,7 @@
  * NO library-specific instructions needed
  */
 
-import { DesignConfig } from './index';
+import type { DesignConfig } from './index';
 
 export function getShadcnPrompt(config: DesignConfig): string {
   const { appType, userStyling, isDarkMode = false } = config;
@@ -30,12 +30,16 @@ Foreground: hsl(222.2 84% 4.9%)
 Border Radius: 0.5rem
 Font Family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
 
-${isDarkMode ? `
+${
+  isDarkMode
+    ? `
 DARK MODE:
 Background: hsl(222.2 84% 4.9%)
 Foreground: hsl(210 40% 98%)
 Primary: hsl(217.2 91.2% 59.8%)
-` : ''}
+`
+    : ''
+}
 
 COLOR SYSTEM:
 Uses CSS custom properties via Tailwind:
@@ -57,7 +61,9 @@ STYLING:
 Use Tailwind CSS classes directly for all UI elements
 Example: <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md">
 
-${userStyling ? `
+${
+  userStyling
+    ? `
 ═══════════════════════════════════════════════════════════
 USER STYLING OVERRIDES (PRIORITY!)
 ═══════════════════════════════════════════════════════════
@@ -65,7 +71,9 @@ USER STYLING OVERRIDES (PRIORITY!)
 ${JSON.stringify(userStyling, null, 2)}
 
 Apply these custom styles AFTER shadcn defaults.
-` : ''}
+`
+    : ''
+}
 
 DESIGN PRINCIPLES:
 1. Simplicity: Clean, minimal interfaces

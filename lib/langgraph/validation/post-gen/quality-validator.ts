@@ -4,8 +4,8 @@
  */
 
 import dotenv from 'dotenv';
-import path from 'path';
 import OpenAI from 'openai';
+import path from 'path';
 
 // Load environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -119,7 +119,8 @@ export async function validateExampleQuality(
       messages: [
         {
           role: 'system',
-          content: 'You are an expert design and code quality evaluator. You provide detailed, objective assessments of UI components. Always return valid JSON only.',
+          content:
+            'You are an expert design and code quality evaluator. You provide detailed, objective assessments of UI components. Always return valid JSON only.',
         },
         {
           role: 'user',
@@ -213,7 +214,7 @@ export async function batchValidateExamples(
 
     // Add small delay to avoid rate limits
     if (i < examples.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 

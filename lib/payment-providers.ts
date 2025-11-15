@@ -41,7 +41,7 @@ export interface VerifyPaymentResponse {
  * Zarinpal Payment Provider
  */
 export class ZarinpalProvider implements PaymentProvider {
-  name = "zarinpal";
+  name = 'zarinpal';
   private merchantId: string;
   private sandbox: boolean;
 
@@ -52,22 +52,22 @@ export class ZarinpalProvider implements PaymentProvider {
 
   private getBaseUrl(): string {
     return this.sandbox
-      ? "https://sandbox.zarinpal.com/pg/v4/payment"
-      : "https://payment.zarinpal.com/pg/v4/payment";
+      ? 'https://sandbox.zarinpal.com/pg/v4/payment'
+      : 'https://payment.zarinpal.com/pg/v4/payment';
   }
 
   private getPaymentPageUrl(): string {
     return this.sandbox
-      ? "https://sandbox.zarinpal.com/pg/StartPay"
-      : "https://www.zarinpal.com/pg/StartPay";
+      ? 'https://sandbox.zarinpal.com/pg/StartPay'
+      : 'https://www.zarinpal.com/pg/StartPay';
   }
 
   async createPayment(params: CreatePaymentParams): Promise<CreatePaymentResponse> {
     try {
       const response = await fetch(`${this.getBaseUrl()}/request.json`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           merchant_id: this.merchantId,
@@ -90,12 +90,12 @@ export class ZarinpalProvider implements PaymentProvider {
 
       return {
         success: false,
-        error: data.errors?.message || "Payment creation failed",
+        error: data.errors?.message || 'Payment creation failed',
       };
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || "Network error",
+        error: error.message || 'Network error',
       };
     }
   }
@@ -103,9 +103,9 @@ export class ZarinpalProvider implements PaymentProvider {
   async verifyPayment(params: VerifyPaymentParams): Promise<VerifyPaymentResponse> {
     try {
       const response = await fetch(`${this.getBaseUrl()}/verify.json`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           merchant_id: this.merchantId,
@@ -126,12 +126,12 @@ export class ZarinpalProvider implements PaymentProvider {
 
       return {
         success: false,
-        error: data.errors?.message || "Payment verification failed",
+        error: data.errors?.message || 'Payment verification failed',
       };
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || "Network error",
+        error: error.message || 'Network error',
       };
     }
   }
@@ -140,12 +140,12 @@ export class ZarinpalProvider implements PaymentProvider {
 /**
  * Payment Provider Factory
  */
-export function getPaymentProvider(providerName: string = "zarinpal"): PaymentProvider {
+export function getPaymentProvider(providerName: string = 'zarinpal'): PaymentProvider {
   switch (providerName) {
-    case "zarinpal":
+    case 'zarinpal':
       return new ZarinpalProvider(
-        process.env.ZARINPAL_MERCHANT_ID || "24b3c9e7-e59d-4428-b36d-3732925ddc81",
-        process.env.NODE_ENV !== "production" // Use sandbox in development
+        process.env.ZARINPAL_MERCHANT_ID || '24b3c9e7-e59d-4428-b36d-3732925ddc81',
+        process.env.NODE_ENV !== 'production' // Use sandbox in development
       );
     default:
       throw new Error(`Payment provider ${providerName} not supported`);

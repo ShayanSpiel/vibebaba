@@ -1,64 +1,59 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getPaymentProvider } from "@/lib/payment-providers";
+import { type NextRequest, NextResponse } from 'next/server';
+import { getExchangeRateToRials, tomanToRials } from '@/lib/config/pricing-config';
 import {
+  activatePackage,
+  addTokens,
   getTransaction,
   updateTransactionStatus,
-  addTokens,
-  activatePackage,
-} from "@/lib/database/pocketbase-credits";
-import { getExchangeRateToRials, tomanToRials } from "@/lib/config/pricing-config";
-import { sanitizeError, validateUrl } from "@/lib/database/pocketbase-utils";
+} from '@/lib/database/pocketbase-credits';
+import { sanitizeError, validateUrl } from '@/lib/database/pocketbase-utils';
+import { getPaymentProvider } from '@/lib/payment-providers';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const authority = searchParams.get("Authority");
-    const status = searchParams.get("Status");
-    const transactionId = searchParams.get("transactionId");
-    const token = searchParams.get("token");  // 🔒 NEW: Verify token
+    const authority = searchParams.get('Authority');
+    const status = searchParams.get('Status');
+    const transactionId = searchParams.get('transactionId');
+    const token = searchParams.get('token'); // 🔒 NEW: Verify token
 
     if (!authority || !transactionId || !token) {
-      return NextResponse.redirect(
-        new URL("/pricing?error=invalid_payment", req.nextUrl.origin)
-      );
+      return NextResponse.redirect(new URL('/pricing?error=invalid_payment', req.nextUrl.origin));
     }
 
     // Check if payment was cancelled
-    if (status === "NOK") {
-      await updateTransactionStatus(transactionId, "cancelled");
-      return NextResponse.redirect(
-        new URL("/pricing?error=payment_cancelled", req.nextUrl.origin)
-      );
+    if (status === 'NOK') {
+      await updateTransactionStatus(transactionId, 'cancelled');
+      return NextResponse.redirect(new URL('/pricing?error=payment_cancelled', req.nextUrl.origin));
     }
 
     // Get transaction
     const transaction = await getTransaction(transactionId);
     if (!transaction) {
-      return NextResponse.redirect(new URL("/pricing?error=not_found", req.nextUrl.origin));
+      return NextResponse.redirect(new URL('/pricing?error=not_found', req.nextUrl.origin));
     }
 
     // 🔒 SECURITY: Validate verify token before processing
     if ((transaction as any).verifyToken !== token) {
       console.error(`[Payment Verify] Token mismatch for transaction ${transactionId}`);
       return NextResponse.redirect(
-        new URL("/pricing?error=authentication_failed", req.nextUrl.origin)
+        new URL('/pricing?error=authentication_failed', req.nextUrl.origin)
       );
     }
 
     // Verify transaction hasn't already been completed (prevent double-processing)
-    if (transaction.status === "completed") {
-      return NextResponse.redirect(
-        new URL("/pricing?error=already_processed", req.nextUrl.origin)
-      );
+    if (transaction.status === 'completed') {
+      return NextResponse.redirect(new URL('/pricing?error=already_processed', req.nextUrl.origin));
     }
 
     // Verify payment with Zarinpal
-    const provider = getPaymentProvider("zarinpal");
+    const provider = getPaymentProvider('zarinpal');
 
     // PHASE 2: Convert amount to Rials using centralized exchange rate
-    const amountInRials = transaction.currency === "IRT"
-      ? tomanToRials(transaction.amount)
-      : transaction.amount * getExchangeRateToRials();
+    const amountInRials =
+      transaction.currency === 'IRT'
+        ? tomanToRials(transaction.amount)
+        : transaction.amount * getExchangeRateToRials();
 
     const verifyResult = await provider.verifyPayment({
       paymentId: transactionId,
@@ -67,14 +62,14 @@ export async function GET(req: NextRequest) {
     });
 
     if (!verifyResult.success) {
-      await updateTransactionStatus(transactionId, "failed");
+      await updateTransactionStatus(transactionId, 'failed');
       return NextResponse.redirect(
-        new URL("/pricing?error=verification_failed", req.nextUrl.origin)
+        new URL('/pricing?error=verification_failed', req.nextUrl.origin)
       );
     }
 
     // Payment successful - add tokens
-    await updateTransactionStatus(transactionId, "completed");
+    await updateTransactionStatus(transactionId, 'completed');
 
     if (transaction.packageId) {
       // Activate package subscription
@@ -85,15 +80,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Redirect to success page with validated URL
-    const successUrl = new URL("/pricing", req.nextUrl.origin);
-    successUrl.searchParams.set("success", "true");
-    successUrl.searchParams.set("tokens", String(transaction.tokens));
-    successUrl.searchParams.set("package", transaction.packageId || "custom");
-    successUrl.searchParams.set("refId", String(verifyResult.refId));
+    const successUrl = new URL('/pricing', req.nextUrl.origin);
+    successUrl.searchParams.set('success', 'true');
+    successUrl.searchParams.set('tokens', String(transaction.tokens));
+    successUrl.searchParams.set('package', transaction.packageId || 'custom');
+    successUrl.searchParams.set('refId', String(verifyResult.refId));
 
     return NextResponse.redirect(successUrl);
   } catch (error: any) {
-    console.error("Error verifying payment:", error);
-    return NextResponse.redirect(new URL("/pricing?error=server_error", req.nextUrl.origin));
+    console.error('Error verifying payment:', error);
+    return NextResponse.redirect(new URL('/pricing?error=server_error', req.nextUrl.origin));
   }
 }

@@ -81,7 +81,7 @@ async function recreateCollection() {
           type: 'json',
           required: false,
           options: {
-            maxSize: 2000000 // 2MB max for styling config JSON
+            maxSize: 2000000, // 2MB max for styling config JSON
           },
         },
         {
@@ -125,7 +125,6 @@ async function recreateCollection() {
     console.log('[Recreate] ✅ Verification:');
     console.log('[Recreate]   - userId type:', userIdField.type);
     console.log('[Recreate]   - Schema is correct!');
-
   } catch (error: any) {
     console.error('[Recreate] ❌ Error:', error.message);
     if (error.data) {

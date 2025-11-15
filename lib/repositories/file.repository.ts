@@ -1,6 +1,7 @@
 // lib/repositories/file.repository.ts
-import { BaseRepository } from './base.repository';
+
 import { Collections, config, validateFileSize } from '@/lib/config';
+import { BaseRepository } from './base.repository';
 
 export interface ProjectFile {
   id: string;
@@ -57,7 +58,7 @@ class FileRepository extends BaseRepository<ProjectFile> {
    */
   async deleteByProjectId(projectId: string): Promise<void> {
     const files = await this.findByProjectId(projectId);
-    await Promise.all(files.map(file => this.delete(file.id)));
+    await Promise.all(files.map((file) => this.delete(file.id)));
   }
 }
 

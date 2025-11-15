@@ -5,18 +5,22 @@
  * FIXED: Enhanced error handling and logging
  */
 
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { z } from "zod";
-import Exa from "exa-js";
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import Exa from 'exa-js';
+import { z } from 'zod';
 
 export function createExaSearchTool() {
   return new DynamicStructuredTool({
-    name: "exa_search",
-    description: "AI-optimized search for technical content, code, and documentation. Best for: code examples, tutorials, technical blogs, API docs, research papers. Use this as the PRIMARY search tool.",
+    name: 'exa_search',
+    description:
+      'AI-optimized search for technical content, code, and documentation. Best for: code examples, tutorials, technical blogs, API docs, research papers. Use this as the PRIMARY search tool.',
     schema: z.object({
-      query: z.string().describe("Search query optimized for AI search"),
-      numResults: z.number().default(5).describe("Number of results to return (default: 5)"),
-      category: z.enum(["research paper", "github", "tweet", "company"]).optional().describe("Optional category filter"),
+      query: z.string().describe('Search query optimized for AI search'),
+      numResults: z.number().default(5).describe('Number of results to return (default: 5)'),
+      category: z
+        .enum(['research paper', 'github', 'tweet', 'company'])
+        .optional()
+        .describe('Optional category filter'),
     }),
     func: async ({ query, numResults, category }) => {
       try {
@@ -24,9 +28,9 @@ export function createExaSearchTool() {
           console.warn('[Exa] EXA_API_KEY not configured - skipping Exa search');
           return JSON.stringify({
             success: false,
-            source: "exa",
-            error: "EXA_API_KEY not configured",
-            fallback: "Use duckduckgo_search or brave_search instead"
+            source: 'exa',
+            error: 'EXA_API_KEY not configured',
+            fallback: 'Use duckduckgo_search or brave_search instead',
           });
         }
 
@@ -35,7 +39,7 @@ export function createExaSearchTool() {
         const exa = new Exa(process.env.EXA_API_KEY);
 
         const result = await exa.searchAndContents(query, {
-          type: "auto",
+          type: 'auto',
           numResults,
           category,
           text: true,
@@ -46,10 +50,10 @@ export function createExaSearchTool() {
           console.warn('[Exa] No results found');
           return JSON.stringify({
             success: false,
-            source: "exa",
+            source: 'exa',
             results: [],
-            error: "No results found",
-            fallback: "Use duckduckgo_search or brave_search instead"
+            error: 'No results found',
+            fallback: 'Use duckduckgo_search or brave_search instead',
           });
         }
 
@@ -57,7 +61,7 @@ export function createExaSearchTool() {
 
         return JSON.stringify({
           success: true,
-          source: "exa",
+          source: 'exa',
           results: result.results.map((r: any) => ({
             title: r.title || '',
             url: r.url || '',
@@ -74,16 +78,16 @@ export function createExaSearchTool() {
           console.error('[Exa] API Response Error:', {
             status: error.response.status,
             statusText: error.response.statusText,
-            data: error.response.data
+            data: error.response.data,
           });
         }
 
         return JSON.stringify({
           success: false,
-          source: "exa",
+          source: 'exa',
           error: error.message || 'Exa search failed',
           errorDetails: error.response?.data?.message || error.response?.statusText || '',
-          fallback: "Use duckduckgo_search or brave_search instead",
+          fallback: 'Use duckduckgo_search or brave_search instead',
         });
       }
     },

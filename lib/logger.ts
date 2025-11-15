@@ -59,8 +59,8 @@ class Logger {
     const levelStr = LogLevel[entry.level];
     const color = {
       [LogLevel.DEBUG]: '\x1b[36m', // Cyan
-      [LogLevel.INFO]: '\x1b[32m',  // Green
-      [LogLevel.WARN]: '\x1b[33m',  // Yellow
+      [LogLevel.INFO]: '\x1b[32m', // Green
+      [LogLevel.WARN]: '\x1b[33m', // Yellow
       [LogLevel.ERROR]: '\x1b[31m', // Red
     }[entry.level];
     const reset = '\x1b[0m';
@@ -82,16 +82,19 @@ class Logger {
     // For now, just store in PocketBase
     try {
       const { pb } = await import('./database/pocketbase');
-      await pb.collection('error_logs').create({
-        level: LogLevel[entry.level],
-        message: entry.message,
-        context: entry.context,
-        error: entry.error?.message,
-        stack: entry.error?.stack,
-        timestamp: entry.timestamp,
-      }).catch(() => {
-        // Silent fail if collection doesn't exist
-      });
+      await pb
+        .collection('error_logs')
+        .create({
+          level: LogLevel[entry.level],
+          message: entry.message,
+          context: entry.context,
+          error: entry.error?.message,
+          stack: entry.error?.stack,
+          timestamp: entry.timestamp,
+        })
+        .catch(() => {
+          // Silent fail if collection doesn't exist
+        });
     } catch (error) {
       // Silent fail - don't crash app due to logging error
     }
@@ -115,9 +118,8 @@ class Logger {
 
   // Get recent logs (for debugging UI)
   getRecentLogs(limit = 100, level?: LogLevel): LogEntry[] {
-    const filtered = level !== undefined
-      ? this.logs.filter(log => log.level === level)
-      : this.logs;
+    const filtered =
+      level !== undefined ? this.logs.filter((log) => log.level === level) : this.logs;
     return filtered.slice(-limit);
   }
 

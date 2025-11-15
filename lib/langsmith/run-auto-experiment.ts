@@ -16,10 +16,15 @@
 // Load environment variables from .env.local
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
-import { runAutomatedExperiment, builtInEvaluators, type ExperimentConfig } from './auto-experiment';
-import { promoteWinner, type PromotionConfig } from './auto-promotion';
+import {
+  builtInEvaluators,
+  type ExperimentConfig,
+  runAutomatedExperiment,
+} from './auto-experiment';
+import { type PromotionConfig, promoteWinner } from './auto-promotion';
 import { enableContinuousOptimization } from './auto-scheduler';
 
 /**
@@ -110,7 +115,9 @@ async function runOnce() {
       console.log(`  Success Rate: ${(variant.metrics.successRate * 100).toFixed(1)}%`);
       console.log(`  Avg Latency: ${variant.metrics.avgLatency.toFixed(0)}ms`);
       console.log(`  Quality Score: ${(variant.metrics.avgQualityScore * 100).toFixed(1)}%`);
-      console.log(`  Runs: ${variant.metrics.totalRuns} (${variant.metrics.passedRuns} passed, ${variant.metrics.failedRuns} failed)`);
+      console.log(
+        `  Runs: ${variant.metrics.totalRuns} (${variant.metrics.passedRuns} passed, ${variant.metrics.failedRuns} failed)`
+      );
       console.log('');
     }
 

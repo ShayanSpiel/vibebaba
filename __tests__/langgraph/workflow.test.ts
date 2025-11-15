@@ -4,35 +4,35 @@
  * Tests the complete workflow and individual nodes
  */
 
-import { describe, test, expect, beforeAll } from '@jest/globals';
-import { createAppGenWorkflow } from '@/lib/langgraph/workflow';
-import type { AppGenState } from '@/lib/langgraph/types';
+import { beforeAll, describe, expect, test } from '@jest/globals';
 import { nanoid } from 'nanoid';
+import type { AppGenState } from '@/lib/langgraph/types';
+import { createAppGenWorkflow } from '@/lib/langgraph/workflow';
 
 // Mock dependencies for testing
 jest.mock('@/lib/ai', () => ({
   generateWithFallback: jest.fn(async (prompt: string, multiline?: boolean) => ({
     text: mockAIResponse(prompt),
     model: 'test-model',
-    provider: 'test'
-  }))
+    provider: 'test',
+  })),
 }));
 
 jest.mock('@/lib/validation', () => ({
   validateCode: jest.fn(async (files: any[]) => ({
     valid: true,
     report: { errors: [], warnings: [] },
-    files
-  }))
+    files,
+  })),
 }));
 
 jest.mock('@/lib/pocketbase', () => ({
   pb: {
     collection: jest.fn(() => ({
       create: jest.fn(async (data: any) => ({ id: 'test-id', ...data })),
-      update: jest.fn(async (id: string, data: any) => ({ id, ...data }))
-    }))
-  }
+      update: jest.fn(async (id: string, data: any) => ({ id, ...data })),
+    })),
+  },
 }));
 
 function mockAIResponse(prompt: string): string {
@@ -42,8 +42,8 @@ function mockAIResponse(prompt: string): string {
       businessContext: {
         targetAudience: 'General users',
         primaryGoal: 'Lead generation',
-        successMetrics: ['Conversions']
-      }
+        successMetrics: ['Conversions'],
+      },
     });
   }
 
@@ -54,7 +54,7 @@ function mockAIResponse(prompt: string): string {
       designStyle: 'modern',
       visualTone: 'light',
       animationLevel: 'subtle',
-      targetAudience: 'General users'
+      targetAudience: 'General users',
     });
   }
 
@@ -68,20 +68,22 @@ function mockAIResponse(prompt: string): string {
       cta: 'simple',
       footer: 'minimal',
       buttons: 'standard',
-      justification: 'Simple landing page needs'
+      justification: 'Simple landing page needs',
     });
   }
 
   if (prompt.includes('backend config')) {
     return JSON.stringify({
-      collections: [{
-        name: 'leads',
-        fields: [
-          { name: 'email', type: 'string' },
-          { name: 'name', type: 'string' }
-        ]
-      }],
-      pages: []
+      collections: [
+        {
+          name: 'leads',
+          fields: [
+            { name: 'email', type: 'string' },
+            { name: 'name', type: 'string' },
+          ],
+        },
+      ],
+      pages: [],
     });
   }
 
@@ -105,7 +107,7 @@ describe('LangGraph Workflow', () => {
       completedNodes: [],
       errors: [],
       artifacts: new Map(),
-      stage: 'initial'
+      stage: 'initial',
     };
 
     const result = await founderNode(state);
@@ -127,7 +129,7 @@ describe('LangGraph Workflow', () => {
       completedNodes: ['founder'],
       errors: [],
       artifacts: new Map(),
-      stage: 'planning'
+      stage: 'planning',
     };
 
     const result = await pmNode(state);
@@ -153,7 +155,7 @@ describe('LangGraph Workflow', () => {
       completedNodes: [],
       errors: [],
       artifacts: new Map(),
-      stage: 'initial'
+      stage: 'initial',
     };
 
     const result = await founderNode(state);
@@ -171,7 +173,7 @@ describe('LangGraph Workflow', () => {
       completedNodes: ['founder', 'pm', 'ux'],
       errors: [],
       artifacts: new Map(),
-      stage: 'building'
+      stage: 'building',
     };
 
     expect(state.completedNodes).toHaveLength(3);
@@ -193,7 +195,7 @@ describe('Node Integration', () => {
       completedNodes: [],
       errors: [],
       artifacts: new Map(),
-      stage: 'initial'
+      stage: 'initial',
     };
 
     // Execute founder

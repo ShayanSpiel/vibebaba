@@ -8,8 +8,12 @@
  * - Promise chaining to prevent race conditions
  */
 
-import { VirtualFileSystem, createVirtualFileSystem } from './files/file-operations';
-import { retryWithBackoff, globalCircuitBreaker, globalErrorDeduplicator } from './monitoring/error-prevention';
+import { createVirtualFileSystem, type VirtualFileSystem } from './files/file-operations';
+import {
+  globalCircuitBreaker,
+  globalErrorDeduplicator,
+  retryWithBackoff,
+} from './monitoring/error-prevention';
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
 
@@ -305,7 +309,7 @@ export class ActionRunner {
    * Get actions by status
    */
   getActionsByStatus(status: ActionStatus): Action[] {
-    return Array.from(this.actions.values()).filter(a => a.status === status);
+    return Array.from(this.actions.values()).filter((a) => a.status === status);
   }
 
   /**
@@ -359,7 +363,7 @@ export class ActionRunner {
    * Notify all listeners of action update
    */
   private notifyListeners(action: Action): void {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(action);
       } catch (error) {
@@ -376,11 +380,11 @@ export class ActionRunner {
 
     return {
       total: actions.length,
-      pending: actions.filter(a => a.status === 'pending').length,
-      running: actions.filter(a => a.status === 'running').length,
-      complete: actions.filter(a => a.status === 'complete').length,
-      failed: actions.filter(a => a.status === 'failed').length,
-      aborted: actions.filter(a => a.status === 'aborted').length,
+      pending: actions.filter((a) => a.status === 'pending').length,
+      running: actions.filter((a) => a.status === 'running').length,
+      complete: actions.filter((a) => a.status === 'complete').length,
+      failed: actions.filter((a) => a.status === 'failed').length,
+      aborted: actions.filter((a) => a.status === 'aborted').length,
     };
   }
 }

@@ -4,8 +4,8 @@
  * Multi-tenant quota tracking and enforcement
  */
 
-import type { QuotaUsage, UsageStats } from '../types';
 import { QUOTA_LIMITS } from '../config';
+import type { QuotaUsage, UsageStats } from '../types';
 
 /**
  * In-memory quota tracking (replace with PocketBase in production)
@@ -69,7 +69,9 @@ export class QuotaManager {
     const allowed = usage < limit;
 
     if (!allowed) {
-      console.warn(`[QuotaManager] Quota exceeded for org ${orgId}, operation ${operation}: ${usage}/${limit}`);
+      console.warn(
+        `[QuotaManager] Quota exceeded for org ${orgId}, operation ${operation}: ${usage}/${limit}`
+      );
     }
 
     return allowed;
@@ -78,11 +80,7 @@ export class QuotaManager {
   /**
    * Track usage for operation
    */
-  async trackUsage(
-    orgId: string,
-    operation: string,
-    cost: number = 1
-  ): Promise<void> {
+  async trackUsage(orgId: string, operation: string, cost: number = 1): Promise<void> {
     if (!this.usage.has(orgId)) {
       this.usage.set(orgId, new Map());
       this.scheduleReset(orgId);
@@ -94,7 +92,9 @@ export class QuotaManager {
 
     orgUsage.set(operation, newUsage);
 
-    console.log(`[QuotaManager] Tracked usage for org ${orgId}, operation ${operation}: ${newUsage}`);
+    console.log(
+      `[QuotaManager] Tracked usage for org ${orgId}, operation ${operation}: ${newUsage}`
+    );
 
     // TODO: Persist to PocketBase
     // await pb.collection('search_usage').create({
@@ -129,7 +129,9 @@ export class QuotaManager {
     }, msUntilMidnight);
 
     this.resetTimers.set(orgId, timer);
-    console.log(`[QuotaManager] Scheduled reset for org ${orgId} in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
+    console.log(
+      `[QuotaManager] Scheduled reset for org ${orgId} in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`
+    );
   }
 
   /**

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { pb } from '@/lib/database/pocketbase';
-import { isValidSubdomain, isReservedSubdomain } from '@/lib/generate-project-name';
 import { buildPublishUrl, getDeploymentServerUrl } from '@/lib/domain-config';
+import { isReservedSubdomain, isValidSubdomain } from '@/lib/generate-project-name';
 
 /**
  * Publish a project to a subdomain
@@ -14,16 +14,16 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!projectId || !subdomain) {
-      return NextResponse.json(
-        { error: 'projectId and subdomain are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'projectId and subdomain are required' }, { status: 400 });
     }
 
     // Validate subdomain format
     if (!isValidSubdomain(subdomain)) {
       return NextResponse.json(
-        { error: 'Invalid subdomain format. Must be 3-63 characters, lowercase letters, numbers, and hyphens only.' },
+        {
+          error:
+            'Invalid subdomain format. Must be 3-63 characters, lowercase letters, numbers, and hyphens only.',
+        },
         { status: 400 }
       );
     }
@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
 
     // Check if subdomain is already taken by another project
     try {
-      const existingProject = await pb.collection('projects')
+      const existingProject = await pb
+        .collection('projects')
         .getFirstListItem(`subdomain="${subdomain}" && id!="${projectId}"`);
 
       if (existingProject) {
@@ -90,12 +91,14 @@ export async function POST(req: NextRequest) {
       customUrl,
       subdomain,
       customDomain: customDomain || null,
-      dnsInstructions: customDomain ? {
-        records: [
-          { type: 'A', name: '@', value: '[YOUR_SERVER_IP]' },
-          { type: 'CNAME', name: 'www', value: 'vibebaba.com' }
-        ]
-      } : null
+      dnsInstructions: customDomain
+        ? {
+            records: [
+              { type: 'A', name: '@', value: '[YOUR_SERVER_IP]' },
+              { type: 'CNAME', name: 'www', value: 'vibebaba.com' },
+            ],
+          }
+        : null,
     });
   } catch (error: any) {
     console.error('Error publishing project:', error);
@@ -115,10 +118,7 @@ export async function DELETE(req: NextRequest) {
     const projectId = req.nextUrl.searchParams.get('projectId');
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId parameter is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'projectId parameter is required' }, { status: 400 });
     }
 
     // Update project to unpublish
@@ -145,7 +145,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Project unpublished successfully'
+      message: 'Project unpublished successfully',
     });
   } catch (error: any) {
     console.error('Error unpublishing project:', error);

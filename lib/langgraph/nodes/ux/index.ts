@@ -1,59 +1,65 @@
 // @ts-nocheck
 // lib/langgraph/nodes/ux-node.ts
 // import 'server-only'; // Commented out for LangGraph Studio compatibility
-import { generateWithFallback } from '@/lib/ai/ai';
-import { gatherBackgroundContext } from '@/lib/mcp/background-helper';
-import { isMCPEnabled } from '@/lib/mcp/config';
-import { selectDesignSystem } from '@/lib/design-systems/index';
-import { addAssistantMessage, conversationMemoryStore } from '@/lib/memory/conversation-memory';
-import type {
-  StylingConfig,
-  BrandConfig,
-  SemanticColors,
-  DarkModeOverrides,
-  ShadowSystem,
-  EnhancedColorTheme,
-  FontSizes,
-  LineHeights,
-  FontWeights,
-  EnhancedTypographyConfig,
-  SpacingScale,
-  LayoutSpacing,
-  SpacingConfig,
-  BorderRadiusScale,
-  BorderWidths,
-  BorderingConfig,
-  TransitionDurations,
-  EasingFunctions,
-  ZIndices,
-  TransitionConfig,
-  ButtonVariants,
-  ButtonSizes,
-  ButtonConfig,
-  InputConfig,
-  CardConfig,
-  AlertConfig,
-  ComponentStyleConfig,
-} from '@/lib/types/styling-config';
-import type { AppGenState, DesignInspiration } from '../../types';
-import { emitNodeStart, emitNodeComplete, emitNodeError, emitProgress } from '../../utils/logging/events';
-import { generateWithLogging, estimateTokens } from '../../utils/logging/ai-with-logging';
-import { extractAndParseJson } from '../../utils/json-parser';
+
 import { colord, extend } from 'colord';
 import a11yPlugin from 'colord/plugins/a11y';
-import { analyzeDesignInspiration } from '@/lib/services/design-inspiration';
-import { getRelevantImages } from '@/lib/unsplash-images';
-import { withLangSmithTracing, traceAICall } from '@/lib/langsmith/tracing';
+import { generateWithFallback } from '@/lib/ai/ai';
+import { selectDesignSystem } from '@/lib/design-systems/index';
 import {
-  getUIDesignFramework,
+  getDesignQualityChecklist,
   getPageOrganizationFramework,
-  getDesignQualityChecklist
+  getUIDesignFramework,
 } from '@/lib/langgraph/prompts/ui-design-framework';
-import { generateEnrichedTokens, adjustColorBrightness } from './design-tokens';
+import { traceAICall, withLangSmithTracing } from '@/lib/langsmith/tracing';
+import { gatherBackgroundContext } from '@/lib/mcp/background-helper';
+import { isMCPEnabled } from '@/lib/mcp/config';
+import { conversationMemoryStore } from '@/lib/memory/conversation-memory';
+import { messageManager } from '@/lib/messaging/message-manager';
+import { analyzeDesignInspiration } from '@/lib/services/design-inspiration';
+import type {
+  AlertConfig,
+  BorderingConfig,
+  BorderRadiusScale,
+  BorderWidths,
+  BrandConfig,
+  ButtonConfig,
+  ButtonSizes,
+  ButtonVariants,
+  CardConfig,
+  ComponentStyleConfig,
+  DarkModeOverrides,
+  EasingFunctions,
+  EnhancedColorTheme,
+  EnhancedTypographyConfig,
+  FontSizes,
+  FontWeights,
+  InputConfig,
+  LayoutSpacing,
+  LineHeights,
+  SemanticColors,
+  ShadowSystem,
+  SpacingConfig,
+  SpacingScale,
+  StylingConfig,
+  TransitionConfig,
+  TransitionDurations,
+  ZIndices,
+} from '@/lib/types/styling-config';
+import { getRelevantImages } from '@/lib/unsplash-images';
+import type { AppGenState, DesignInspiration } from '../../types';
+import { extractAndParseJson } from '../../utils/json-parser';
+import { estimateTokens, generateWithLogging } from '../../utils/logging/ai-with-logging';
+import {
+  emitNodeComplete,
+  emitNodeError,
+  emitNodeStart,
+  emitProgress,
+} from '../../utils/logging/events';
+import { adjustColorBrightness, generateEnrichedTokens } from './design-tokens';
 
 // Enable accessibility plugin for contrast validation
 extend([a11yPlugin]);
-
 
 /**
  * Generate page organization from PM's routes using AI reasoning
@@ -68,7 +74,7 @@ async function generatePageOrganization(
 
   // Collect all unique routes from features with their purposes
   const routeMap = new Map<string, { featureName: string; purpose: string }>();
-  features?.forEach(f => {
+  features?.forEach((f) => {
     f.routes?.forEach((r: any) => {
       if (!routeMap.has(r.path)) {
         routeMap.set(r.path, { featureName: f.name, purpose: r.purpose });
@@ -84,7 +90,7 @@ async function generatePageOrganization(
   const routesList = Array.from(routeMap.entries()).map(([path, info]) => ({
     path,
     feature: info.featureName,
-    purpose: info.purpose
+    purpose: info.purpose,
   }));
 
   const pageOrgPrompt = `${getPageOrganizationFramework()}
@@ -123,7 +129,7 @@ OUTPUT JSON:
     nodeName: 'ux',
     callType: 'page-organization',
     estimatedTokens: estimateTokens(pageOrgPrompt),
-    attempt: 1
+    attempt: 1,
   });
 
   const parsed = extractAndParseJson(result, { pageOrganization: {} });
@@ -133,7 +139,7 @@ OUTPUT JSON:
   // VALIDATION: Ensure all routes from PM have organization
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const missingRoutes: string[] = [];
-  routesList.forEach(route => {
+  routesList.forEach((route) => {
     if (!pageOrg[route.path]) {
       missingRoutes.push(route.path);
       console.warn(`[UX] ⚠️ No organization for route ${route.path}, adding default`);
@@ -147,7 +153,7 @@ OUTPUT JSON:
         pageOrg[route.path] = {
           layout: 'hero-features-cta',
           sections: ['hero', 'features', 'cta'],
-          sectionConfig: {}
+          sectionConfig: {},
         };
       } else if (hasInteractiveVerbs) {
         // Interactive pages need appropriate interface layouts
@@ -155,26 +161,30 @@ OUTPUT JSON:
         pageOrg[route.path] = {
           layout: isChatLike ? 'split-view' : 'form',
           sections: isChatLike ? ['chat-window', 'input-area'] : ['header', 'content'],
-          sectionConfig: {}
+          sectionConfig: {},
         };
       } else {
         // Display pages need content layout
         pageOrg[route.path] = {
           layout: 'list-detail',
           sections: ['header', 'content'],
-          sectionConfig: {}
+          sectionConfig: {},
         };
       }
     }
   });
 
   if (missingRoutes.length > 0) {
-    console.log(`[UX] 🔧 Added default organization for ${missingRoutes.length} missing routes: ${missingRoutes.join(', ')}`);
+    console.log(
+      `[UX] 🔧 Added default organization for ${missingRoutes.length} missing routes: ${missingRoutes.join(', ')}`
+    );
   }
 
   console.log(`[UX] ✅ Page organization validated for ${Object.keys(pageOrg).length} routes`);
-  Object.keys(pageOrg).forEach(route => {
-    console.log(`[UX]    ${route}: ${pageOrg[route].layout} with sections [${pageOrg[route].sections.join(', ')}]`);
+  Object.keys(pageOrg).forEach((route) => {
+    console.log(
+      `[UX]    ${route}: ${pageOrg[route].layout} with sections [${pageOrg[route].sections.join(', ')}]`
+    );
   });
 
   return pageOrg;
@@ -192,43 +202,43 @@ function getContextualStylingDefaults(
   // ========== LAYOUT DIRECTION ==========
   // Detect RTL languages (Arabic, Hebrew, Urdu, Farsi)
   const rtlPatterns = [
-    /[\u0600-\u06FF]/,  // Arabic
-    /[\u0590-\u05FF]/,  // Hebrew
-    /[\u0750-\u077F]/,  // Arabic Supplement
+    /[\u0600-\u06FF]/, // Arabic
+    /[\u0590-\u05FF]/, // Hebrew
+    /[\u0750-\u077F]/, // Arabic Supplement
   ];
 
-  const isRTL = rtlPatterns.some(pattern => pattern.test(userDescription));
+  const isRTL = rtlPatterns.some((pattern) => pattern.test(userDescription));
 
   if (isRTL) {
     defaults.layout = {
       direction: 'rtl',
       maxWidth: '1200px',
-      spacing: 'normal'
+      spacing: 'normal',
     };
   }
 
   // ========== COLOR THEME ==========
   // Detect color preferences from keywords
   const colorKeywords: Record<string, string> = {
-    'blue': '#1890ff',
-    'green': '#52c41a',
-    'red': '#f5222d',
-    'orange': '#fa8c16',
-    'purple': '#722ed1',
-    'pink': '#eb2f96',
-    'yellow': '#fadb14',
-    'cyan': '#13c2c2',
-    'geekblue': '#2f54eb',
-    'lime': '#a0d911',
-    'gold': '#faad14',
-    'magenta': '#eb2f96'
+    blue: '#1890ff',
+    green: '#52c41a',
+    red: '#f5222d',
+    orange: '#fa8c16',
+    purple: '#722ed1',
+    pink: '#eb2f96',
+    yellow: '#fadb14',
+    cyan: '#13c2c2',
+    geekblue: '#2f54eb',
+    lime: '#a0d911',
+    gold: '#faad14',
+    magenta: '#eb2f96',
   };
 
   for (const [keyword, color] of Object.entries(colorKeywords)) {
     if (userDescription.toLowerCase().includes(keyword)) {
       defaults.colorTheme = {
         primary: color,
-        mode: 'light'
+        mode: 'light',
       };
       break;
     }
@@ -236,29 +246,29 @@ function getContextualStylingDefaults(
 
   // Dark mode detection
   const darkKeywords = ['dark', 'night', 'black', 'midnight'];
-  const hasDarkKeyword = darkKeywords.some(kw => userDescription.toLowerCase().includes(kw));
+  const hasDarkKeyword = darkKeywords.some((kw) => userDescription.toLowerCase().includes(kw));
 
   if (hasDarkKeyword || appContext?.visualTone === 'dark') {
     defaults.colorTheme = {
       ...defaults.colorTheme,
       primary: defaults.colorTheme?.primary || '#1890ff',
-      mode: 'dark'
+      mode: 'dark',
     };
   }
 
   // ========== TYPOGRAPHY ==========
   // Detect font preferences from keywords FIRST (explicit user choice)
   const fontKeywords: Record<string, any> = {
-    'modern': 'Inter',
-    'elegant': 'Montserrat',
-    'playful': 'Poppins',
-    'professional': 'Roboto',
-    'clean': 'Inter',
-    'corporate': 'Open Sans',
-    'luxury': 'Playfair Display',
-    'tech': 'Space Grotesk',
-    'friendly': 'Poppins',
-    'sophisticated': 'Montserrat'
+    modern: 'Inter',
+    elegant: 'Montserrat',
+    playful: 'Poppins',
+    professional: 'Roboto',
+    clean: 'Inter',
+    corporate: 'Open Sans',
+    luxury: 'Playfair Display',
+    tech: 'Space Grotesk',
+    friendly: 'Poppins',
+    sophisticated: 'Montserrat',
   };
 
   let fontSelected = false;
@@ -267,7 +277,7 @@ function getContextualStylingDefaults(
       defaults.typography = {
         fontFamily: font as any,
         scale: 'normal',
-        headingWeight: 700
+        headingWeight: 700,
       };
       fontSelected = true;
       break;
@@ -277,47 +287,51 @@ function getContextualStylingDefaults(
   // If no explicit font keyword, select based on APP TYPE & CATEGORY
   if (!fontSelected && appContext?.appType) {
     const appTypeFonts: Record<string, any> = {
-      'saas-app': 'Inter',           // Professional, clean
-      'dashboard': 'Inter',           // Data-focused, readable
-      'ecommerce': 'Roboto',          // Commercial, trustworthy
-      'portfolio': 'Montserrat',      // Creative, unique
-      'blog': 'Lato',                 // Reading-focused
-      'tool': 'Inter',                // Functional, clear
-      'marketplace': 'Roboto',        // Commercial
-      'social': 'Poppins',            // Friendly, approachable
-      'other': 'Inter'                // Default
+      'saas-app': 'Inter', // Professional, clean
+      dashboard: 'Inter', // Data-focused, readable
+      ecommerce: 'Roboto', // Commercial, trustworthy
+      portfolio: 'Montserrat', // Creative, unique
+      blog: 'Lato', // Reading-focused
+      tool: 'Inter', // Functional, clear
+      marketplace: 'Roboto', // Commercial
+      social: 'Poppins', // Friendly, approachable
+      other: 'Inter', // Default
     };
 
     const selectedFont = appTypeFonts[appContext.appType] || 'Inter';
     defaults.typography = {
       fontFamily: selectedFont as any,
       scale: 'normal',
-      headingWeight: 700
+      headingWeight: 700,
     };
     fontSelected = true;
-    console.log(`[UX] 🔤 Font auto-selected based on app type "${appContext.appType}": ${selectedFont}`);
+    console.log(
+      `[UX] 🔤 Font auto-selected based on app type "${appContext.appType}": ${selectedFont}`
+    );
   }
 
   // Fallback: Select based on DESIGN STYLE if still no font
   if (!fontSelected && appContext?.designStyle) {
     const designStyleFonts: Record<string, any> = {
-      'modern': 'Inter',
-      'minimalist': 'Inter',
-      'playful': 'Poppins',
-      'elegant': 'Montserrat',
-      'professional': 'Roboto',
-      'creative': 'Montserrat',
-      'corporate': 'Open Sans',
-      'tech': 'Space Grotesk'
+      modern: 'Inter',
+      minimalist: 'Inter',
+      playful: 'Poppins',
+      elegant: 'Montserrat',
+      professional: 'Roboto',
+      creative: 'Montserrat',
+      corporate: 'Open Sans',
+      tech: 'Space Grotesk',
     };
 
     const selectedFont = designStyleFonts[appContext.designStyle] || 'Inter';
     defaults.typography = {
       fontFamily: selectedFont as any,
       scale: 'normal',
-      headingWeight: 700
+      headingWeight: 700,
     };
-    console.log(`[UX] 🔤 Font auto-selected based on design style "${appContext.designStyle}": ${selectedFont}`);
+    console.log(
+      `[UX] 🔤 Font auto-selected based on design style "${appContext.designStyle}": ${selectedFont}`
+    );
   }
 
   // ========== ANIMATIONS ==========
@@ -331,7 +345,7 @@ function getContextualStylingDefaults(
           intensity: 'none',
           transitions: true,
           pageTransitions: false,
-          hoverEffects: false
+          hoverEffects: false,
         };
         break;
       case 'playful':
@@ -341,7 +355,7 @@ function getContextualStylingDefaults(
           intensity: 'heavy',
           transitions: true,
           pageTransitions: true,
-          hoverEffects: true
+          hoverEffects: true,
         };
         break;
       case 'modern':
@@ -351,7 +365,7 @@ function getContextualStylingDefaults(
           intensity: 'moderate',
           transitions: true,
           pageTransitions: true,
-          hoverEffects: true
+          hoverEffects: true,
         };
         break;
       case 'professional':
@@ -361,7 +375,7 @@ function getContextualStylingDefaults(
           intensity: 'subtle',
           transitions: true,
           pageTransitions: false,
-          hoverEffects: true
+          hoverEffects: true,
         };
         break;
     }
@@ -377,7 +391,7 @@ function getContextualStylingDefaults(
         intensity: 'none',
         transitions: true,
         pageTransitions: false,
-        hoverEffects: false
+        hoverEffects: false,
       };
     } else if (heavyAnimationTypes.includes(appContext?.appType)) {
       defaults.animations = {
@@ -385,19 +399,19 @@ function getContextualStylingDefaults(
         intensity: 'heavy',
         transitions: true,
         pageTransitions: true,
-        hoverEffects: true
+        hoverEffects: true,
       };
     }
   }
 
   // Detect animation preferences from keywords
   const animationKeywords: Record<string, any> = {
-    'minimal': 'none',
+    minimal: 'none',
     'no animation': 'none',
-    'subtle': 'subtle',
-    'smooth': 'moderate',
-    'animated': 'moderate',
-    'dynamic': 'heavy'
+    subtle: 'subtle',
+    smooth: 'moderate',
+    animated: 'moderate',
+    dynamic: 'heavy',
   };
 
   for (const [keyword, intensity] of Object.entries(animationKeywords)) {
@@ -407,7 +421,7 @@ function getContextualStylingDefaults(
         intensity: intensity as any,
         transitions: true,
         pageTransitions: intensity === 'heavy',
-        hoverEffects: intensity !== 'none'
+        hoverEffects: intensity !== 'none',
       };
       break;
     }
@@ -419,13 +433,13 @@ function getContextualStylingDefaults(
     defaults.iconography = {
       style: 'outlined',
       source: 'lucide',
-      size: 'medium'
+      size: 'medium',
     };
   } else if (appContext?.appType === 'creative' || appContext?.appType === 'portfolio') {
     defaults.iconography = {
       style: 'filled',
       source: 'lucide',
-      size: 'large'
+      size: 'large',
     };
   }
 
@@ -436,14 +450,14 @@ function getContextualStylingDefaults(
       ...defaults.layout,
       direction: defaults.layout?.direction || 'ltr',
       maxWidth: (defaults.layout?.maxWidth || '1400px') as any,
-      spacing: 'compact'
+      spacing: 'compact',
     };
   } else if (appContext?.appType === 'portfolio' || appContext?.appType === 'blog') {
     defaults.layout = {
       ...defaults.layout,
       direction: defaults.layout?.direction || 'ltr',
       maxWidth: (defaults.layout?.maxWidth || '1200px') as any,
-      spacing: 'spacious'
+      spacing: 'spacious',
     };
   }
 
@@ -464,39 +478,60 @@ function mergeWithDefaults(
       primary: extracted.colorTheme?.primary || contextual.colorTheme?.primary || '#2563eb',
       secondary: extracted.colorTheme?.secondary || contextual.colorTheme?.secondary || '#64748b',
       accent: extracted.colorTheme?.accent || contextual.colorTheme?.accent || '#f59e0b',
-      background: extracted.colorTheme?.background || contextual.colorTheme?.background || (mode === 'dark' ? '#0a0a0a' : '#ffffff'),
-      backgroundSecondary: extracted.colorTheme?.backgroundSecondary || contextual.colorTheme?.backgroundSecondary || (mode === 'dark' ? '#1a1a1a' : '#f9fafb'),
-      backgroundTertiary: extracted.colorTheme?.backgroundTertiary || contextual.colorTheme?.backgroundTertiary || (mode === 'dark' ? '#2a2a2a' : '#f3f4f6'),
-      border: extracted.colorTheme?.border || contextual.colorTheme?.border || (mode === 'dark' ? '#27272a' : '#e4e4e7'),
-      muted: extracted.colorTheme?.muted || contextual.colorTheme?.muted || (mode === 'dark' ? '#18181b' : '#f4f4f5'),
-      destructive: extracted.colorTheme?.destructive || contextual.colorTheme?.destructive || '#ef4444',
+      background:
+        extracted.colorTheme?.background ||
+        contextual.colorTheme?.background ||
+        (mode === 'dark' ? '#0a0a0a' : '#ffffff'),
+      backgroundSecondary:
+        extracted.colorTheme?.backgroundSecondary ||
+        contextual.colorTheme?.backgroundSecondary ||
+        (mode === 'dark' ? '#1a1a1a' : '#f9fafb'),
+      backgroundTertiary:
+        extracted.colorTheme?.backgroundTertiary ||
+        contextual.colorTheme?.backgroundTertiary ||
+        (mode === 'dark' ? '#2a2a2a' : '#f3f4f6'),
+      border:
+        extracted.colorTheme?.border ||
+        contextual.colorTheme?.border ||
+        (mode === 'dark' ? '#27272a' : '#e4e4e7'),
+      muted:
+        extracted.colorTheme?.muted ||
+        contextual.colorTheme?.muted ||
+        (mode === 'dark' ? '#18181b' : '#f4f4f5'),
+      destructive:
+        extracted.colorTheme?.destructive || contextual.colorTheme?.destructive || '#ef4444',
       success: extracted.colorTheme?.success || contextual.colorTheme?.success || '#22c55e',
       warning: extracted.colorTheme?.warning || contextual.colorTheme?.warning || '#f59e0b',
-      info: extracted.colorTheme?.info || contextual.colorTheme?.info || '#3b82f6'
+      info: extracted.colorTheme?.info || contextual.colorTheme?.info || '#3b82f6',
     },
     layout: {
       direction: extracted.layout?.direction || contextual.layout?.direction || 'ltr',
       maxWidth: (extracted.layout?.maxWidth || contextual.layout?.maxWidth || '1200px') as any,
-      spacing: extracted.layout?.spacing || contextual.layout?.spacing || 'normal'
+      spacing: extracted.layout?.spacing || contextual.layout?.spacing || 'normal',
     },
     typography: {
-      fontFamily: (extracted.typography?.fontFamily || contextual.typography?.fontFamily || 'Inter') as any,
+      fontFamily: (extracted.typography?.fontFamily ||
+        contextual.typography?.fontFamily ||
+        'Inter') as any,
       customFont: extracted.typography?.customFont || contextual.typography?.customFont,
       scale: extracted.typography?.scale || contextual.typography?.scale || 'normal',
-      headingWeight: extracted.typography?.headingWeight || contextual.typography?.headingWeight || 700
+      headingWeight:
+        extracted.typography?.headingWeight || contextual.typography?.headingWeight || 700,
     },
     iconography: {
       style: extracted.iconography?.style || contextual.iconography?.style || 'outlined',
       source: extracted.iconography?.source || contextual.iconography?.source || 'lucide',
-      size: extracted.iconography?.size || contextual.iconography?.size || 'medium'
+      size: extracted.iconography?.size || contextual.iconography?.size || 'medium',
     },
     animations: {
       enabled: extracted.animations?.enabled ?? contextual.animations?.enabled ?? true,
       intensity: extracted.animations?.intensity || contextual.animations?.intensity || 'subtle',
       transitions: extracted.animations?.transitions ?? contextual.animations?.transitions ?? true,
-      pageTransitions: extracted.animations?.pageTransitions ?? contextual.animations?.pageTransitions ?? false,
-      hoverEffects: extracted.animations?.hoverEffects ?? contextual.animations?.hoverEffects ?? true
-    }
+      pageTransitions:
+        extracted.animations?.pageTransitions ?? contextual.animations?.pageTransitions ?? false,
+      hoverEffects:
+        extracted.animations?.hoverEffects ?? contextual.animations?.hoverEffects ?? true,
+    },
   };
 }
 
@@ -511,8 +546,10 @@ function mergeDesignInspiration(
   console.log('[UX] 🎨 Merging design inspiration with styling config...');
 
   // Determine mode from inspiration background
-  const inspirationMode = inspiration.colors.background === '#FFFFFF' ||
-    colord(inspiration.colors.background).isLight() ? 'light' : 'dark';
+  const inspirationMode =
+    inspiration.colors.background === '#FFFFFF' || colord(inspiration.colors.background).isLight()
+      ? 'light'
+      : 'dark';
 
   return {
     ...stylingConfig,
@@ -522,9 +559,11 @@ function mergeDesignInspiration(
       secondary: stylingConfig.colorTheme?.secondary || inspiration.colors.secondary,
       accent: stylingConfig.colorTheme?.accent || inspiration.colors.accent,
       background: stylingConfig.colorTheme?.background || inspiration.colors.background,
-      backgroundSecondary: stylingConfig.colorTheme?.backgroundSecondary ||
+      backgroundSecondary:
+        stylingConfig.colorTheme?.backgroundSecondary ||
         (inspirationMode === 'light' ? '#F9FAFB' : '#1A1A1A'),
-      backgroundTertiary: stylingConfig.colorTheme?.backgroundTertiary ||
+      backgroundTertiary:
+        stylingConfig.colorTheme?.backgroundTertiary ||
         (inspirationMode === 'light' ? '#F3F4F6' : '#2A2A2A'),
       // Keep existing semantic colors (not in inspiration)
       border: stylingConfig.colorTheme?.border,
@@ -533,28 +572,34 @@ function mergeDesignInspiration(
       success: stylingConfig.colorTheme?.success,
       warning: stylingConfig.colorTheme?.warning,
       info: stylingConfig.colorTheme?.info,
-      mode: stylingConfig.colorTheme?.mode || inspirationMode
+      mode: stylingConfig.colorTheme?.mode || inspirationMode,
     },
     typography: {
-      fontFamily: (stylingConfig.typography?.fontFamily || inspiration.typography.headingFont) as any,
+      fontFamily: (stylingConfig.typography?.fontFamily ||
+        inspiration.typography.headingFont) as any,
       customFont: stylingConfig.typography?.customFont,
       scale: stylingConfig.typography?.scale || 'normal',
       headingWeight: stylingConfig.typography?.headingWeight || 700,
       bodyWeight: stylingConfig.typography?.bodyWeight || 400,
-      weights: stylingConfig.typography?.weights
+      weights: stylingConfig.typography?.weights,
     },
     layout: {
       direction: stylingConfig.layout?.direction || 'ltr',
-      maxWidth: stylingConfig.layout?.maxWidth || '1200px' as any,
+      maxWidth: stylingConfig.layout?.maxWidth || ('1200px' as any),
       spacing: stylingConfig.layout?.spacing || 'normal',
       borderRadius: (stylingConfig.layout?.borderRadius ||
-        (inspiration.borderRadius === '0px' ? 'none' :
-         inspiration.borderRadius === '4px' ? 'small' :
-         inspiration.borderRadius === '8px' ? 'medium' :
-         inspiration.borderRadius === '12px' ? 'large' : 'medium')) as any
+        (inspiration.borderRadius === '0px'
+          ? 'none'
+          : inspiration.borderRadius === '4px'
+            ? 'small'
+            : inspiration.borderRadius === '8px'
+              ? 'medium'
+              : inspiration.borderRadius === '12px'
+                ? 'large'
+                : 'medium')) as any,
     },
     iconography: stylingConfig.iconography,
-    animations: stylingConfig.animations
+    animations: stylingConfig.animations,
   };
 }
 
@@ -572,17 +617,15 @@ function mergeDesignInspiration(
  * @param minContrast - Minimum contrast ratio (4.5 for normal text, 3.0 for large text)
  * @returns Adjusted foreground color if needed
  */
-function ensureContrast(
-  foreground: string,
-  background: string,
-  minContrast: number = 4.5
-): string {
+function ensureContrast(foreground: string, background: string, minContrast: number = 4.5): string {
   const fg = colord(foreground);
   const bg = colord(background);
 
   let currentContrast = fg.contrast(bg);
 
-  console.log(`[UX] 🎨 Checking contrast: ${foreground} on ${background} = ${currentContrast.toFixed(2)}:1`);
+  console.log(
+    `[UX] 🎨 Checking contrast: ${foreground} on ${background} = ${currentContrast.toFixed(2)}:1`
+  );
 
   if (currentContrast >= minContrast) {
     console.log(`[UX] ✓ Contrast OK (${currentContrast.toFixed(2)}:1 >= ${minContrast}:1)`);
@@ -595,22 +638,24 @@ function ensureContrast(
 
   // If background is dark, lighten foreground; if light, darken foreground
   for (let step = 0; step < 20; step++) {
-    adjustedFg = isDark
-      ? adjustedFg.lighten(0.05)
-      : adjustedFg.darken(0.05);
+    adjustedFg = isDark ? adjustedFg.lighten(0.05) : adjustedFg.darken(0.05);
 
     currentContrast = adjustedFg.contrast(bg);
 
     if (currentContrast >= minContrast) {
       const adjusted = adjustedFg.toHex();
-      console.log(`[UX] ✓ Adjusted ${foreground} → ${adjusted} (contrast: ${currentContrast.toFixed(2)}:1)`);
+      console.log(
+        `[UX] ✓ Adjusted ${foreground} → ${adjusted} (contrast: ${currentContrast.toFixed(2)}:1)`
+      );
       return adjusted;
     }
   }
 
   // Fallback: use pure white or black
   const fallback = isDark ? '#ffffff' : '#000000';
-  console.log(`[UX] ⚠️ Using fallback color: ${fallback} (original ${foreground} failed validation)`);
+  console.log(
+    `[UX] ⚠️ Using fallback color: ${fallback} (original ${foreground} failed validation)`
+  );
   return fallback;
 }
 
@@ -628,25 +673,34 @@ function generateDesignInstructions(
   images?: any
 ): string {
   const colors = stylingConfig.colorTheme;
-  const typography = stylingConfig.typography || { fontFamily: 'Inter', headingWeight: 700, scale: 'normal' };
+  const typography = stylingConfig.typography || {
+    fontFamily: 'Inter',
+    headingWeight: 700,
+    scale: 'normal',
+  };
   const spacing = stylingConfig.layout?.spacing || 'normal';
   const animations = stylingConfig.animations || { enabled: true, intensity: 'subtle' };
-  const iconography = stylingConfig.iconography || { source: 'lucide', style: 'outlined', size: 'medium' };
+  const iconography = stylingConfig.iconography || {
+    source: 'lucide',
+    style: 'outlined',
+    size: 'medium',
+  };
   const layout = stylingConfig.layout || {};
 
   // Map spacing to Tailwind classes
   const spacingClasses = {
     compact: { sections: 'py-8 md:py-12', container: 'px-3 md:px-4' },
     normal: { sections: 'py-16 md:py-24', container: 'px-4 md:px-6' },
-    spacious: { sections: 'py-24 md:py-32', container: 'px-6 md:px-8' }
+    spacious: { sections: 'py-24 md:py-32', container: 'px-6 md:px-8' },
   }[spacing] || { sections: 'py-16 md:py-24', container: 'px-4 md:px-6' };
 
   // Map icon size
-  const iconSizeClass = {
-    small: 'h-4 w-4',
-    medium: 'h-5 w-5',
-    large: 'h-6 w-6'
-  }[iconography.size] || 'h-5 w-5';
+  const iconSizeClass =
+    {
+      small: 'h-4 w-4',
+      medium: 'h-5 w-5',
+      large: 'h-6 w-6',
+    }[iconography.size] || 'h-5 w-5';
 
   // Get design framework
   const uiFramework = getUIDesignFramework();
@@ -719,13 +773,17 @@ Semantic Colors (Status):
 ❌ NEVER use bg-gray-100, bg-gray-200 - use design system colors!
 ❌ NEVER confuse bg-secondary (brand) with bg-background-secondary (surface)!
 
-${colors?.accent ? `
+${
+  colors?.accent
+    ? `
 GRADIENT SUPPORT:
 Use bg-gradient-to-r from-primary to-accent on:
 - Hero headings (with bg-clip-text text-transparent)
 - Premium CTAs and feature highlights
 - Card backgrounds (with opacity: from-primary/10 to-accent/10)
-` : ''}
+`
+    : ''
+}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 2. TYPOGRAPHY
@@ -821,18 +879,24 @@ SIZING:
 
 Intensity: ${animations.intensity || 'subtle'}
 
-${animations.intensity === 'none' ? `
+${
+  animations.intensity === 'none'
+    ? `
 NO ANIMATIONS - Professional/Corporate
 - transition-colors on buttons only
 - No entrance animations
 - Focus on clarity and speed
-` : animations.intensity === 'subtle' ? `
+`
+    : animations.intensity === 'subtle'
+      ? `
 SUBTLE ANIMATIONS - Professional & Modern
 🚨 APPLY TO: Hero, sections, cards, buttons
 <section className="animate-fade-in">
 <div className="hover:scale-105 transition-all duration-200">
 ✅ REQUIRED: Add animations, don't skip!
-` : animations.intensity === 'moderate' ? `
+`
+      : animations.intensity === 'moderate'
+        ? `
 MODERATE ANIMATIONS - Modern & Engaging (RECOMMENDED)
 🚨 CRITICAL: APPLY TO ALL MAJOR ELEMENTS!
 
@@ -851,14 +915,16 @@ Example:
 </section>
 
 🚨 DO NOT SKIP ANIMATIONS - They're configured and expected!
-` : `
+`
+        : `
 HEAVY ANIMATIONS - Playful & Creative
 - animate-bounce on CTAs
 - Complex hover effects with transforms
 - Page transitions
 - Stagger animations on lists
 - group-hover with multiple children effects
-`}
+`
+}
 
 🎨 All animation classes are pre-configured in globals.css!
 Available: animate-fade-in, animate-slide-up, animate-bounce
@@ -868,7 +934,9 @@ Timing: delay-100, delay-200, delay-300, duration-200, duration-300
 6. IMAGE USAGE STRATEGY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${images ? `
+${
+  images
+    ? `
 Available Images:
 - Hero: ${images.hero}
 - Feature 1: ${images.feature1}
@@ -897,13 +965,15 @@ Image Styling (When Used):
 - Features: rounded-xl shadow-lg object-cover
 - Products: aspect-square or aspect-video with hover:scale-105
 - Always include proper alt text for accessibility
-` : `
+`
+    : `
 NO IMAGES PROVIDED
 Use gradients and solid colors instead:
 - bg-gradient-to-r from-primary/10 to-accent/10
 - bg-secondary, bg-muted for card backgrounds
 - Decorative blur elements: bg-primary/10 blur-3xl
-`}
+`
+}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 7. LOGO PATTERN
@@ -940,13 +1010,16 @@ async function uxNodeImpl(state: AppGenState): Promise<Partial<AppGenState>> {
 
   try {
     console.log('[UX] 🚀 Starting UX node (Design System)');
-    console.log(`[UX] 🎨 App Type: ${state.context?.appType}, Style: ${state.context?.designStyle}`);
+    console.log(
+      `[UX] 🎨 App Type: ${state.context?.appType}, Style: ${state.context?.designStyle}`
+    );
 
     // Emit thinking process before starting
     emitNodeStart('ux', state, {
       userInput: state.plan || state.userDescription,
-      interpretation: 'Analyzing the product plan to select the best design system and extract styling preferences.',
-      plan: 'I will select the appropriate design system, extract user styling preferences, and gather any relevant background context. Frontend AI will decide which components to use.'
+      interpretation:
+        'Analyzing the product plan to select the best design system and extract styling preferences.',
+      plan: 'I will select the appropriate design system, extract user styling preferences, and gather any relevant background context. Frontend AI will decide which components to use.',
     });
 
     // Step 1: Design System Selection
@@ -954,7 +1027,7 @@ async function uxNodeImpl(state: AppGenState): Promise<Partial<AppGenState>> {
     const selectedDesignSystem = selectDesignSystem({
       appType: state.context?.appType,
       userDescription: state.userDescription,
-      designStyle: state.context?.designStyle
+      designStyle: state.context?.designStyle,
     });
     console.log(`[UX] ✅ Selected design system: ${selectedDesignSystem}`);
 
@@ -963,9 +1036,11 @@ async function uxNodeImpl(state: AppGenState): Promise<Partial<AppGenState>> {
     emitProgress('ux', state.projectId, 'Extracting styling preferences...');
 
     // Generate styling configuration
-    const stylingResult = await traceAICall('ux-styling-extraction', async () => {
-      return await generateWithLogging({
-        prompt: `Extract styling config from: "${state.userDescription}"
+    const stylingResult = await traceAICall(
+      'ux-styling-extraction',
+      async () => {
+        return await generateWithLogging({
+          prompt: `Extract styling config from: "${state.userDescription}"
 
 APP: ${state.context?.appType || 'web-app'} | ${state.context?.designStyle || 'modern'} | ${state.context?.visualTone || 'balanced'}
 
@@ -1027,22 +1102,27 @@ RETURN COMPLETE JSON (ALL 13 colorTheme fields required):
 
 For dark mode: background=#0a0a0a, backgroundSecondary=#1a1a1a, backgroundTertiary=#2a2a2a, border=#27272a, muted=#18181b
 Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Poppins, Elegant→Playfair Display`,
-        projectId: state.projectId,
-        nodeName: 'ux',
-        callType: 'analysis',
-        estimatedTokens: estimateTokens(`Extract styling from...`),
-        attempt: 1
-      });
-    }, {
-      appType: state.context?.appType,
-      designStyle: state.context?.designStyle,
-      visualTone: state.context?.visualTone
-    });
+          projectId: state.projectId,
+          nodeName: 'ux',
+          callType: 'analysis',
+          estimatedTokens: estimateTokens(`Extract styling from...`),
+          attempt: 1,
+        });
+      },
+      {
+        appType: state.context?.appType,
+        designStyle: state.context?.designStyle,
+        visualTone: state.context?.visualTone,
+      }
+    );
     // Parse and merge styling config with COMPLETE defaults
     let stylingConfig: Partial<StylingConfig> | null = null;
     try {
       // ✅ FIX: Provide COMPLETE default object to extractAndParseJson to prevent missing fields
-      const mode = state.context?.visualTone === 'dark' || state.userDescription.toLowerCase().includes('dark') ? 'dark' : 'light';
+      const mode =
+        state.context?.visualTone === 'dark' || state.userDescription.toLowerCase().includes('dark')
+          ? 'dark'
+          : 'light';
       const completeDefaults = {
         colorTheme: {
           mode,
@@ -1057,57 +1137,69 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
           destructive: '#ef4444',
           success: '#22c55e',
           warning: '#f59e0b',
-          info: '#3b82f6'
+          info: '#3b82f6',
         },
         typography: {
           fontFamily: 'Inter',
           scale: 'normal',
           headingWeight: 700,
           bodyWeight: 400,
-          weights: [400, 500, 600, 700]
+          weights: [400, 500, 600, 700],
         },
         iconography: {
           style: 'outlined',
           source: 'lucide',
-          size: 'medium'
+          size: 'medium',
         },
         animations: {
           enabled: true,
           intensity: 'moderate',
           transitions: true,
           pageTransitions: true,
-          hoverEffects: true
+          hoverEffects: true,
         },
         layout: {
           direction: 'ltr',
           maxWidth: '1200px',
           spacing: 'normal',
-          borderRadius: 'medium'
-        }
+          borderRadius: 'medium',
+        },
       };
 
       const extractedStyling = extractAndParseJson(stylingResult, completeDefaults);
 
       // Debug: Log what AI actually returned
-      console.log('[UX] 🔍 AI returned colors:', extractedStyling.colorTheme ? Object.keys(extractedStyling.colorTheme).join(', ') : 'none');
+      console.log(
+        '[UX] 🔍 AI returned colors:',
+        extractedStyling.colorTheme ? Object.keys(extractedStyling.colorTheme).join(', ') : 'none'
+      );
       if (extractedStyling.colorTheme) {
-        console.log('[UX] 🔍 AI color values:', JSON.stringify(extractedStyling.colorTheme, null, 2));
+        console.log(
+          '[UX] 🔍 AI color values:',
+          JSON.stringify(extractedStyling.colorTheme, null, 2)
+        );
       }
 
       const contextualDefaults = getContextualStylingDefaults(state.context, state.userDescription);
       stylingConfig = mergeWithDefaults(extractedStyling, contextualDefaults);
       console.log('[UX] ✅ Styling config extracted successfully');
-      console.log('[UX] ✅ After merge, all colors present:', Object.keys(stylingConfig.colorTheme).length, 'fields');
+      console.log(
+        '[UX] ✅ After merge, all colors present:',
+        Object.keys(stylingConfig.colorTheme).length,
+        'fields'
+      );
     } catch (error) {
       console.warn('[UX] Failed to extract styling config, using contextual defaults:', error);
-      stylingConfig = getContextualStylingDefaults(state.context, state.userDescription) as StylingConfig;
+      stylingConfig = getContextualStylingDefaults(
+        state.context,
+        state.userDescription
+      ) as StylingConfig;
     }
 
     // Step 2.5: Design Inspiration Analysis (if design reference uploaded)
     const { uploadedFiles } = state;
-    const designRefFiles = uploadedFiles?.filter(
-      f => f.purpose === 'design-reference' || f.purpose === 'both'
-    ) || [];
+    const designRefFiles =
+      uploadedFiles?.filter((f) => f.purpose === 'design-reference' || f.purpose === 'both') || [];
 
     let designInspiration: DesignInspiration | null = null;
 
@@ -1120,8 +1212,8 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
         context: {
           appType: state.context?.appType || 'web-app',
           designStyle: state.context?.designStyle,
-          visualTone: state.context?.visualTone
-        }
+          visualTone: state.context?.visualTone,
+        },
       });
 
       if (designInspiration) {
@@ -1134,7 +1226,9 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
         stylingConfig = mergeDesignInspiration(stylingConfig!, designInspiration);
         console.log('[UX] ✅ Design inspiration merged with styling config');
       } else {
-        console.log('[UX] ⚠️  Design inspiration analysis failed or quality too low, using AI-generated styles');
+        console.log(
+          '[UX] ⚠️  Design inspiration analysis failed or quality too low, using AI-generated styles'
+        );
       }
     }
 
@@ -1220,14 +1314,20 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
       }
 
       console.log('[UX] 🔍 Validating color contrast for WCAG AA compliance (4.5:1 ratio)...');
-      console.log('[UX] 🔍 Validating against all background layers: background, backgroundSecondary, backgroundTertiary');
+      console.log(
+        '[UX] 🔍 Validating against all background layers: background, backgroundSecondary, backgroundTertiary'
+      );
 
       // Validate brand colors with RELAXED contrast (3.0 - large text standard)
       // This preserves brand vibrancy while meeting minimum accessibility
       if (colorTheme.primary) {
         const originalPrimary = colorTheme.primary;
         colorTheme.primary = ensureContrast(colorTheme.primary, colorTheme.background, 3.0);
-        colorTheme.primary = ensureContrast(colorTheme.primary, colorTheme.backgroundSecondary, 3.0);
+        colorTheme.primary = ensureContrast(
+          colorTheme.primary,
+          colorTheme.backgroundSecondary,
+          3.0
+        );
         if (originalPrimary !== colorTheme.primary) {
           console.log(`[UX] 🎨 Primary adjusted: ${originalPrimary} → ${colorTheme.primary}`);
         }
@@ -1299,12 +1399,12 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
         success: colorTheme.success,
         warning: colorTheme.warning,
         info: colorTheme.info,
-        mode
+        mode,
       });
     }
 
     // #done Step 3: Use Background Context from State (already fetched by unified search)
-    let backgroundContext = state.backgroundContext || null;
+    const backgroundContext = state.backgroundContext || null;
     if (backgroundContext) {
       console.log('[UX] ✅ Using background context from unified search');
     } else {
@@ -1312,9 +1412,10 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
     }
 
     // Step 4: Generate Design System Prompt (with styling config)
-    const isDarkMode = state.context?.visualTone === 'dark' ||
-                       state.userDescription.toLowerCase().includes('ai') ||
-                       state.userDescription.toLowerCase().includes('dark');
+    const isDarkMode =
+      state.context?.visualTone === 'dark' ||
+      state.userDescription.toLowerCase().includes('ai') ||
+      state.userDescription.toLowerCase().includes('dark');
 
     const duration = Date.now() - startTime;
 
@@ -1329,9 +1430,9 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
         designSystem: selectedDesignSystem,
         designStyle: state.context?.designStyle,
         hasMCPContext: !!backgroundContext,
-        hasStylingConfig: !!stylingConfig
+        hasStylingConfig: !!stylingConfig,
       },
-      summary: `Design system: ${selectedDesignSystem}. Style: ${state.context?.designStyle} with ${state.context?.visualTone} theme${backgroundContext ? '. Enhanced with MCP research.' : ''}. Frontend AI will decide components.`
+      summary: `Design system: ${selectedDesignSystem}. Style: ${state.context?.designStyle} with ${state.context?.visualTone} theme${backgroundContext ? '. Enhanced with MCP research.' : ''}. Frontend AI will decide components.`,
     });
 
     // Note: Styling preferences are now stored in conversation memory automatically
@@ -1346,7 +1447,9 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
         state.context?.appType || 'other',
         state.projectId
       );
-      console.log(`[UX] ✅ Page organization created for ${Object.keys(pageOrganization).length} routes`);
+      console.log(
+        `[UX] ✅ Page organization created for ${Object.keys(pageOrganization).length} routes`
+      );
     } else {
       console.log('[UX] ℹ️ No features to organize (single feature or no features)');
     }
@@ -1359,7 +1462,8 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
 
     // ========== ENRICH STYLING CONFIG WITH DESIGN TOKENS ==========
     console.log('[UX] 🎨 Enriching styling config with comprehensive design tokens...');
-    const projectName = state.requirements?.projectName || state.userDescription?.split(' ').slice(0, 3).join(' ');
+    const projectName =
+      state.requirements?.projectName || state.userDescription?.split(' ').slice(0, 3).join(' ');
     let finalStylingConfig = stylingConfig as StylingConfig;
 
     if (stylingConfig) {
@@ -1371,7 +1475,9 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
 
       // If brand name was extracted from description, update it
       if (state.userDescription && finalStylingConfig.brand) {
-        const brandNameMatch = state.userDescription.match(/(?:called|named|for)\s+["']?([A-Z][a-zA-Z0-9\s]+)["']?/i);
+        const brandNameMatch = state.userDescription.match(
+          /(?:called|named|for)\s+["']?([A-Z][a-zA-Z0-9\s]+)["']?/i
+        );
         if (brandNameMatch) {
           finalStylingConfig.brand.brandName = brandNameMatch[1].trim();
           console.log(`[UX] 📛 Brand name extracted: "${finalStylingConfig.brand.brandName}"`);
@@ -1380,21 +1486,48 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
 
       console.log('[UX] ✅ Styling config enriched with 80+ design tokens');
       console.log(`[UX]   - Brand: ${finalStylingConfig.brand?.brandName}`);
-      console.log(`[UX]   - Semantic colors: ${Object.keys(finalStylingConfig.enhancedColors?.semantic || {}).length}`);
-      console.log(`[UX]   - Font sizes: ${Object.keys(finalStylingConfig.enhancedTypography?.fontSizes || {}).length}`);
-      console.log(`[UX]   - Component styles: ${Object.keys(finalStylingConfig.components || {}).length}`);
+      console.log(
+        `[UX]   - Semantic colors: ${Object.keys(finalStylingConfig.enhancedColors?.semantic || {}).length}`
+      );
+      console.log(
+        `[UX]   - Font sizes: ${Object.keys(finalStylingConfig.enhancedTypography?.fontSizes || {}).length}`
+      );
+      console.log(
+        `[UX]   - Component styles: ${Object.keys(finalStylingConfig.components || {}).length}`
+      );
     }
 
     // CONVERSATION MEMORY: Track UX's response with full branding details
-    const brandInfo = finalStylingConfig?.brand?.brandName ? `Brand: ${finalStylingConfig.brand.brandName}. ` : '';
+    const brandInfo = finalStylingConfig?.brand?.brandName
+      ? `Brand: ${finalStylingConfig.brand.brandName}. `
+      : '';
     const colorMode = stylingConfig?.colorTheme?.mode || 'light';
-    const primaryColor = finalStylingConfig?.colorTheme?.primary || stylingConfig?.colorTheme?.primary || 'default';
-    const bodyFont = finalStylingConfig?.typography?.bodyFont || stylingConfig?.typography?.bodyFont || 'system';
-    const headingFont = finalStylingConfig?.typography?.headingFont || stylingConfig?.typography?.headingFont || 'system';
+    const primaryColor =
+      finalStylingConfig?.colorTheme?.primary || stylingConfig?.colorTheme?.primary || 'default';
+    const bodyFont =
+      finalStylingConfig?.typography?.bodyFont || stylingConfig?.typography?.bodyFont || 'system';
+    const headingFont =
+      finalStylingConfig?.typography?.headingFont ||
+      stylingConfig?.typography?.headingFont ||
+      'system';
 
-    const uxResponse = `${brandInfo}Selected ${selectedDesignSystem} design system with ${colorMode} mode. Colors: primary=${primaryColor}. Fonts: body=${bodyFont}, heading=${headingFont}. Generated 80+ design tokens for consistent branding.`;
-    addAssistantMessage(state.projectId, uxResponse, 'ux');
-    console.log('[UX] 💬 Tracked full branding & styling details in conversation memory');
+    // ✅ UNIFIED MESSAGING: Send design-ready event via messageManager
+    await messageManager.sendEvent(
+      state.projectId,
+      {
+        type: 'design-ready',
+        designSystem: selectedDesignSystem,
+        colorMode: colorMode as 'light' | 'dark',
+        primaryColor,
+        fonts: {
+          body: bodyFont,
+          heading: headingFont,
+        },
+        brandName: finalStylingConfig?.brand?.brandName,
+      },
+      'ux'
+    );
+    console.log('[UX] ✅ Sent design-ready event via messageManager');
 
     // 💾 Save memory checkpoint after styling config generation
     await conversationMemoryStore.saveMemory(state.projectId);
@@ -1414,7 +1547,10 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
     console.log('[UX] 🔍 Returning state with:');
     console.log('[UX] 🔍   - stylingConfig exists?', !!finalStylingConfig);
     console.log('[UX] 🔍   - stylingConfig.brand?', !!finalStylingConfig?.brand);
-    console.log('[UX] 🔍   - pageOrganization routes:', pageOrganization ? Object.keys(pageOrganization).length : 0);
+    console.log(
+      '[UX] 🔍   - pageOrganization routes:',
+      pageOrganization ? Object.keys(pageOrganization).length : 0
+    );
     if (pageOrganization && Object.keys(pageOrganization).length > 0) {
       console.log('[UX] 🔍   - pageOrganization details:');
       Object.entries(pageOrganization).forEach(([route, org]: [string, any]) => {
@@ -1426,15 +1562,15 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
     }
 
     return {
-      designSystem: selectedDesignSystem,  // ✅ Selected design system
-      stylingConfig: finalStylingConfig,   // ✅ ENRICHED User styling with 80+ tokens
-      backgroundContext,                    // ✅ MCP research (optional)
-      designInspiration,                    // ✅ Design tokens from screenshot (optional)
-      pageOrganization,                     // ✅ Page organization for multi-page apps
-      images,                               // ✅ Curated Unsplash images
-      designInstructions,                   // ✅ Complete design system for Frontend
+      designSystem: selectedDesignSystem, // ✅ Selected design system
+      stylingConfig: finalStylingConfig, // ✅ ENRICHED User styling with 80+ tokens
+      backgroundContext, // ✅ MCP research (optional)
+      designInspiration, // ✅ Design tokens from screenshot (optional)
+      pageOrganization, // ✅ Page organization for multi-page apps
+      images, // ✅ Curated Unsplash images
+      designInstructions, // ✅ Complete design system for Frontend
       stage: 'building',
-      completedNodes: ['ux'] // Reducer auto-appends
+      completedNodes: ['ux'], // Reducer auto-appends
     };
   } catch (error) {
     emitNodeError('ux', error as Error, state);
@@ -1442,11 +1578,14 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
 
     // Fallback
     const isDarkMode = state.context?.visualTone === 'dark';
-    const fallbackStyling = getContextualStylingDefaults(state.context, state.userDescription) as StylingConfig;
+    const fallbackStyling = getContextualStylingDefaults(
+      state.context,
+      state.userDescription
+    ) as StylingConfig;
     const fallbackDesignSystem = selectDesignSystem({
       appType: state.context?.appType,
       userDescription: state.userDescription,
-      designStyle: state.context?.designStyle
+      designStyle: state.context?.designStyle,
     });
 
     // COMMENTED OUT: Always generate images even in error fallback
@@ -1462,16 +1601,16 @@ Font selection: Professional→Inter/Roboto, Creative→Montserrat, Playful→Po
     );
 
     return {
-      designSystem: fallbackDesignSystem,  // ✅ Fallback design system
-      stylingConfig: fallbackStyling,      // ✅ Fallback styling
+      designSystem: fallbackDesignSystem, // ✅ Fallback design system
+      stylingConfig: fallbackStyling, // ✅ Fallback styling
       backgroundContext: null,
-      designInspiration: null,              // ✅ No design inspiration on error
-      pageOrganization: {},                 // ✅ Empty page org on error
-      images: fallbackImages,               // ✅ FIX: Include images in error fallback
-      designInstructions: fallbackDesignInstructions,  // ✅ Fallback design instructions
+      designInspiration: null, // ✅ No design inspiration on error
+      pageOrganization: {}, // ✅ Empty page org on error
+      images: fallbackImages, // ✅ FIX: Include images in error fallback
+      designInstructions: fallbackDesignInstructions, // ✅ Fallback design instructions
       stage: 'building',
       completedNodes: ['ux'], // Reducer auto-appends
-      errors: [{ node: 'ux', message: (error as Error).message }] // Reducer auto-appends
+      errors: [{ node: 'ux', message: (error as Error).message }], // Reducer auto-appends
     };
   }
 }

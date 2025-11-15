@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 /**
  * Uploaded file from API
@@ -58,7 +58,7 @@ export function UploadedFilesProvider({ projectId, children }: UploadedFilesProv
         ?.split('=')[1];
 
       const response = await fetch(`/api/files/list/${projectId}`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
 
       if (!response.ok) {
@@ -93,7 +93,7 @@ export function UploadedFilesProvider({ projectId, children }: UploadedFilesProv
   // Add a file to the list (optimistic update)
   const addFile = useCallback((file: UploadedFile) => {
     console.log('[UploadedFiles] ➕ Adding file:', file.name);
-    setFiles(prev => [...prev, file]);
+    setFiles((prev) => [...prev, file]);
   }, []);
 
   const value: UploadedFilesContextValue = {
@@ -101,14 +101,10 @@ export function UploadedFilesProvider({ projectId, children }: UploadedFilesProv
     loading,
     error,
     refetch: fetchFiles,
-    addFile
+    addFile,
   };
 
-  return (
-    <UploadedFilesContext.Provider value={value}>
-      {children}
-    </UploadedFilesContext.Provider>
-  );
+  return <UploadedFilesContext.Provider value={value}>{children}</UploadedFilesContext.Provider>;
 }
 
 /**

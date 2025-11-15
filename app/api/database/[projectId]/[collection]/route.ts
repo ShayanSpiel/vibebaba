@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { pb } from "@/lib/database/pocketbase";
-import { escapeFilterValue, sanitizeError, validateCollectionName } from "@/lib/database/pocketbase-utils";
+import { type NextRequest, NextResponse } from 'next/server';
+import { pb } from '@/lib/database/pocketbase';
+import {
+  escapeFilterValue,
+  sanitizeError,
+  validateCollectionName,
+} from '@/lib/database/pocketbase-utils';
 
 /**
  * GET /api/database/[projectId]/[collection]
@@ -20,27 +24,23 @@ export async function GET(
     try {
       await pb.collection('projects').getOne(projectId);
     } catch (error) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     // Get all records from collection for this project with escaped filter
     const records = await pb.collection(collection).getFullList({
       filter: `projectId = "${escapeFilterValue(projectId)}"`,
-      sort: '-created'
+      sort: '-created',
     });
 
     return NextResponse.json({ items: records });
-
   } catch (error: any) {
     console.error(`[Database API] Error fetching ${collection}:`, error);
 
     return NextResponse.json(
       {
         error: sanitizeError(error),
-        collection
+        collection,
       },
       { status: 500 }
     );
@@ -67,29 +67,25 @@ export async function POST(
     try {
       await pb.collection('projects').getOne(projectId);
     } catch (error) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     // Add projectId to record
     const record = await pb.collection(collection).create({
       ...data,
-      projectId
+      projectId,
     });
 
     console.log(`[Database API] Created record in ${collection}:`, record.id);
 
     return NextResponse.json(record);
-
   } catch (error: any) {
     console.error(`[Database API] Error creating record in ${collection}:`, error);
 
     return NextResponse.json(
       {
         error: sanitizeError(error),
-        collection
+        collection,
       },
       { status: 500 }
     );

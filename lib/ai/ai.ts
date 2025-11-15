@@ -1,88 +1,94 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getMCPManager, formatToolsForPrompt, parseToolCalls } from "../mcp/client";
-import { getServersForContext, getMCPToolInstructions, isMCPEnabled } from "../mcp/config";
-import { getCachedWorkingModel, setCachedWorkingModel, clearCachedWorkingModel, getAIMode, type AIProvider } from "./ai-config-store";
-import { getAIThrottler } from "./ai-throttler";
-import { getRateLimitTracker } from "../monitoring/rate-limit-tracker";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { formatToolsForPrompt, getMCPManager, parseToolCalls } from '../mcp/client';
+import { getMCPToolInstructions, getServersForContext, isMCPEnabled } from '../mcp/config';
+import { getRateLimitTracker } from '../monitoring/rate-limit-tracker';
+import {
+  type AIProvider,
+  clearCachedWorkingModel,
+  getAIMode,
+  getCachedWorkingModel,
+  setCachedWorkingModel,
+} from './ai-config-store';
+import { getAIThrottler } from './ai-throttler';
 
-type Locale = "en" | "fa" | "ar";
+type Locale = 'en' | 'fa' | 'ar';
 
 // Gemini API configuration
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Available models in priority order (VERIFIED WORKING MODELS ONLY)
 // Only models verified to exist and work with the Gemini API
 const GEMINI_MODELS = [
   // TIER 1: High RPD (200-250 requests/day) - VERIFIED WORKING ✅
-  "gemini-2.0-flash-exp",                      // Experimental (best quality, 50 RPD)
-  "gemini-2.0-flash",                          // Stable 2.0 Flash (1M context, 200 RPD)
-  "gemini-1.5-flash",                          // Most reliable (1M context, high RPD)
-  "gemini-1.5-flash-002",                      // Flash latest version
-  "gemini-1.5-flash-8b",                       // Smaller fast variant
+  'gemini-2.0-flash-exp', // Experimental (best quality, 50 RPD)
+  'gemini-2.0-flash', // Stable 2.0 Flash (1M context, 200 RPD)
+  'gemini-1.5-flash', // Most reliable (1M context, high RPD)
+  'gemini-1.5-flash-002', // Flash latest version
+  'gemini-1.5-flash-8b', // Smaller fast variant
 
   // TIER 2: Pro models (50 RPD) - Best quality ⭐
-  "gemini-1.5-pro",                            // Most capable
-  "gemini-1.5-pro-002",                        // Pro latest
+  'gemini-1.5-pro', // Most capable
+  'gemini-1.5-pro-002', // Pro latest
 
   // TIER 3: Legacy models (backup)
-  "gemini-1.0-pro",                            // Original Pro
+  'gemini-1.0-pro', // Original Pro
 ];
 
 // OpenRouter configuration - Use function to read env var lazily
-const getOpenRouterApiKey = () => process.env.OPENROUTER_API_KEY || "";
+const getOpenRouterApiKey = () => process.env.OPENROUTER_API_KEY || '';
 // ALL FREE OpenRouter models (no credits required)
 const OPENROUTER_FREE_MODELS = [
   // TIER 1: Most capable models (Best first)
-  "qwen/qwen3-235b-a22b:free",                 // Qwen 3 235B - Largest model
-  "deepseek/deepseek-r1-0528:free",            // DeepSeek R1 - Advanced reasoning
-  "deepseek/deepseek-chat-v3.1:free",          // DeepSeek V3.1 - Excellent reasoning
-  "deepseek/deepseek-chat-v3-0324:free",       // DeepSeek V3 (March version)
-  "alibaba/tongyi-deepresearch-30b-a3b:free",  // Alibaba Tongyi DeepResearch 30B
-  "tngtech/deepseek-r1t2-chimera:free",        // DeepSeek R1T2 Chimera - Hybrid model
+  'qwen/qwen3-235b-a22b:free', // Qwen 3 235B - Largest model
+  'deepseek/deepseek-r1-0528:free', // DeepSeek R1 - Advanced reasoning
+  'deepseek/deepseek-chat-v3.1:free', // DeepSeek V3.1 - Excellent reasoning
+  'deepseek/deepseek-chat-v3-0324:free', // DeepSeek V3 (March version)
+  'alibaba/tongyi-deepresearch-30b-a3b:free', // Alibaba Tongyi DeepResearch 30B
+  'tngtech/deepseek-r1t2-chimera:free', // DeepSeek R1T2 Chimera - Hybrid model
 
   // TIER 2: Large 70B+ models
-  "meta-llama/llama-3.3-70b-instruct:free",    // Llama 3.3 70B - Latest Meta
-  "moonshotai/kimi-dev-72b:free",              // Moonshot Kimi 72B
+  'meta-llama/llama-3.3-70b-instruct:free', // Llama 3.3 70B - Latest Meta
+  'moonshotai/kimi-dev-72b:free', // Moonshot Kimi 72B
 
   // TIER 3: Medium 30B-32B models
-  "qwen/qwen-2.5-coder-32b-instruct:free",     // Qwen 2.5 Coder 32B - Best for coding
-  "qwen/qwen3-30b-a3b:free",                   // Qwen 3 30B
-  "qwen/qwen3-coder:free",                     // Qwen 3 Coder
-  "google/gemma-3-27b-it:free",                // Gemma 3 27B
+  'qwen/qwen-2.5-coder-32b-instruct:free', // Qwen 2.5 Coder 32B - Best for coding
+  'qwen/qwen3-30b-a3b:free', // Qwen 3 30B
+  'qwen/qwen3-coder:free', // Qwen 3 Coder
+  'google/gemma-3-27b-it:free', // Gemma 3 27B
 
   // TIER 4: Small but powerful models
-  "mistralai/mistral-small-3.2-24b-instruct:free", // Mistral Small 3.2 24B
-  "openai/gpt-oss-20b:free",                   // OpenAI GPT-OSS 20B
-  "agentica-org/deepcoder-14b-preview:free",   // DeepCoder 14B - Code specialist
-  "microsoft/mai-ds-r1:free",                  // Microsoft MAI-DS R1
-  "z-ai/glm-4.5-air:free",                     // GLM 4.5 Air
+  'mistralai/mistral-small-3.2-24b-instruct:free', // Mistral Small 3.2 24B
+  'openai/gpt-oss-20b:free', // OpenAI GPT-OSS 20B
+  'agentica-org/deepcoder-14b-preview:free', // DeepCoder 14B - Code specialist
+  'microsoft/mai-ds-r1:free', // Microsoft MAI-DS R1
+  'z-ai/glm-4.5-air:free', // GLM 4.5 Air
 
   // TIER 5: Fast models
-  "meituan/longcat-flash-chat:free",           // Meituan LongCat Flash
-  "nvidia/nemotron-nano-9b-v2:free",           // NVIDIA Nemotron Nano 9B
+  'meituan/longcat-flash-chat:free', // Meituan LongCat Flash
+  'nvidia/nemotron-nano-9b-v2:free', // NVIDIA Nemotron Nano 9B
 
   // TIER 6: Trial/Alpha models
-  "openrouter/andromeda-alpha",                // OpenRouter Andromeda Alpha
+  'openrouter/andromeda-alpha', // OpenRouter Andromeda Alpha
 ];
 
 // Mistral configuration - Use functions to read env vars lazily (after dotenv loads)
 // NOTE: Codestral uses dedicated endpoint (codestral.mistral.ai) with CODESTRAL_API_KEY
 // Other Mistral models use standard endpoint (api.mistral.ai) with MISTRAL_API_KEY
-const getMistralApiKey = () => process.env.MISTRAL_API_KEY || "";
-const getCodestralApiKey = () => process.env.CODESTRAL_API_KEY || "";
+const getMistralApiKey = () => process.env.MISTRAL_API_KEY || '';
+const getCodestralApiKey = () => process.env.CODESTRAL_API_KEY || '';
 
 // VERIFIED WORKING MODELS (Tested 2025-11-10) ✅
 const MISTRAL_MODELS = [
-  "ministral-3b-latest",            // Ultra fast - 3B params (standard endpoint)
-  "ministral-8b-latest",            // Fast - 8B params (standard endpoint)
-  "codestral-latest",               // Code specialist (DEDICATED endpoint: codestral.mistral.ai)
-  "mistral-small-latest",           // Balanced - good quality/speed (standard endpoint)
-  "mistral-large-latest",           // Most capable - Latest (standard endpoint)
-  "mistral-large-2411",             // Most capable - 123B params (standard endpoint)
+  'ministral-3b-latest', // Ultra fast - 3B params (standard endpoint)
+  'ministral-8b-latest', // Fast - 8B params (standard endpoint)
+  'codestral-latest', // Code specialist (DEDICATED endpoint: codestral.mistral.ai)
+  'mistral-small-latest', // Balanced - good quality/speed (standard endpoint)
+  'mistral-large-latest', // Most capable - Latest (standard endpoint)
+  'mistral-large-2411', // Most capable - 123B params (standard endpoint)
 ];
 
 // Groq configuration - Use function to read env var lazily
-const getGroqApiKey = () => process.env.GROQ_API_KEY || "";
+const getGroqApiKey = () => process.env.GROQ_API_KEY || '';
 
 // TIMEOUT CONFIGURATION: Optimized for better UX
 const AI_REQUEST_TIMEOUT = 60000; // 60 seconds per AI request - better user experience
@@ -121,29 +127,29 @@ async function fetchWithTimeout(
 // ALL FREE Groq models (extremely fast inference)
 const GROQ_FREE_MODELS = [
   // TIER 1: Production Models (Fast & Reliable)
-  "llama-3.3-70b-versatile",                   // Meta Llama 3.3 70B - Most capable
-  "llama-3.1-8b-instant",                      // Meta Llama 3.1 8B - Ultra fast
-  "openai/gpt-oss-120b",                       // OpenAI GPT-OSS 120B - Very large
-  "openai/gpt-oss-20b",                        // OpenAI GPT-OSS 20B
+  'llama-3.3-70b-versatile', // Meta Llama 3.3 70B - Most capable
+  'llama-3.1-8b-instant', // Meta Llama 3.1 8B - Ultra fast
+  'openai/gpt-oss-120b', // OpenAI GPT-OSS 120B - Very large
+  'openai/gpt-oss-20b', // OpenAI GPT-OSS 20B
 
   // TIER 2: Preview Models (Experimental)
-  "meta-llama/llama-4-maverick-17b-128e-instruct",  // Llama 4 Maverick
-  "meta-llama/llama-4-scout-17b-16e-instruct",      // Llama 4 Scout
-  "moonshotai/kimi-k2-instruct-0905",          // Moonshot Kimi K2
-  "qwen/qwen3-32b",                            // Qwen 3 32B
+  'meta-llama/llama-4-maverick-17b-128e-instruct', // Llama 4 Maverick
+  'meta-llama/llama-4-scout-17b-16e-instruct', // Llama 4 Scout
+  'moonshotai/kimi-k2-instruct-0905', // Moonshot Kimi K2
+  'qwen/qwen3-32b', // Qwen 3 32B
 
   // TIER 3: Compound Systems (Agentic)
-  "groq/compound",                             // Groq Compound - With tools
-  "groq/compound-mini",                        // Groq Compound Mini
+  'groq/compound', // Groq Compound - With tools
+  'groq/compound-mini', // Groq Compound Mini
 ];
 
 // Type for AI generation result with metadata
 export interface AIGenerationResult {
   text: string;
   model: string;
-  provider: "claude" | "gemini" | "openrouter" | "groq" | "mistral";
+  provider: 'claude' | 'gemini' | 'openrouter' | 'groq' | 'mistral';
   attemptsLog: string[];
-  tokenCount?: number;  // Actual token count from API response
+  tokenCount?: number; // Actual token count from API response
 }
 
 /**
@@ -151,8 +157,14 @@ export interface AIGenerationResult {
  * Returns both the generated text AND metadata about which model was used
  */
 export async function generateWithFallback(prompt: string): Promise<string>;
-export async function generateWithFallback(prompt: string, returnMetadata: true): Promise<AIGenerationResult>;
-export async function generateWithFallback(prompt: string, returnMetadata?: boolean): Promise<string | AIGenerationResult> {
+export async function generateWithFallback(
+  prompt: string,
+  returnMetadata: true
+): Promise<AIGenerationResult>;
+export async function generateWithFallback(
+  prompt: string,
+  returnMetadata?: boolean
+): Promise<string | AIGenerationResult> {
   const attemptsLog: string[] = [];
 
   // SERVER MODE: Use Gemini, OpenRouter, Groq
@@ -174,21 +186,21 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
       // Try the cached model based on provider
       if (cached.provider === 'mistral') {
         // Use correct endpoint and API key based on model type
-        const isCodestralModel = cached.model.includes("codestral");
+        const isCodestralModel = cached.model.includes('codestral');
         const apiEndpoint = isCodestralModel
-          ? "https://codestral.mistral.ai/v1/chat/completions"
-          : "https://api.mistral.ai/v1/chat/completions";
+          ? 'https://codestral.mistral.ai/v1/chat/completions'
+          : 'https://api.mistral.ai/v1/chat/completions';
         const apiKey = isCodestralModel ? getCodestralApiKey() : getMistralApiKey();
 
         const response = await fetchWithTimeout(apiEndpoint, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: cached.model,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
           }),
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -202,32 +214,32 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         text = response.text();
         tokenCount = (response as any).usageMetadata?.totalTokenCount;
       } else if (cached.provider === 'openrouter') {
-        const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
+        const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${getOpenRouterApiKey()}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://vibebaba.app",
-            "X-Title": "Vibebaba",
+            Authorization: `Bearer ${getOpenRouterApiKey()}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://vibebaba.app',
+            'X-Title': 'Vibebaba',
           },
           body: JSON.stringify({
             model: cached.model,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
           }),
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         text = data.choices[0].message.content;
       } else if (cached.provider === 'groq') {
-        const response = await fetchWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
+        const response = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${getGroqApiKey()}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${getGroqApiKey()}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: cached.model,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
             max_tokens: 8192, // Increased from 4096 to support longer code generation
             temperature: 0, // Deterministic code generation
           }),
@@ -298,9 +310,9 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         return {
           text: response.text(),
           model: modelName,
-          provider: "gemini",
+          provider: 'gemini',
           attemptsLog,
-          tokenCount
+          tokenCount,
         };
       }
       return response.text();
@@ -311,9 +323,9 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // OPTIMIZATION: Detect and track rate limit errors
       const isRateLimitError =
-        error.message?.includes("429") ||
-        error.message?.includes("quota") ||
-        error.message?.includes("overload");
+        error.message?.includes('429') ||
+        error.message?.includes('quota') ||
+        error.message?.includes('overload');
 
       if (isRateLimitError) {
         rateLimitTracker.recordRateLimit('gemini', GEMINI_MODELS[i], error.message);
@@ -327,8 +339,7 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
       // - 503: Service overloaded / unavailable
       // - unavailable: Service unavailable
       const shouldRetryWithNextModel =
-        error.message?.includes("503") ||
-        error.message?.includes("unavailable");
+        error.message?.includes('503') || error.message?.includes('unavailable');
 
       if (shouldRetryWithNextModel) {
         continue;
@@ -362,23 +373,23 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // Codestral uses DEDICATED endpoint with CODESTRAL_API_KEY
       // Other Mistral models use STANDARD endpoint with MISTRAL_API_KEY
-      const isCodestralModel = modelName.includes("codestral");
+      const isCodestralModel = modelName.includes('codestral');
       const apiEndpoint = isCodestralModel
-        ? "https://codestral.mistral.ai/v1/chat/completions"  // Dedicated Codestral endpoint
-        : "https://api.mistral.ai/v1/chat/completions";       // Standard Mistral endpoint
+        ? 'https://codestral.mistral.ai/v1/chat/completions' // Dedicated Codestral endpoint
+        : 'https://api.mistral.ai/v1/chat/completions'; // Standard Mistral endpoint
       const apiKey = isCodestralModel ? getCodestralApiKey() : getMistralApiKey();
 
       // OPTIMIZATION: Throttle request to prevent rate limits
       const response = await throttler.enqueue(async () => {
         return await fetchWithTimeout(apiEndpoint, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: modelName,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
           }),
         });
       });
@@ -415,9 +426,9 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         return {
           text: content,
           model: modelName,
-          provider: "mistral",
+          provider: 'mistral',
           attemptsLog,
-          tokenCount
+          tokenCount,
         };
       }
       return content;
@@ -428,12 +439,12 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // OPTIMIZATION: Track rate limits and capacity errors for Mistral
       const isRateLimitError =
-        error.message?.includes("429") ||
-        error.message?.includes("rate limit") ||
-        error.message?.includes("rate_limit") ||
-        error.message?.includes("quota") ||
-        error.message?.includes("service_tier_capacity_exceeded") ||
-        error.message?.includes("Service tier capacity exceeded");
+        error.message?.includes('429') ||
+        error.message?.includes('rate limit') ||
+        error.message?.includes('rate_limit') ||
+        error.message?.includes('quota') ||
+        error.message?.includes('service_tier_capacity_exceeded') ||
+        error.message?.includes('Service tier capacity exceeded');
 
       if (isRateLimitError) {
         rateLimitTracker.recordRateLimit('mistral', MISTRAL_MODELS[i], error.message);
@@ -441,8 +452,6 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         console.log(`[AI] ${trackMsg}`);
         attemptsLog.push(trackMsg);
       }
-
-      continue;
     }
   }
 
@@ -472,19 +481,19 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // OPTIMIZATION: Throttle request to prevent rate limits
       const response = await throttler.enqueue(async () => {
-        return await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
+        return await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${getOpenRouterApiKey()}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://vibebaba.app",
-            "X-Title": "Vibebaba",
+            Authorization: `Bearer ${getOpenRouterApiKey()}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://vibebaba.app',
+            'X-Title': 'Vibebaba',
           },
           body: JSON.stringify({
             model: modelName,
             messages: [
               {
-                role: "user",
+                role: 'user',
                 content: prompt,
               },
             ],
@@ -523,8 +532,8 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         return {
           text: content,
           model: modelName,
-          provider: "openrouter",
-          attemptsLog
+          provider: 'openrouter',
+          attemptsLog,
         };
       }
       return content;
@@ -535,9 +544,9 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // OPTIMIZATION: Track rate limits for OpenRouter
       const isRateLimitError =
-        error.message?.includes("429") ||
-        error.message?.includes("rate limit") ||
-        error.message?.includes("quota");
+        error.message?.includes('429') ||
+        error.message?.includes('rate limit') ||
+        error.message?.includes('quota');
 
       if (isRateLimitError) {
         rateLimitTracker.recordRateLimit('openrouter', OPENROUTER_FREE_MODELS[i], error.message);
@@ -546,23 +555,21 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         attemptsLog.push(trackMsg);
 
         // If this is a per-minute rate limit, track consecutive failures
-        if (error.message?.includes("free-models-per-min")) {
+        if (error.message?.includes('free-models-per-min')) {
           consecutivePerMinuteFailures++;
 
           // After 3 consecutive per-minute failures, add exponential backoff delay
           if (consecutivePerMinuteFailures >= 3) {
-            const delayMs = Math.min(5000 * Math.pow(2, consecutivePerMinuteFailures - 3), 30000); // Max 30s
+            const delayMs = Math.min(5000 * 2 ** (consecutivePerMinuteFailures - 3), 30000); // Max 30s
             const delayMsg = `⏸️  Pausing ${delayMs}ms after ${consecutivePerMinuteFailures} consecutive per-minute rate limits...`;
             console.log(`[AI] ${delayMsg}`);
             attemptsLog.push(delayMsg);
-            await new Promise(resolve => setTimeout(resolve, delayMs));
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
           }
         } else {
           consecutivePerMinuteFailures = 0; // Reset on non-per-minute errors
         }
       }
-
-      continue;
     }
   }
 
@@ -589,17 +596,17 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // OPTIMIZATION: Throttle request to prevent rate limits
       const response = await throttler.enqueue(async () => {
-        return await fetchWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
+        return await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${getGroqApiKey()}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${getGroqApiKey()}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: modelName,
             messages: [
               {
-                role: "user",
+                role: 'user',
                 content: prompt,
               },
             ],
@@ -641,9 +648,9 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         return {
           text: content,
           model: modelName,
-          provider: "groq",
+          provider: 'groq',
           attemptsLog,
-          tokenCount
+          tokenCount,
         };
       }
       return content;
@@ -654,9 +661,9 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
 
       // OPTIMIZATION: Track rate limits for Groq
       const isRateLimitError =
-        error.message?.includes("429") ||
-        error.message?.includes("rate limit") ||
-        error.message?.includes("quota");
+        error.message?.includes('429') ||
+        error.message?.includes('rate limit') ||
+        error.message?.includes('quota');
 
       if (isRateLimitError) {
         rateLimitTracker.recordRateLimit('groq', GROQ_FREE_MODELS[i], error.message);
@@ -664,8 +671,6 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
         console.log(`[AI] ${trackMsg}`);
         attemptsLog.push(trackMsg);
       }
-
-      continue;
     }
   }
 
@@ -675,7 +680,7 @@ export async function generateWithFallback(prompt: string, returnMetadata?: bool
   throw new Error(errorMsg);
 }
 
-export async function generatePlan(appDescription: string, locale: Locale = "en") {
+export async function generatePlan(appDescription: string, locale: Locale = 'en') {
   // Simple prompt - i18n system not yet implemented
   const prompt = `Generate a project plan for: ${appDescription}`;
 
@@ -693,8 +698,14 @@ export async function generatePlan(appDescription: string, locale: Locale = "en"
  * Use this for code generation tasks (frontend, backend, etc.)
  */
 export async function generateCodeWithCodestral(prompt: string): Promise<string>;
-export async function generateCodeWithCodestral(prompt: string, returnMetadata: true): Promise<AIGenerationResult>;
-export async function generateCodeWithCodestral(prompt: string, returnMetadata?: boolean): Promise<string | AIGenerationResult> {
+export async function generateCodeWithCodestral(
+  prompt: string,
+  returnMetadata: true
+): Promise<AIGenerationResult>;
+export async function generateCodeWithCodestral(
+  prompt: string,
+  returnMetadata?: boolean
+): Promise<string | AIGenerationResult> {
   const attemptsLog: string[] = [];
 
   const codestralMsg = '🚀 CODESTRAL PRIORITY MODE: Trying Codestral first for code generation';
@@ -705,7 +716,7 @@ export async function generateCodeWithCodestral(prompt: string, returnMetadata?:
   const throttler = getAIThrottler();
 
   // TRY CODESTRAL FIRST (specialized for code generation)
-  const codestralModel = "codestral-latest";
+  const codestralModel = 'codestral-latest';
 
   if (!rateLimitTracker.isRateLimited('mistral', codestralModel)) {
     try {
@@ -714,15 +725,15 @@ export async function generateCodeWithCodestral(prompt: string, returnMetadata?:
       attemptsLog.push(attemptMsg);
 
       const response = await throttler.enqueue(async () => {
-        return await fetchWithTimeout("https://codestral.mistral.ai/v1/chat/completions", {
-          method: "POST",
+        return await fetchWithTimeout('https://codestral.mistral.ai/v1/chat/completions', {
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${getCodestralApiKey()}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${getCodestralApiKey()}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: codestralModel,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
           }),
         });
       });
@@ -757,9 +768,9 @@ export async function generateCodeWithCodestral(prompt: string, returnMetadata?:
         return {
           text: content,
           model: codestralModel,
-          provider: "mistral",
+          provider: 'mistral',
           attemptsLog,
-          tokenCount
+          tokenCount,
         };
       }
       return content;
@@ -770,9 +781,9 @@ export async function generateCodeWithCodestral(prompt: string, returnMetadata?:
 
       // Track rate limits
       const isRateLimitError =
-        error.message?.includes("429") ||
-        error.message?.includes("rate limit") ||
-        error.message?.includes("quota");
+        error.message?.includes('429') ||
+        error.message?.includes('rate limit') ||
+        error.message?.includes('quota');
 
       if (isRateLimitError) {
         rateLimitTracker.recordRateLimit('mistral', codestralModel, error.message);
@@ -805,7 +816,7 @@ export async function generateCodeWithCodestral(prompt: string, returnMetadata?:
 
 export async function generateWithMCP(
   prompt: string,
-  context: "planning" | "prototype" | "chat" = "chat",
+  context: 'planning' | 'prototype' | 'chat' = 'chat',
   options: {
     maxToolCalls?: number;
     userId?: string;
@@ -817,7 +828,7 @@ export async function generateWithMCP(
 
   // Check if MCP is enabled
   if (!isMCPEnabled()) {
-    console.log("[MCP] MCP is disabled, using standard generation");
+    console.log('[MCP] MCP is disabled, using standard generation');
     return await generateWithFallback(prompt);
   }
 
@@ -828,7 +839,7 @@ export async function generateWithMCP(
     return await generateWithFallback(prompt);
   }
 
-  console.log(`[MCP] Using servers: ${servers.join(", ")} for context: ${context}`);
+  console.log(`[MCP] Using servers: ${servers.join(', ')} for context: ${context}`);
 
   try {
     const mcpManager = getMCPManager();
@@ -850,7 +861,7 @@ export async function generateWithMCP(
     // Get all available tools
     const toolsByServer = await mcpManager.getAllTools(servers);
     if (toolsByServer.every((ts) => ts.tools.length === 0)) {
-      console.log("[MCP] No tools available, using standard generation");
+      console.log('[MCP] No tools available, using standard generation');
       return await generateWithFallback(enhancedPrompt);
     }
 
@@ -864,7 +875,7 @@ export async function generateWithMCP(
     let toolCallCount = 0;
 
     // Execute tool calls if present
-    while (response.includes("TOOL_CALL:") && toolCallCount < maxToolCalls) {
+    while (response.includes('TOOL_CALL:') && toolCallCount < maxToolCalls) {
       console.log(`[MCP] Tool call iteration ${toolCallCount + 1}/${maxToolCalls}`);
 
       const toolCalls = parseToolCalls(response);
@@ -911,11 +922,11 @@ Now, use these results to generate your final response. Do not make more tool ca
     }
 
     // Clean up tool call syntax from final response
-    response = response.replace(/TOOL_CALL:.*?\)/g, "").trim();
+    response = response.replace(/TOOL_CALL:.*?\)/g, '').trim();
 
     return response;
   } catch (error) {
-    console.error("[MCP] Error in MCP generation, falling back to standard:", error);
+    console.error('[MCP] Error in MCP generation, falling back to standard:', error);
     return await generateWithFallback(prompt);
   }
 }

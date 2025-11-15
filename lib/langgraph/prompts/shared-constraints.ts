@@ -63,9 +63,36 @@ Type Narrowing After Null Checks:
 - Error: "Type 'import(...).Type' is not assignable to type 'Type'" = duplicate definition
 - Exception: Next.js built-in types ({ params: { id: string } }) are acceptable
 
+🚨 CRITICAL: Literal Union Types and Type Inference:
+- Problem: TypeScript infers string literals as 'string' type, not literal union ('car' | 'motorcycle')
+- Error: "Type 'string' is not assignable to type '"car" | "motorcycle"'"
+- Root Cause: Array literals with union type fields need explicit type annotation
+- Solutions:
+  ✅ SOLUTION 1 (Preferred): Type annotate the array
+     const posts: Post[] = [
+       { id: '1', type: 'car', ... }  // TypeScript now knows 'car' is the literal type
+     ];
+  ✅ SOLUTION 2: Use 'as const' assertion on literal values
+     const posts = [
+       { id: '1', type: 'car' as const, ... }  // Tells TypeScript this is literal 'car', not string
+     ];
+  ✅ SOLUTION 3: Inline type assertion
+     setState([
+       { id: '1', type: 'car' as 'car', ... }
+     ]);
+  ❌ WRONG: No type annotation when array has union literal fields
+     const posts = [
+       { id: '1', type: 'car', ... }  // TypeScript infers type: string (BREAKS!)
+     ];
+     setState(posts);  // ERROR: Type 'string' not assignable to '"car" | "motorcycle"'
+- Pattern: When creating arrays with union literal types, ALWAYS add explicit type annotation
+- Context: Happens with useState<Type[]>, function parameters expecting specific literal values
+- Why: TypeScript's type inference widens 'car' to string for flexibility, but union types need literals
+
 REASONING:
 TypeScript strict mode requires explicit types to ensure type safety.
 Build fails with "implicitly has an 'any' type" without proper annotations.
+Literal types need explicit annotation or 'as const' to prevent widening to string.
 `;
 
 export const IMPORT_RULES = `
@@ -184,6 +211,17 @@ Use Context (Shared State Across Pages):
 - Implementation: Create context file in lib/, provide in layout, consume via hook
 - Pattern: Provider wraps children, custom hook accesses state
 
+🔐 NextAuth Authentication Integration:
+- If authentication is enabled, NextAuth provides pre-built auth pages at /login and /signup
+- Your pages should link to these routes for authentication actions
+- Login/Signup buttons: Use <Link href="/login"> and <Link href="/signup">
+- Logout buttons: Use useAuth() hook's logout() function (from @/hooks/useAuth)
+- User session: Access via useAuth() hook (user, isAuthenticated, isLoading)
+- Protected actions: Check isAuthenticated before allowing user-specific operations
+- Example: "Sign In" button → <Link href="/login" className="...">Sign In</Link>
+- Example: "Get Started" button → <Link href="/signup" className="...">Get Started</Link>
+- DO NOT create custom login/signup forms in other pages - use the dedicated routes
+
 Context File Structure (src/lib/[name]-context.tsx):
 1. Define interface for context type
 2. Create context with createContext<Type | undefined>(undefined)
@@ -243,6 +281,12 @@ Functional Actions:
 - Every button must have onClick handler
 - Handler must perform actual operation
 - Operations connect to data or state layer
+
+Authentication Navigation:
+- Login buttons must link to /login route (use Next.js Link component)
+- Signup/Register buttons must link to /signup route (use Next.js Link component)
+- Never create inline auth forms - use the dedicated auth pages
+- Use useAuth() hook to access user session and logout functionality
 
 Visual Feedback:
 - Loading states during async operations

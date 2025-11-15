@@ -108,8 +108,8 @@ async function generateAllComponents() {
   console.log('🚀 Starting bulk component generation...');
   console.log(`📊 Target: ${CATEGORIES_TO_GENERATE.reduce((sum, cat) => sum + cat.count, 0)} components`);
 
-  let generated = 0;
-  let failed = 0;
+  const generated = 0;
+  const failed = 0;
 
   for (const category of CATEGORIES_TO_GENERATE) {
     console.log(`\\n📁 Generating ${category.count} components for: ${category.slug}`);

@@ -4,29 +4,29 @@
  * LangChain ReAct agent for intelligent search and retrieval
  */
 
-import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatAnthropic } from '@langchain/anthropic';
+import { v4 as uuidv4 } from 'uuid';
+import { getAnalyticsTracker } from './cache/analytics';
+import { getQuotaManager } from './cache/quota-manager';
+import { getSearchCache } from './cache/search-cache';
+import { analyzeIntent, generateSearchQueries } from './intent-analyzer';
+import {
+  logAnalytics,
+  logCacheStatus,
+  logIntentDetection,
+  logQuotaCheck,
+  logSearchResults,
+  logSearchStart,
+  logSearchStrategy,
+  SearchProgress,
+} from './logger';
+import { getCodeVectorStore } from './rag/vector-store';
+import { createToolRegistry } from './tools';
 // FIXME: AgentExecutor removed from @langchain/langgraph/prebuilt in newer versions
 // Need to update to use new LangGraph agent architecture
 // import { AgentExecutor, createReactAgent } from "@langchain/langgraph/prebuilt";
 // import { pull } from "langchain/hub";
-import type { SearchAgentConfig, SearchContext, SearchResult, SearchIntent } from './types';
-import { createToolRegistry } from './tools';
-import { analyzeIntent, generateSearchQueries } from './intent-analyzer';
-import { getSearchCache } from './cache/search-cache';
-import { getQuotaManager } from './cache/quota-manager';
-import { getAnalyticsTracker } from './cache/analytics';
-import { getCodeVectorStore } from './rag/vector-store';
-import { v4 as uuidv4 } from 'uuid';
-import {
-  logSearchStart,
-  logIntentDetection,
-  logSearchStrategy,
-  logSearchResults,
-  logQuotaCheck,
-  logCacheStatus,
-  logAnalytics,
-  SearchProgress,
-} from './logger';
+import type { SearchAgentConfig, SearchContext, SearchIntent, SearchResult } from './types';
 
 /**
  * Main Search Agent class
@@ -45,7 +45,7 @@ export class SearchAgent {
 
     // Initialize LLM
     this.llm = new ChatAnthropic({
-      model: config.llmModel || "claude-3-5-sonnet-20241022",
+      model: config.llmModel || 'claude-3-5-sonnet-20241022',
       temperature: config.llmTemperature || 0,
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -125,7 +125,9 @@ export class SearchAgent {
       // Analyze intent
       const progress = new SearchProgress('Analyzing search intent');
       const intent = await analyzeIntent(query, context);
-      progress.complete(`Detected: ${intent.category} (${(intent.confidence * 100).toFixed(0)}% confidence)`);
+      progress.complete(
+        `Detected: ${intent.category} (${(intent.confidence * 100).toFixed(0)}% confidence)`
+      );
 
       logIntentDetection(intent);
 
@@ -148,7 +150,14 @@ export class SearchAgent {
 
       // Format result
       const formatProgress = new SearchProgress('Formatting results');
-      const result = await this.formatSearchResult(searchResults, intent, searchId, orgId, startTime, context);
+      const result = await this.formatSearchResult(
+        searchResults,
+        intent,
+        searchId,
+        orgId,
+        startTime,
+        context
+      );
       formatProgress.complete();
 
       // Log comprehensive results
@@ -218,7 +227,16 @@ export class SearchAgent {
 
       return {
         success: false,
-        intent: { category: 'general-knowledge', searchSources: [], requiresScreenshot: false, requiresCodeExtraction: false, requiresBrandScraping: false, requiresCloneAnalysis: false, confidence: 0, priority: 'low' },
+        intent: {
+          category: 'general-knowledge',
+          searchSources: [],
+          requiresScreenshot: false,
+          requiresCodeExtraction: false,
+          requiresBrandScraping: false,
+          requiresCloneAnalysis: false,
+          confidence: 0,
+          priority: 'low',
+        },
         metadata: {
           searchId,
           orgId,
@@ -228,11 +246,13 @@ export class SearchAgent {
           cacheHit: false,
           tokensUsed: 0,
         },
-        errors: [{
-          tool: 'agent',
-          error: error.message || 'Search failed',
-          recoverable: false,
-        }],
+        errors: [
+          {
+            tool: 'agent',
+            error: error.message || 'Search failed',
+            recoverable: false,
+          },
+        ],
       };
     }
   }
@@ -241,7 +261,11 @@ export class SearchAgent {
    * Execute search based on intent using direct tool orchestration
    * Replaces ReAct agent with simple conditional logic
    */
-  private async executeSearch(intent: SearchIntent, query: string, context?: SearchContext): Promise<any> {
+  private async executeSearch(
+    intent: SearchIntent,
+    query: string,
+    context?: SearchContext
+  ): Promise<any> {
     const tools = this.agent.tools;
     const results: any = {
       toolsUsed: [],
@@ -295,11 +319,16 @@ export class SearchAgent {
   /**
    * Execute design inspiration search (for PM node)
    */
-  private async executeDesignSearch(tools: any[], intent: SearchIntent, query: string, results: any): Promise<void> {
+  private async executeDesignSearch(
+    tools: any[],
+    intent: SearchIntent,
+    query: string,
+    results: any
+  ): Promise<void> {
     console.log('[SearchAgent] 🎨 Executing design inspiration search...');
 
     // Use Exa for design-focused content
-    const exaTool = tools.find(t => t.name === 'exa_search');
+    const exaTool = tools.find((t) => t.name === 'exa_search');
     if (exaTool && intent.searchSources.includes('exa')) {
       try {
         const exaQuery = `${query} design system CSS color palette typography`;
@@ -319,7 +348,7 @@ export class SearchAgent {
 
     // Use Brand Scraper if brands mentioned
     if (intent.requiresBrandScraping && intent.brandMentions && intent.brandMentions.length > 0) {
-      const scraperTool = tools.find(t => t.name === 'brand_scraper');
+      const scraperTool = tools.find((t) => t.name === 'brand_scraper');
       if (scraperTool) {
         try {
           const brandUrl = `https://${intent.brandMentions[0]}.com`;
@@ -329,7 +358,9 @@ export class SearchAgent {
           if (parsed.success) {
             results.brandGuidelines.push(parsed);
             results.toolsUsed.push('brand_scraper');
-            console.log(`[SearchAgent] ✅ Scraped brand guidelines from ${intent.brandMentions[0]}`);
+            console.log(
+              `[SearchAgent] ✅ Scraped brand guidelines from ${intent.brandMentions[0]}`
+            );
           }
         } catch (error: any) {
           console.warn('[SearchAgent] Brand scraper failed:', error.message);
@@ -342,23 +373,31 @@ export class SearchAgent {
   /**
    * Execute code search (for Editor node)
    */
-  private async executeCodeSearch(tools: any[], intent: SearchIntent, query: string, results: any): Promise<void> {
+  private async executeCodeSearch(
+    tools: any[],
+    intent: SearchIntent,
+    query: string,
+    results: any
+  ): Promise<void> {
     console.log('[SearchAgent] 💻 Executing code search...');
 
     // GitHub search with progressive fallback
-    const githubTool = tools.find(t => t.name === 'github_search');
+    const githubTool = tools.find((t) => t.name === 'github_search');
     if (githubTool && intent.searchSources.includes('github')) {
       const techStackStr = intent.techStack?.join(' ') || '';
 
       // Try specific query first
-      let githubQuery = `${query} ${techStackStr}`.trim();
+      const githubQuery = `${query} ${techStackStr}`.trim();
       let found = false;
 
       // Progressive fallback
       const queries = [
-        githubQuery,  // Full query with tech stack
-        query,  // Without tech stack
-        query.split(' ').slice(0, 2).join(' '),  // First 2 words only
+        githubQuery, // Full query with tech stack
+        query, // Without tech stack
+        query
+          .split(' ')
+          .slice(0, 2)
+          .join(' '), // First 2 words only
       ];
 
       for (const q of queries) {
@@ -379,13 +418,17 @@ export class SearchAgent {
       }
 
       if (!found) {
-        results.errors.push({ tool: 'github_search', error: 'No repositories found', recoverable: true });
+        results.errors.push({
+          tool: 'github_search',
+          error: 'No repositories found',
+          recoverable: true,
+        });
       }
     }
 
     // Extract code if requested
     if (intent.requiresCodeExtraction && results.repositories.length > 0) {
-      const extractorTool = tools.find(t => t.name === 'code_extractor');
+      const extractorTool = tools.find((t) => t.name === 'code_extractor');
       if (extractorTool) {
         try {
           const topRepo = results.repositories[0];
@@ -412,7 +455,12 @@ export class SearchAgent {
   /**
    * Execute brand cloning (for brand-like requests)
    */
-  private async executeBrandClone(tools: any[], intent: SearchIntent, query: string, results: any): Promise<void> {
+  private async executeBrandClone(
+    tools: any[],
+    intent: SearchIntent,
+    query: string,
+    results: any
+  ): Promise<void> {
     console.log('[SearchAgent] 🎯 Executing brand clone analysis...');
 
     if (intent.brandMentions && intent.brandMentions.length > 0) {
@@ -420,7 +468,7 @@ export class SearchAgent {
 
       // Clone Analyzer
       if (intent.requiresCloneAnalysis) {
-        const cloneTool = tools.find(t => t.name === 'clone_analyzer');
+        const cloneTool = tools.find((t) => t.name === 'clone_analyzer');
         if (cloneTool) {
           try {
             const cloneResult = await cloneTool.func({ url: brandUrl });
@@ -429,14 +477,18 @@ export class SearchAgent {
             console.log(`[SearchAgent] ✅ Analyzed ${intent.brandMentions[0]} structure`);
           } catch (error: any) {
             console.warn('[SearchAgent] Clone analyzer failed:', error.message);
-            results.errors.push({ tool: 'clone_analyzer', error: error.message, recoverable: true });
+            results.errors.push({
+              tool: 'clone_analyzer',
+              error: error.message,
+              recoverable: true,
+            });
           }
         }
       }
 
       // Brand Scraper
       if (intent.requiresBrandScraping) {
-        const scraperTool = tools.find(t => t.name === 'brand_scraper');
+        const scraperTool = tools.find((t) => t.name === 'brand_scraper');
         if (scraperTool) {
           try {
             const scraperResult = await scraperTool.func({ url: brandUrl });
@@ -458,11 +510,16 @@ export class SearchAgent {
   /**
    * Execute API documentation search
    */
-  private async executeApiDocSearch(tools: any[], intent: SearchIntent, query: string, results: any): Promise<void> {
+  private async executeApiDocSearch(
+    tools: any[],
+    intent: SearchIntent,
+    query: string,
+    results: any
+  ): Promise<void> {
     console.log('[SearchAgent] 📚 Executing API documentation search...');
 
     // Exa is best for documentation
-    const exaTool = tools.find(t => t.name === 'exa_search');
+    const exaTool = tools.find((t) => t.name === 'exa_search');
     if (exaTool) {
       try {
         const docQuery = `${query} official documentation API reference`;
@@ -472,7 +529,9 @@ export class SearchAgent {
         if (parsed.success && parsed.results) {
           results.webResults.push(...parsed.results);
           results.toolsUsed.push('exa_search');
-          console.log(`[SearchAgent] ✅ Exa found ${parsed.results.length} documentation resources`);
+          console.log(
+            `[SearchAgent] ✅ Exa found ${parsed.results.length} documentation resources`
+          );
         }
       } catch (error: any) {
         console.warn('[SearchAgent] Exa search failed:', error.message);
@@ -484,12 +543,17 @@ export class SearchAgent {
   /**
    * Execute general web search (fallback chain)
    */
-  private async executeGeneralSearch(tools: any[], intent: SearchIntent, query: string, results: any): Promise<void> {
+  private async executeGeneralSearch(
+    tools: any[],
+    intent: SearchIntent,
+    query: string,
+    results: any
+  ): Promise<void> {
     console.log('[SearchAgent] 🌐 Executing general web search...');
 
     // Try Exa first
     if (intent.searchSources.includes('exa')) {
-      const exaTool = tools.find(t => t.name === 'exa_search');
+      const exaTool = tools.find((t) => t.name === 'exa_search');
       if (exaTool) {
         try {
           const exaResult = await exaTool.func({ query, numResults: 5 });
@@ -509,7 +573,7 @@ export class SearchAgent {
 
     // Fallback to DuckDuckGo
     if (intent.searchSources.includes('duckduckgo')) {
-      const ddgTool = tools.find(t => t.name === 'duckduckgo_search');
+      const ddgTool = tools.find((t) => t.name === 'duckduckgo_search');
       if (ddgTool) {
         try {
           const ddgResult = await ddgTool.func({ query, maxResults: 5 });
@@ -529,7 +593,7 @@ export class SearchAgent {
 
     // Final fallback to Brave
     if (intent.searchSources.includes('brave')) {
-      const braveTool = tools.find(t => t.name === 'brave_search');
+      const braveTool = tools.find((t) => t.name === 'brave_search');
       if (braveTool) {
         try {
           const braveResult = await braveTool.func({ query, count: 5 });
@@ -617,7 +681,10 @@ export class SearchAgent {
     const duration = Date.now() - startTime;
 
     const result: SearchResult = {
-      success: searchResults.repositories?.length > 0 || searchResults.webResults?.length > 0 || searchResults.brandGuidelines?.length > 0,
+      success:
+        searchResults.repositories?.length > 0 ||
+        searchResults.webResults?.length > 0 ||
+        searchResults.brandGuidelines?.length > 0,
       intent,
       metadata: {
         searchId,
@@ -641,18 +708,16 @@ export class SearchAgent {
 
       // NO repositories for PM node (they need design, not code)
       console.log('[SearchAgent] ✅ Filtered results for PM node (design only)');
-
     } else if (caller === 'editor-node' || intent.category === 'code-search') {
       // Editor Node: ONLY code data (NO design, NO brand guidelines)
       result.code = searchResults.code;
       result.repositories = searchResults.repositories?.slice(0, 3); // Top 3 repos only
-      result.webResults = searchResults.webResults?.filter((r: any) =>
-        r.url?.includes('github.com') || r.url?.includes('stackoverflow.com')
+      result.webResults = searchResults.webResults?.filter(
+        (r: any) => r.url?.includes('github.com') || r.url?.includes('stackoverflow.com')
       );
 
       // NO brand guidelines or design tokens for Editor
       console.log('[SearchAgent] ✅ Filtered results for Editor node (code only)');
-
     } else if (caller === 'context-analyzer' || intent.category === 'brand-clone') {
       // Context Analyzer: Full brand data for cloning
       result.cloneAnalysis = searchResults.cloneAnalysis;
@@ -660,7 +725,6 @@ export class SearchAgent {
       result.repositories = searchResults.repositories;
 
       console.log('[SearchAgent] ✅ Filtered results for Context Analyzer (brand clone)');
-
     } else {
       // General: Return all results
       result.repositories = searchResults.repositories;

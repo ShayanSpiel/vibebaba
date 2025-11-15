@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { pb } from "@/lib/database/pocketbase";
+import { type NextRequest, NextResponse } from 'next/server';
+import { pb } from '@/lib/database/pocketbase';
 
 /**
  * PATCH /api/database/[projectId]/[collection]/[id]
@@ -18,17 +18,14 @@ export async function PATCH(
     try {
       await pb.collection('projects').getOne(projectId);
     } catch (error) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     // Verify record exists and belongs to this project
     const existing = await pb.collection(collection).getOne(id);
     if (existing.projectId !== projectId) {
       return NextResponse.json(
-        { error: "Record does not belong to this project" },
+        { error: 'Record does not belong to this project' },
         { status: 403 }
       );
     }
@@ -39,15 +36,14 @@ export async function PATCH(
     console.log(`[Database API] Updated record in ${collection}:`, id);
 
     return NextResponse.json(updated);
-
   } catch (error: any) {
     console.error(`[Database API] Error updating record in ${collection}:`, error);
 
     return NextResponse.json(
       {
-        error: error.message || "Failed to update record",
+        error: error.message || 'Failed to update record',
         collection,
-        id
+        id,
       },
       { status: 500 }
     );
@@ -65,22 +61,18 @@ export async function DELETE(
 ) {
   const { projectId, collection, id } = await params;
   try {
-
     // Verify project exists
     try {
       await pb.collection('projects').getOne(projectId);
     } catch (error) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     // Verify record exists and belongs to this project
     const existing = await pb.collection(collection).getOne(id);
     if (existing.projectId !== projectId) {
       return NextResponse.json(
-        { error: "Record does not belong to this project" },
+        { error: 'Record does not belong to this project' },
         { status: 403 }
       );
     }
@@ -91,15 +83,14 @@ export async function DELETE(
     console.log(`[Database API] Deleted record from ${collection}:`, id);
 
     return NextResponse.json({ success: true });
-
   } catch (error: any) {
     console.error(`[Database API] Error deleting record from ${collection}:`, error);
 
     return NextResponse.json(
       {
-        error: error.message || "Failed to delete record",
+        error: error.message || 'Failed to delete record',
         collection,
-        id
+        id,
       },
       { status: 500 }
     );

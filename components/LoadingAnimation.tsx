@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 interface LoadingAnimationProps {
   type: 'building' | 'database' | 'design' | 'deploying' | 'thinking';
@@ -12,7 +12,7 @@ export function LoadingAnimation({ type, size = 'md', message }: LoadingAnimatio
   const sizeClasses = {
     sm: 'w-12 h-12',
     md: 'w-16 h-16',
-    lg: 'w-24 h-24'
+    lg: 'w-24 h-24',
   };
 
   return (
@@ -40,10 +40,7 @@ export function LoadingAnimation({ type, size = 'md', message }: LoadingAnimatio
 // Building animation - code brackets with pulse
 function BuildingAnimation() {
   return (
-    <motion.svg
-      viewBox="0 0 100 100"
-      className="w-full h-full"
-    >
+    <motion.svg viewBox="0 0 100 100" className="w-full h-full">
       <motion.path
         d="M 30 20 L 20 35 L 20 65 L 30 80"
         stroke="url(#gradient1)"
@@ -52,7 +49,7 @@ function BuildingAnimation() {
         fill="none"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.path
         d="M 70 20 L 80 35 L 80 65 L 70 80"
@@ -62,7 +59,7 @@ function BuildingAnimation() {
         fill="none"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 0.2 }}
       />
       <motion.circle
         cx="50"
@@ -71,7 +68,7 @@ function BuildingAnimation() {
         fill="url(#gradient1)"
         initial={{ scale: 0.8, opacity: 0.5 }}
         animate={{ scale: 1.2, opacity: 1 }}
-        transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
+        transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse' }}
       />
       <defs>
         <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -86,10 +83,7 @@ function BuildingAnimation() {
 // Database animation - rotating cylinder
 function DatabaseAnimation() {
   return (
-    <motion.svg
-      viewBox="0 0 100 100"
-      className="w-full h-full"
-    >
+    <motion.svg viewBox="0 0 100 100" className="w-full h-full">
       <motion.ellipse
         cx="50"
         cy="30"
@@ -100,7 +94,7 @@ function DatabaseAnimation() {
         strokeWidth="4"
         initial={{ opacity: 0.5 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
+        transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
       />
       <motion.path
         d="M 20 30 L 20 70 Q 20 80 50 80 Q 80 80 80 70 L 80 30"
@@ -118,7 +112,7 @@ function DatabaseAnimation() {
         strokeWidth="4"
         initial={{ opacity: 0.3 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse", delay: 0.4 }}
+        transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse', delay: 0.4 }}
       />
       <motion.ellipse
         cx="50"
@@ -148,26 +142,23 @@ function DesignAnimation() {
   const colors = ['#fbbf24', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981'];
 
   return (
-    <motion.svg
-      viewBox="0 0 100 100"
-      className="w-full h-full"
-    >
+    <motion.svg viewBox="0 0 100 100" className="w-full h-full">
       {colors.map((color, i) => (
         <motion.circle
           key={i}
-          cx={30 + (i * 10)}
+          cx={30 + i * 10}
           cy={50 + (i % 2 === 0 ? -10 : 10)}
           r="8"
           fill={color}
           initial={{ scale: 0.8, y: 0 }}
           animate={{
             scale: [0.8, 1.2, 0.8],
-            y: [0, -10, 0]
+            y: [0, -10, 0],
           }}
           transition={{
             duration: 1.5,
             repeat: Infinity,
-            delay: i * 0.2
+            delay: i * 0.2,
           }}
         />
       ))}
@@ -193,10 +184,7 @@ function DesignAnimation() {
 // Deploying animation - rocket with exhaust
 function DeployingAnimation() {
   return (
-    <motion.svg
-      viewBox="0 0 100 100"
-      className="w-full h-full"
-    >
+    <motion.svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Rocket body */}
       <motion.path
         d="M 50 20 L 40 50 L 40 70 L 50 75 L 60 70 L 60 50 Z"
@@ -239,10 +227,7 @@ function DeployingAnimation() {
 // Thinking animation - brain with pulse + sparkles
 function ThinkingAnimation() {
   return (
-    <motion.svg
-      viewBox="0 0 100 100"
-      className="w-full h-full"
-    >
+    <motion.svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Brain shape */}
       <motion.path
         d="M 30 40 Q 25 30 35 25 Q 40 22 45 25 Q 50 20 55 25 Q 60 22 65 25 Q 75 30 70 40 Q 75 50 70 60 Q 72 70 65 75 Q 60 78 55 75 Q 50 80 45 75 Q 40 78 35 75 Q 28 70 30 60 Q 25 50 30 40 Z"
@@ -257,8 +242,8 @@ function ThinkingAnimation() {
       {[...Array(3)].map((_, i) => (
         <motion.circle
           key={i}
-          cx={40 + (i * 10)}
-          cy={30 + (i * 8)}
+          cx={40 + i * 10}
+          cy={30 + i * 8}
           r="2"
           fill="#fbbf24"
           initial={{ scale: 0, opacity: 0 }}
@@ -266,7 +251,7 @@ function ThinkingAnimation() {
           transition={{
             duration: 1.5,
             repeat: Infinity,
-            delay: i * 0.3
+            delay: i * 0.3,
           }}
         />
       ))}
@@ -290,12 +275,12 @@ export function TypingIndicator() {
           className="w-2 h-2 bg-text-tertiary rounded-full"
           animate={{
             y: [0, -8, 0],
-            opacity: [0.3, 1, 0.3]
+            opacity: [0.3, 1, 0.3],
           }}
           transition={{
             duration: 0.6,
             repeat: Infinity,
-            delay: i * 0.15
+            delay: i * 0.15,
           }}
         />
       ))}
@@ -304,24 +289,30 @@ export function TypingIndicator() {
 }
 
 // Spinner for inline loading
-export function Spinner({ size = 'md', color = 'amber' }: { size?: 'sm' | 'md' | 'lg', color?: 'amber' | 'blue' | 'green' }) {
+export function Spinner({
+  size = 'md',
+  color = 'amber',
+}: {
+  size?: 'sm' | 'md' | 'lg';
+  color?: 'amber' | 'blue' | 'green';
+}) {
   const sizeClasses = {
     sm: 'w-4 h-4 border-2',
     md: 'w-6 h-6 border-2',
-    lg: 'w-8 h-8 border-3'
+    lg: 'w-8 h-8 border-3',
   };
 
   const colorClasses = {
     amber: 'border-amber-400 border-t-transparent',
     blue: 'border-blue-400 border-t-transparent',
-    green: 'border-green-400 border-t-transparent'
+    green: 'border-green-400 border-t-transparent',
   };
 
   return (
     <motion.div
       className={`${sizeClasses[size]} ${colorClasses[color]} rounded-full`}
       animate={{ rotate: 360 }}
-      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
     />
   );
 }

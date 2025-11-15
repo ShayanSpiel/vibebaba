@@ -1,13 +1,24 @@
 // @ts-nocheck
 // lib/langgraph/nodes/backend-node.ts
-import type { AppGenState } from '../../types';
-import { emitNodeStart, emitNodeComplete, emitNodeError, emitProgress } from '../../utils/logging/events';
-import { generateWithLogging, estimateTokens } from '../../utils/logging/ai-with-logging';
-import { safeJsonParse, extractAndParseJson } from '../../utils/json-parser';
-import { addAssistantMessage, conversationMemoryStore } from '@/lib/memory/conversation-memory';
-import { withLangSmithTracing, traceAICall } from '@/lib/langsmith/tracing';
-import { validateFeatureBackendCompleteness, getCompletenessReport } from '@/lib/langgraph/validation/post-gen/feature-backend-completeness';
+
 import { API_CONTRACT_SCHEMA } from '@/lib/langgraph/prompts/backend-integration';
+import {
+  getCompletenessReport,
+  validateFeatureBackendCompleteness,
+} from '@/lib/langgraph/validation/post-gen/feature-backend-completeness';
+import { traceAICall, withLangSmithTracing } from '@/lib/langsmith/tracing';
+import { conversationMemoryStore } from '@/lib/memory/conversation-memory';
+import { messageManager } from '@/lib/messaging/message-manager';
+import type { AppGenState } from '../../types';
+import { extractAndParseJson, safeJsonParse } from '../../utils/json-parser';
+import { estimateTokens, generateWithLogging } from '../../utils/logging/ai-with-logging';
+import {
+  emitChatMessage,
+  emitNodeComplete,
+  emitNodeError,
+  emitNodeStart,
+  emitProgress,
+} from '../../utils/logging/events';
 
 /**
  * BACKEND NODE
@@ -38,7 +49,7 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
       console.log('[Backend] 🔄 INCREMENTAL MODE: Adding to existing backend');
       console.log(`[Backend]   Existing collections: ${existingCollections.length}`);
       console.log(`[Backend]   Existing endpoints: ${existingEndpoints.length}`);
-      console.log(`[Backend]   Collections: ${existingCollections.map(c => c.name).join(', ')}`);
+      console.log(`[Backend]   Collections: ${existingCollections.map((c) => c.name).join(', ')}`);
     } else {
       console.log('[Backend] 🚀 NEW PROJECT MODE: Creating backend from scratch');
     }
@@ -46,8 +57,14 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     // RULE 1: Check if backend is needed
     console.log('[Backend] 🔍 Checking backend requirements...');
     console.log('[Backend] 🔍 state.context:', JSON.stringify(state.context, null, 2));
-    console.log('[Backend] 🔍 state.context?.pmPlan:', JSON.stringify(state.context?.pmPlan, null, 2));
-    console.log('[Backend] 🔍 state.context?.pmPlan?.needsBackend:', state.context?.pmPlan?.needsBackend);
+    console.log(
+      '[Backend] 🔍 state.context?.pmPlan:',
+      JSON.stringify(state.context?.pmPlan, null, 2)
+    );
+    console.log(
+      '[Backend] 🔍 state.context?.pmPlan?.needsBackend:',
+      state.context?.pmPlan?.needsBackend
+    );
 
     const needsBackend = state.context?.pmPlan?.needsBackend ?? false;
     console.log('[Backend] 🔍 needsBackend flag:', needsBackend);
@@ -61,12 +78,12 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
         taskDescription: 'Backend analysis completed',
         success: true,
         output: { status: 'skipped' },
-        summary: 'Static export mode - no backend needed'
+        summary: 'Static export mode - no backend needed',
       });
 
       return {
         backendConfig: undefined,
-        completedNodes: ['backend'] // Reducer auto-appends to existing array
+        completedNodes: ['backend'], // Reducer auto-appends to existing array
       };
     }
 
@@ -77,7 +94,7 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     emitNodeStart('backend', state, {
       userInput: state.userDescription,
       interpretation: 'Generating Express API with RESTful endpoints for data persistence',
-      plan: 'Creating database collections and API routes based on app requirements'
+      plan: 'Creating database collections and API routes based on app requirements',
     });
 
     // Build prompt for AI (with conversation context)
@@ -89,20 +106,24 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     const estimatedTokens = estimateTokens(prompt);
     console.log(`[Backend] 🤖 AI Call: API Generation (~${estimatedTokens} tokens)`);
 
-    const response = await traceAICall('backend-api-generation', async () => {
-      return await generateWithLogging({
-        prompt,
-        projectId: state.projectId,
-        nodeName: 'backend',
-        callType: 'generation',
+    const response = await traceAICall(
+      'backend-api-generation',
+      async () => {
+        return await generateWithLogging({
+          prompt,
+          projectId: state.projectId,
+          nodeName: 'backend',
+          callType: 'generation',
+          estimatedTokens,
+          attempt: 1,
+        });
+      },
+      {
+        needsBackend,
+        userDescription: state.userDescription,
         estimatedTokens,
-        attempt: 1
-      });
-    }, {
-      needsBackend,
-      userDescription: state.userDescription,
-      estimatedTokens
-    });
+      }
+    );
 
     // RULE 5: Log raw AI response (first 500 chars for debugging)
     console.log('[Backend] 📝 RAW AI RESPONSE (first 500 chars):');
@@ -110,7 +131,13 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     console.log('...\n');
 
     // Parse AI response
-    const generatedConfig = parseBackendResponse(response, state.projectId);
+    const { backendConfig: generatedConfig, allRequestedFeatures: updatedFeaturesFromParsing } =
+      parseBackendResponse(
+        response,
+        state.projectId,
+        state.allRequestedFeatures || [],
+        isIncremental
+      );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // INCREMENTAL MERGING: Add new collections, avoid duplicates
@@ -121,20 +148,22 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
       console.log('[Backend] 🔄 Merging new collections with existing backend...');
 
       // Filter out duplicate collections
-      const newCollections = generatedConfig.collections.filter(newCol =>
-        !existingCollections.some(existing =>
-          existing.name.toLowerCase() === newCol.name.toLowerCase()
-        )
+      const newCollections = generatedConfig.collections.filter(
+        (newCol) =>
+          !existingCollections.some(
+            (existing) => existing.name.toLowerCase() === newCol.name.toLowerCase()
+          )
       );
 
       console.log(`[Backend]   New collections: ${newCollections.length}`);
       console.log(`[Backend]   Existing preserved: ${existingCollections.length}`);
 
       // Filter out duplicate endpoints
-      const newEndpoints = (generatedConfig.apiEndpoints || []).filter(newEp =>
-        !existingEndpoints.some(existing =>
-          existing.path === newEp.path && existing.method === newEp.method
-        )
+      const newEndpoints = (generatedConfig.apiEndpoints || []).filter(
+        (newEp) =>
+          !existingEndpoints.some(
+            (existing) => existing.path === newEp.path && existing.method === newEp.method
+          )
       );
 
       console.log(`[Backend]   New endpoints: ${newEndpoints.length}`);
@@ -147,7 +176,7 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
         apiEndpoints: [...existingEndpoints, ...newEndpoints],
         pages: generatedConfig.pages || existingBackend?.pages || [],
         needsBackend: true,
-        projectId: state.projectId
+        projectId: state.projectId,
       };
 
       console.log('[Backend] ✅ Merged backend config:');
@@ -157,19 +186,24 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
       // New project - use generated config as-is
       backendConfig = generatedConfig;
       console.log('[Backend] ✅ New backend config generated:');
-      console.log(`[Backend]   Collections: ${backendConfig.collections.map(c => c.name).join(', ')}`);
+      console.log(
+        `[Backend]   Collections: ${backendConfig.collections.map((c) => c.name).join(', ')}`
+      );
       console.log(`[Backend]   Total Endpoints: ${backendConfig.apiEndpoints?.length || 0}`);
     }
 
     // DEPENDENCY ASSIGNMENT: Analyze collection relationships and assign dependencies
     console.log('[Backend] 🔗 Assigning feature dependencies based on collection relationships...');
-    const updatedFeatures = (state.allRequestedFeatures || []).map((feature: any) => {
+    // Use the features from parsing which already have collections assigned
+    const featuresWithCollections = updatedFeaturesFromParsing || state.allRequestedFeatures || [];
+    const updatedFeatures = featuresWithCollections.map((feature: any) => {
       const dependencies: string[] = [];
 
       // Find collection for this feature
-      const featureCollection = backendConfig.collections.find(c =>
-        c.name.toLowerCase() === feature.name.toLowerCase().replace(/\s+/g, '_') ||
-        c.name.toLowerCase() === feature.id.replace(/-/g, '_')
+      const featureCollection = backendConfig.collections.find(
+        (c) =>
+          c.name.toLowerCase() === feature.name.toLowerCase().replace(/\s+/g, '_') ||
+          c.name.toLowerCase() === feature.id.replace(/-/g, '_')
       );
 
       if (featureCollection && featureCollection.fields) {
@@ -179,15 +213,19 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
             // Find which feature owns this collection
             const relatedFeature = (state.allRequestedFeatures || []).find((f: any) => {
               const relatedCollectionName = field.options?.collectionId || field.relation;
-              return relatedCollectionName && (
-                relatedCollectionName.toLowerCase() === f.name.toLowerCase().replace(/\s+/g, '_') ||
-                relatedCollectionName.toLowerCase() === f.id.replace(/-/g, '_')
+              return (
+                relatedCollectionName &&
+                (relatedCollectionName.toLowerCase() ===
+                  f.name.toLowerCase().replace(/\s+/g, '_') ||
+                  relatedCollectionName.toLowerCase() === f.id.replace(/-/g, '_'))
               );
             });
 
             if (relatedFeature && !dependencies.includes(relatedFeature.id)) {
               dependencies.push(relatedFeature.id);
-              console.log(`[Backend]   ${feature.name} depends on ${relatedFeature.name} (${field.name} relation)`);
+              console.log(
+                `[Backend]   ${feature.name} depends on ${relatedFeature.name} (${field.name} relation)`
+              );
             }
           }
         });
@@ -195,7 +233,7 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
 
       return {
         ...feature,
-        dependencies
+        dependencies,
       };
     });
 
@@ -203,18 +241,20 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     console.log('[Backend] 🔍 Validating feature-backend completeness...');
     const completenessReport = getCompletenessReport({
       ...state,
-      backendConfig
+      backendConfig,
     });
 
     console.log(`[Backend] 📊 Completeness Report:`);
     console.log(`[Backend]   Total MVP features: ${completenessReport.totalFeatures}`);
-    console.log(`[Backend]   Features needing backend: ${completenessReport.featuresNeedingBackend}`);
+    console.log(
+      `[Backend]   Features needing backend: ${completenessReport.featuresNeedingBackend}`
+    );
     console.log(`[Backend]   Collections generated: ${completenessReport.collectionsGenerated}`);
     console.log(`[Backend]   Endpoints generated: ${completenessReport.endpointsGenerated}`);
 
     if (completenessReport.errors.length > 0) {
       console.log(`[Backend] ❌ ${completenessReport.errors.length} validation errors:`);
-      completenessReport.errors.forEach(err => {
+      completenessReport.errors.forEach((err) => {
         console.log(`[Backend]     • ${err.feature}: ${err.message}`);
         console.log(`[Backend]       💡 ${err.suggestion}`);
       });
@@ -222,7 +262,7 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
 
     if (completenessReport.warnings.length > 0) {
       console.log(`[Backend] ⚠️  ${completenessReport.warnings.length} validation warnings:`);
-      completenessReport.warnings.forEach(warn => {
+      completenessReport.warnings.forEach((warn) => {
         console.log(`[Backend]     • ${warn.feature}: ${warn.message}`);
       });
     }
@@ -234,30 +274,58 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     }
     console.log();
 
-    // CONVERSATION MEMORY: Track Backend's response
-    const backendResponse = `Generated backend configuration. Collections: ${backendConfig.collections.map(c => c.name).join(', ')}. Created ${backendConfig.apiEndpoints?.length || 0} API endpoints.`;
-    addAssistantMessage(state.projectId, backendResponse, 'backend');
-    console.log('[Backend] 💬 Tracked assistant response in conversation memory');
+    // ✅ FIX: USE MESSAGE MANAGER (was memory-only, never showed in UI!)
+    await messageManager.sendEvent(
+      state.projectId,
+      {
+        type: 'backend-complete',
+        collections: backendConfig.collections.map((c) => ({
+          name: c.name,
+          fields: c.fields.map((f) => f.name),
+        })),
+        endpoints:
+          backendConfig.apiEndpoints?.map((e) => ({
+            method: e.method,
+            path: e.path,
+            description: e.description,
+          })) || [],
+        needsAuth: backendConfig.collections.some(
+          (c) => c.name === 'users' || c.name.includes('auth')
+        ),
+      },
+      'backend'
+    );
+    console.log('[Backend] 💬 Sent backend summary via MessageManager (now displays in UI!)');
 
     // 💾 Save memory checkpoint after backend config generation
     await conversationMemoryStore.saveMemory(state.projectId);
     console.log('[Backend] 💾 Checkpoint saved after backend config generation');
 
     const duration = Date.now() - startTime;
+    const technicalSummary = `Generated ${backendConfig.collections.length} collections and ${backendConfig.apiEndpoints?.length || 0} API endpoints`;
+
     emitNodeComplete('backend', state, duration, {
       taskDescription: 'Generated backend collections and API endpoints',
       success: true,
       output: {
         collections: backendConfig.collections.length,
-        endpoints: backendConfig.apiEndpoints?.length || 0
+        endpoints: backendConfig.apiEndpoints?.length || 0,
       },
-      summary: `Generated ${backendConfig.collections.length} collections and ${backendConfig.apiEndpoints?.length || 0} API endpoints`
+      summary: technicalSummary,
     });
+
+    // Simple completion message for chat UI (no emojis, no technical details like "API endpoints")
+    const collectionCount = backendConfig.collections.length;
+    emitChatMessage(
+      state.projectId,
+      `**Backend Engineer**: Set up ${collectionCount} ${collectionCount === 1 ? 'database' : 'databases'} for your app. ✓`,
+      { type: 'info' } // Neutral color
+    );
 
     return {
       backendConfig,
       allRequestedFeatures: updatedFeatures, // Return features with assigned dependencies
-      completedNodes: ['backend'] // Reducer auto-appends to existing array
+      completedNodes: ['backend'], // Reducer auto-appends to existing array
     };
   } catch (error) {
     emitNodeError('backend', error as Error, state);
@@ -266,7 +334,7 @@ async function backendNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
     return {
       backendConfig: undefined,
       completedNodes: ['backend'], // Reducer auto-appends
-      errors: [{ node: 'backend', message: (error as Error).message }] // Reducer auto-appends
+      errors: [{ node: 'backend', message: (error as Error).message }], // Reducer auto-appends
     };
   }
 }
@@ -281,7 +349,8 @@ function buildBackendPrompt(state: AppGenState): string {
   // MVP FILTERING: Only build features marked for MVP AND requiring backend
   // In incremental mode, only generate for NEW features (not completed)
   // IMPORTANT: Must match frontend's feature filtering to avoid mismatches
-  let mvpFeatures = state.allRequestedFeatures?.filter((f: any) => f.included_in_mvp && f.backend_required) || [];
+  let mvpFeatures =
+    state.allRequestedFeatures?.filter((f: any) => f.included_in_mvp && f.backend_required) || [];
 
   if (isIncremental) {
     // Filter to only NEW features (not yet completed)
@@ -291,35 +360,50 @@ function buildBackendPrompt(state: AppGenState): string {
 
   console.log('[Backend] 📋 All features:', state.allRequestedFeatures?.length || 0);
   console.log('[Backend] 📋 MVP features for backend:', mvpFeatures.length);
-  console.log('[Backend] 📋 Backend requirements:', JSON.stringify(state.backendRequirements || {}, null, 2));
+  console.log(
+    '[Backend] 📋 Backend requirements:',
+    JSON.stringify(state.backendRequirements || {}, null, 2)
+  );
 
   // 🔍 Enhanced logging: Show which features will get collections
   console.log('[Backend] 🔍 Feature Analysis (MVP only):');
   state.allRequestedFeatures?.forEach((f: any) => {
-    const willGenerate = f.included_in_mvp && f.backend_required && (!isIncremental || !f.completed);
+    const willGenerate =
+      f.included_in_mvp && f.backend_required && (!isIncremental || !f.completed);
     console.log(`[Backend]   ${f.name}:`);
     console.log(`[Backend]     - Phase: ${f.included_in_mvp ? '1 (MVP)' : '2 (Later)'}`);
     console.log(`[Backend]     - Backend Required: ${f.backend_required ? '✅' : '❌'}`);
     console.log(`[Backend]     - Completed: ${f.completed ? '✅' : '❌'}`);
-    console.log(`[Backend]     - Status: ${willGenerate ? '✅ Will Generate Collections' : '⏭️ Skipped (Phase 2 or complete)'}`);
+    console.log(
+      `[Backend]     - Status: ${willGenerate ? '✅ Will Generate Collections' : '⏭️ Skipped (Phase 2 or complete)'}`
+    );
   });
 
-  // Check if auth is required
+  // Check if auth is required (comprehensive detection)
   const userDescription = state.userDescription.toLowerCase();
-  const needsAuth = userDescription.includes('auth') ||
-                    userDescription.includes('login') ||
-                    userDescription.includes('signup') ||
-                    userDescription.includes('sign up') ||
-                    userDescription.includes('register') ||
-                    userDescription.includes('user account');
+  const needsAuth =
+    state.allRequestedFeatures?.some(
+      (f) =>
+        f.id === 'user-authentication' ||
+        f.id === 'authentication' ||
+        /(login|signup|register|sign up|sign in|authentication|user account|auth|member)/i.test(
+          f.name + ' ' + f.description
+        )
+    ) ||
+    userDescription.includes('auth') ||
+    userDescription.includes('login') ||
+    userDescription.includes('signup') ||
+    userDescription.includes('sign up') ||
+    userDescription.includes('register') ||
+    userDescription.includes('user account');
 
   // Build feature list with auth if needed
   const featuresList = [...mvpFeatures];
   if (needsAuth) {
     featuresList.push({
-      name: 'User Authentication',
-      description: 'Register, login, logout, and user session management',
-      priority: 'high'
+      name: 'User Authentication (NextAuth.js)',
+      description: 'NextAuth.js authentication with OAuth and credentials providers',
+      priority: 'high',
     });
   }
 
@@ -328,7 +412,8 @@ function buildBackendPrompt(state: AppGenState): string {
     console.log(`[Backend]   - ${f.name}: ${f.description || 'no description'}`);
   });
 
-  const existingCollectionsContext = isIncremental ? `
+  const existingCollectionsContext = isIncremental
+    ? `
 🔄 **INCREMENTAL MODE - EXISTING BACKEND DETECTED:**
 
 Existing Collections (DO NOT DUPLICATE):
@@ -340,9 +425,12 @@ CRITICAL RULES FOR INCREMENTAL MODE:
 3. Ensure new collections don't conflict with existing ones
 4. Verify collection names are unique
 
-` : '';
+`
+    : '';
 
-  const backendInstructions = featuresList.length > 0 ? `
+  const backendInstructions =
+    featuresList.length > 0
+      ? `
 ${existingCollectionsContext}
 🚨 CRITICAL CONSTRAINT - READ THIS FIRST:
 Generate backend for these ${isIncremental ? 'NEW' : ''} features:
@@ -441,22 +529,49 @@ DECISION GUIDE:
 - ✅ Data management? → Use generic CRUD pattern (LIST endpoint is MANDATORY)
 - ⚠️  CRITICAL: Every collection needs a GET (list) endpoint with PLURAL name
 
-ROUTE-COLLECTION MAPPING:
-Map PM-assigned routes to collections they need.
+${
+  needsAuth
+    ? `
+🔐 AUTHENTICATION SYSTEM (NextAuth.js)
 
-PROCESS:
-1. Use feature routes from PM Node (already assigned)
-2. Match collections to feature requirements
-3. List collections each route interacts with
+You MUST create these 4 exact collections for NextAuth compatibility:
 
-MAPPING RULES:
-- Marketing pages (/) → Empty array (static content)
-- Feature pages → Include collections for feature operations
-- Dashboard pages → Include collections for aggregated data
+1. **users** collection:
+   - email (email, required, unique)
+   - emailVerified (date, optional)
+   - name (text, optional)
+   - avatar (text, optional)
+   - password (text, optional)
 
-${needsAuth ? `Include authentication endpoints: registerUser, loginUser, logoutUser, getCurrentUser.
-` : ''}Skip static UI sections - they don't need backend.
-` : '';
+2. **accounts** collection:
+   - userId (text, required)
+   - type (text, required)
+   - provider (text, required)
+   - providerAccountId (text, required)
+   - refresh_token (text, optional)
+   - access_token (text, optional)
+   - expires_at (number, optional)
+   - token_type (text, optional)
+   - scope (text, optional)
+   - id_token (text, optional)
+   - session_state (text, optional)
+
+3. **sessions** collection:
+   - sessionToken (text, required, unique)
+   - userId (text, required)
+   - expires (date, required)
+
+4. **verification_tokens** collection:
+   - identifier (text, required)
+   - token (text, required, unique)
+   - expires (date, required)
+
+⚠️ DO NOT create custom auth API endpoints - NextAuth handles all auth routes automatically.
+`
+    : ''
+}Skip static UI sections - they don't need backend.
+`
+      : '';
 
   return `🚨 [BACKEND NODE OUTPUT FORMAT] - READ THIS FIRST:
 Your response MUST be ONLY valid JSON. Start with { and end with }.
@@ -498,13 +613,6 @@ Return pure JSON:
 
 🚨 FIELD REQUIREMENT RULE: Set required: true for ALL user-defined fields by default. Only use required: false for explicitly optional fields like notes, tags, or metadata.
 Example: name, email, price, imageUrl → required: true | description, tags → required: false
-  "pageCollectionMapping": [
-    {
-      "route": "/route-path",
-      "collections": ["collection_name1", "collection_name2"],
-      "purpose": "Brief description of what this page does with these collections"
-    }
-  ],
   "apiEndpoints": [
     {
       "method": "GET|POST|PUT|DELETE|PATCH",
@@ -633,7 +741,12 @@ ENDPOINT PATTERN RULES:
 🚨 MANDATORY: Every endpoint MUST include "returns" field with correct capitalized collection name`;
 }
 
-function parseBackendResponse(response: string, projectId: string): NonNullable<AppGenState['backendConfig']> {
+function parseBackendResponse(
+  response: string,
+  projectId: string,
+  allRequestedFeatures: any[] = [],
+  isIncremental: boolean = false
+): { backendConfig: NonNullable<AppGenState['backendConfig']>; allRequestedFeatures: any[] } {
   // Use the improved JSON parser that handles markdown contamination
   const fallbackConfig = {
     collections: [],
@@ -642,7 +755,7 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
     apiEndpoints: [],
     relationships: [],
     port: null,
-    needsBackend: true
+    needsBackend: true,
   };
 
   const parsed = extractAndParseJson(response, {
@@ -650,7 +763,6 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
     pages: [],
     apiEndpoints: [],
     relationships: [],
-    pageCollectionMapping: []
   });
 
   // ✅ CRITICAL FIX: Remove duplicates and ensure every collection has a GET (list all) endpoint
@@ -658,7 +770,7 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
   const collections = (parsed.collections || []).map((col: any) => ({
     ...col,
     originalName: col.name, // Keep original for type names (e.g., "BlogPosts")
-    name: col.name.toLowerCase() // Normalize for PocketBase (e.g., "blogposts")
+    name: col.name.toLowerCase(), // Normalize for PocketBase (e.g., "blogposts")
   }));
   let apiEndpoints = parsed.apiEndpoints || [];
 
@@ -681,7 +793,7 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
 
   if (duplicatesRemoved.length > 0) {
     console.log(`[Backend] ⚠️  REMOVED ${duplicatesRemoved.length} duplicate endpoints:`);
-    duplicatesRemoved.forEach(dup => console.log(`[Backend]     ✂️  ${dup}`));
+    duplicatesRemoved.forEach((dup) => console.log(`[Backend]     ✂️  ${dup}`));
   }
 
   // Convert back to array
@@ -711,8 +823,8 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
       ep.collection = normalizedCollection;
 
       // Find the original collection to get originalName
-      const collectionObj = collections.find((c: any) =>
-        c.name.toLowerCase() === normalizedCollection
+      const collectionObj = collections.find(
+        (c: any) => c.name.toLowerCase() === normalizedCollection
       );
 
       if (collectionObj) {
@@ -723,8 +835,12 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
 
         // Skip void returns (DELETE endpoints)
         if (ep.returns !== 'void' && returnsWithoutArray !== expectedTypeName) {
-          console.log(`[Backend] 🔧 ${ep.handler}: Fixing incorrect return type "${ep.returns}" → "${expectedTypeName}${ep.returns.includes('[]') ? '[]' : ''}"`);
-          console.log(`[Backend]     Collection: "${normalizedCollection}" (original: "${nameForType}") → Expected type: "${expectedTypeName}"`);
+          console.log(
+            `[Backend] 🔧 ${ep.handler}: Fixing incorrect return type "${ep.returns}" → "${expectedTypeName}${ep.returns.includes('[]') ? '[]' : ''}"`
+          );
+          console.log(
+            `[Backend]     Collection: "${normalizedCollection}" (original: "${nameForType}") → Expected type: "${expectedTypeName}"`
+          );
           console.log(`[Backend]     ⚠️ AI GENERATED WRONG TYPE - This is why we validate!`);
 
           // Fix the return type to match collection name
@@ -745,11 +861,12 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
     const collectionName = collection.name.toLowerCase();
 
     // Check if there's a GET endpoint for this collection (list all)
-    const hasGetEndpoint = apiEndpoints.some((ep: any) =>
-      ep.method === 'GET' &&
-      !ep.path.includes(':id') && // Not a detail endpoint
-      (ep.collection?.toLowerCase() === collectionName ||
-       ep.path.toLowerCase().includes(collectionName))
+    const hasGetEndpoint = apiEndpoints.some(
+      (ep: any) =>
+        ep.method === 'GET' &&
+        !ep.path.includes(':id') && // Not a detail endpoint
+        (ep.collection?.toLowerCase() === collectionName ||
+          ep.path.toLowerCase().includes(collectionName))
     );
 
     if (!hasGetEndpoint) {
@@ -760,23 +877,61 @@ function parseBackendResponse(response: string, projectId: string): NonNullable<
         path: `/api/${collection.name}`,
         handler: handlerName,
         collection: collection.name,
-        description: `Get all ${collection.name}`
+        description: `Get all ${collection.name}`,
       };
 
       apiEndpoints.push(newEndpoint);
-      console.log(`[Backend] ⚠️  AUTO-FIXED: Added missing GET endpoint for "${collection.name}" → ${handlerName}()`);
+      console.log(
+        `[Backend] ⚠️  AUTO-FIXED: Added missing GET endpoint for "${collection.name}" → ${handlerName}()`
+      );
     }
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // UPDATE ALLREQUESTEDFEATURES WITH COLLECTIONS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  // Map collections to features based on which features were used for generation
+  const collectionNames = collections.map((c: any) => c.name);
+
+  console.log('[Backend] 🔗 Mapping collections to features...');
+  console.log(`[Backend]   Generated collections: ${collectionNames.join(', ')}`);
+
+  // Update allRequestedFeatures with collections
+  const updatedFeatures = (allRequestedFeatures || []).map((feature: any) => {
+    // Only update features that were part of MVP and required backend
+    if (feature.included_in_mvp && feature.backend_required) {
+      // In incremental mode, only update if not completed
+      if (!isIncremental || !feature.completed) {
+        console.log(`[Backend]   ✅ Assigning ALL collections to feature: ${feature.name}`);
+        return {
+          ...feature,
+          collections: collectionNames, // Assign all generated collections to this feature
+          completed: true, // Mark as completed since we generated backend for it
+        };
+      }
+    }
+    return feature;
+  });
+
+  console.log('[Backend] 🎯 Updated Features with Collections:');
+  updatedFeatures.forEach((f: any) => {
+    if (f.collections && f.collections.length > 0) {
+      console.log(`[Backend]   ${f.name}: ${f.collections.join(', ')}`);
+    }
+  });
+
   return {
-    collections: parsed.collections || [],
-    pages: parsed.pages || [],
-    apiEndpoints,
-    pageCollectionMapping: parsed.pageCollectionMapping || [],
-    projectId,
-    relationships: parsed.relationships || [],
-    port: null, // Assigned during deployment
-    needsBackend: true
+    backendConfig: {
+      collections: parsed.collections || [],
+      pages: parsed.pages || [],
+      apiEndpoints,
+      projectId,
+      relationships: parsed.relationships || [],
+      port: null, // Assigned during deployment
+      needsBackend: true,
+    },
+    allRequestedFeatures: updatedFeatures, // Return updated features separately
   };
 }
 
@@ -799,7 +954,7 @@ function autoDetectParameters(endpoint: any): any[] {
       type: 'string',
       required: true,
       location: 'path',
-      description: `${paramName} parameter`
+      description: `${paramName} parameter`,
     });
   });
 
@@ -809,22 +964,23 @@ function autoDetectParameters(endpoint: any): any[] {
     const handlerLower = handler.toLowerCase();
 
     // Search/filter/query endpoints need query params
-    if (pathLower.includes('/search') ||
-        pathLower.includes('/filter') ||
-        pathLower.includes('/query') ||
-        handlerLower.includes('search') ||
-        handlerLower.includes('filter') ||
-        handlerLower.includes('query') ||
-        handlerLower.includes('find') ||
-        handlerLower.includes('lookup')) {
-
+    if (
+      pathLower.includes('/search') ||
+      pathLower.includes('/filter') ||
+      pathLower.includes('/query') ||
+      handlerLower.includes('search') ||
+      handlerLower.includes('filter') ||
+      handlerLower.includes('query') ||
+      handlerLower.includes('find') ||
+      handlerLower.includes('lookup')
+    ) {
       // Add generic query parameters
       parameters.push({
         name: 'query',
         type: 'string',
         required: false,
         location: 'query',
-        description: 'Search query'
+        description: 'Search query',
       });
 
       // If it seems like a list/search, add pagination
@@ -833,7 +989,7 @@ function autoDetectParameters(endpoint: any): any[] {
         type: 'number',
         required: false,
         location: 'query',
-        description: 'Number of items to return'
+        description: 'Number of items to return',
       });
     }
 
@@ -847,7 +1003,7 @@ function autoDetectParameters(endpoint: any): any[] {
         type: 'number',
         required: false,
         location: 'query',
-        description: 'Number of items to return'
+        description: 'Number of items to return',
       });
 
       parameters.push({
@@ -855,7 +1011,7 @@ function autoDetectParameters(endpoint: any): any[] {
         type: 'number',
         required: false,
         location: 'query',
-        description: 'Number of items to skip'
+        description: 'Number of items to skip',
       });
     }
   }
@@ -875,7 +1031,7 @@ function autoDetectParameters(endpoint: any): any[] {
       type: 'object',
       required: true,
       location: 'body',
-      description: `${resourceName || 'Resource'} data`
+      description: `${resourceName || 'Resource'} data`,
     });
   }
 
@@ -898,8 +1054,8 @@ function inferReturnType(endpoint: any, collections: any[]): string {
 
   // Try to find matching collection and capitalize
   if (collection) {
-    const collectionObj = collections.find((c: any) =>
-      c.name.toLowerCase() === collection.toLowerCase()
+    const collectionObj = collections.find(
+      (c: any) => c.name.toLowerCase() === collection.toLowerCase()
     );
 
     if (collectionObj) {

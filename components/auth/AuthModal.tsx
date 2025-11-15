@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { usePocketBaseAuth } from "./PocketBaseAuthProvider";
-import { useLanguage } from "@/lib/language-context";
-import { useTranslations } from "next-intl";
-import { Button, Input } from "@/components/ui";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { type FormEvent, useState } from 'react';
+import { Button, Input } from '@/components/ui';
+import { useLanguage } from '@/lib/language-context';
+import { usePocketBaseAuth } from './PocketBaseAuthProvider';
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -13,19 +13,19 @@ type AuthModalProps = {
 };
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const { login, signup, loginWithGoogle } = usePocketBaseAuth();
   const { dir } = useLanguage();
-  const t = useTranslations("auth");
-  const tCommon = useTranslations("common");
-  const tErrors = useTranslations("errors");
-  const isRTL = dir === "rtl";
+  const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
+  const isRTL = dir === 'rtl';
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -33,17 +33,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setIsLoading(true);
 
     try {
-      if (mode === "signup") {
+      if (mode === 'signup') {
         await signup(email, password, name);
         onClose();
         // Reset form
-        setEmail("");
-        setPassword("");
-        setName("");
+        setEmail('');
+        setPassword('');
+        setName('');
 
         // Redirect to projects page after signup
         router.push('/projects');
@@ -51,8 +51,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         await login(email, password);
         onClose();
         // Reset form
-        setEmail("");
-        setPassword("");
+        setEmail('');
+        setPassword('');
 
         // Get redirect URL from search params (set by middleware)
         const redirectUrl = searchParams.get('redirect');
@@ -65,7 +65,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         }
       }
     } catch (err: any) {
-      setError(err.message || tErrors("generic"));
+      setError(err.message || tErrors('generic'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -73,7 +73,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   const handleGoogleSignIn = async () => {
-    setError("");
+    setError('');
     setIsLoading(true);
     try {
       await loginWithGoogle();
@@ -82,9 +82,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
 
       // Reset form
-      setEmail("");
-      setPassword("");
-      setName("");
+      setEmail('');
+      setPassword('');
+      setName('');
 
       // Get redirect URL from search params (set by middleware)
       const redirectUrl = searchParams.get('redirect');
@@ -96,7 +96,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         router.push('/projects');
       }
     } catch (err: any) {
-      setError(err.message || "Google sign-in failed");
+      setError(err.message || 'Google sign-in failed');
       console.error(err);
       setIsLoading(false);
     }
@@ -115,7 +115,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <button
           onClick={onClose}
           className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} p-2 rounded-xl bg-transparent hover:bg-background-overlay text-text-tertiary hover:text-text-primary transition-all duration-200 group`}
-          aria-label={tCommon("close")}
+          aria-label={tCommon('close')}
         >
           <svg
             className="w-5 h-5 transition-transform duration-200 group-hover:rotate-90"
@@ -134,31 +134,39 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div
-            className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-6 transition-transform duration-300 hover:scale-105 shadow-lg"
-          >
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          <div className="w-16 h-16 bg-gradient-brand rounded-xl flex items-center justify-center mx-auto mb-6 transition-transform duration-300 hover:scale-105 shadow-lg">
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-text-primary mb-2">
-            {mode === "signin" ? t("welcomeBack") : t("createYourAccount")}
+            {mode === 'signin' ? t('welcomeBack') : t('createYourAccount')}
           </h2>
           <p className="text-text-secondary text-sm">
-            {mode === "signin"
-              ? t("signInSubtitle")
-              : t("signUpSubtitle")}
+            {mode === 'signin' ? t('signInSubtitle') : t('signUpSubtitle')}
           </p>
         </div>
 
         {/* Error message */}
         {error && (
-          <div
-            className="mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm animate-in slide-in-from-top duration-200"
-          >
+          <div className="mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm animate-in slide-in-from-top duration-200">
             <div className="flex items-start gap-3">
               <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>{error}</span>
             </div>
@@ -167,14 +175,14 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {mode === "signup" && (
+          {mode === 'signup' && (
             <Input
               id="name"
-              label={t("name")}
+              label={t('name')}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t("namePlaceholder")}
+              placeholder={t('namePlaceholder')}
               required
               disabled={isLoading}
             />
@@ -182,22 +190,22 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           <Input
             id="email"
-            label={t("email")}
+            label={t('email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder={t("emailPlaceholder")}
+            placeholder={t('emailPlaceholder')}
             required
             disabled={isLoading}
           />
 
           <Input
             id="password"
-            label={t("password")}
+            label={t('password')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={t("passwordPlaceholder")}
+            placeholder={t('passwordPlaceholder')}
             required
             minLength={6}
             disabled={isLoading}
@@ -212,7 +220,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               fullWidth
               className="rounded-xl"
             >
-              {mode === "signin" ? t("signIn") : t("signUp")}
+              {mode === 'signin' ? t('signIn') : t('signUp')}
             </Button>
           </div>
         </form>
@@ -234,7 +242,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           disabled={isLoading}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-background-raised hover:bg-background-overlay border border-border-light rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-text-primary group"
         >
-          <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24">
+          <svg
+            className="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
+            viewBox="0 0 24 24"
+          >
             <path
               fill="currentColor"
               className="text-brand-primary"
@@ -256,40 +267,40 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          <span>{t("continueWithGoogle")}</span>
+          <span>{t('continueWithGoogle')}</span>
         </button>
 
         {/* Toggle mode */}
         <div className="mt-8 pt-6 border-t border-border-subtle text-center">
           <p className="text-sm text-text-secondary">
-            {mode === "signin" ? (
+            {mode === 'signin' ? (
               <>
-                {t("dontHaveAccount")}{" "}
+                {t('dontHaveAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
-                    setMode("signup");
-                    setError("");
+                    setMode('signup');
+                    setError('');
                   }}
                   className="text-brand-primary font-medium hover:text-brand-primary-hover transition-colors duration-200 underline-offset-4 hover:underline"
                   disabled={isLoading}
                 >
-                  {t("signUp")}
+                  {t('signUp')}
                 </button>
               </>
             ) : (
               <>
-                {t("alreadyHaveAccount")}{" "}
+                {t('alreadyHaveAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
-                    setMode("signin");
-                    setError("");
+                    setMode('signin');
+                    setError('');
                   }}
                   className="text-brand-primary font-medium hover:text-brand-primary-hover transition-colors duration-200 underline-offset-4 hover:underline"
                   disabled={isLoading}
                 >
-                  {t("signIn")}
+                  {t('signIn')}
                 </button>
               </>
             )}

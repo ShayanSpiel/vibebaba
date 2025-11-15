@@ -72,9 +72,7 @@ async function createSettingsCollection() {
           },
         },
       ],
-      indexes: [
-        'CREATE UNIQUE INDEX idx_settings_key ON settings (key)',
-      ],
+      indexes: ['CREATE UNIQUE INDEX idx_settings_key ON settings (key)'],
       listRule: null, // Only admins can list
       viewRule: null, // Only admins can view
       createRule: null, // Only admins can create

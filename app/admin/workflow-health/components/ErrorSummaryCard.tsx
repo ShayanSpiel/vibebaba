@@ -1,7 +1,7 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 interface ErrorSummaryCardProps {
   category: string;
@@ -18,7 +18,7 @@ export function ErrorSummaryCard({
   totalWarnings,
   successRate,
   status,
-  timestamp
+  timestamp,
 }: ErrorSummaryCardProps) {
   const statusColors = {
     healthy: 'bg-green-500/10 text-green-500 border-green-500/20',
@@ -30,9 +30,7 @@ export function ErrorSummaryCard({
     <Card className="p-6 bg-background-raised border-border-subtle">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-text-primary">{category}</h3>
-        <Badge className={`${statusColors[status]} border`}>
-          {status.toUpperCase()}
-        </Badge>
+        <Badge className={`${statusColors[status]} border`}>{status.toUpperCase()}</Badge>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -52,7 +50,9 @@ export function ErrorSummaryCard({
 
       {timestamp && (
         <div className="mt-4 pt-4 border-t border-border-subtle">
-          <p className="text-xs text-text-tertiary">Last updated: {new Date(timestamp).toLocaleString()}</p>
+          <p className="text-xs text-text-tertiary">
+            Last updated: {new Date(timestamp).toLocaleString()}
+          </p>
         </div>
       )}
     </Card>

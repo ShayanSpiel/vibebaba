@@ -13,7 +13,9 @@ export class MemoryConsolidator {
    * Consolidate user observations into preferences
    */
   async consolidateUserMemory(userId: string): Promise<void> {
-    console.log(`[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`);
+    console.log(
+      `[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`
+    );
     return;
 
     // DEPRECATED CODE BELOW (commented out - now using LangChain memory)
@@ -85,7 +87,9 @@ export class MemoryConsolidator {
    * Consolidate project observations
    */
   async consolidateProjectMemory(projectId: string): Promise<void> {
-    console.log(`[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`);
+    console.log(
+      `[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`
+    );
     return;
   }
 
@@ -93,7 +97,9 @@ export class MemoryConsolidator {
    * Run consolidation for all users (cron job)
    */
   async consolidateAll(): Promise<void> {
-    console.log(`[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`);
+    console.log(
+      `[Consolidator] DEPRECATED: This service is no longer used (LangChain memory agent replacement)`
+    );
     return;
   }
 }

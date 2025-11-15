@@ -19,11 +19,11 @@ const DEPLOYMENTS_DIR = path.join(__dirname, '../deployment-server/deployments')
  */
 function unescapeContent(content) {
   return content
-    .replace(/\\n/g, '\n')           // Fix newlines
-    .replace(/\\"/g, '"')             // Fix double quotes
-    .replace(/\\'/g, "'")             // Fix single quotes
-    .replace(/\\t/g, '\t')           // Fix tabs
-    .replace(/\\\\/g, '\\');         // Fix escaped backslashes
+    .replace(/\\n/g, '\n') // Fix newlines
+    .replace(/\\"/g, '"') // Fix double quotes
+    .replace(/\\'/g, "'") // Fix single quotes
+    .replace(/\\t/g, '\t') // Fix tabs
+    .replace(/\\\\/g, '\\'); // Fix escaped backslashes
 }
 
 /**
@@ -57,7 +57,7 @@ async function processFile(filePath) {
 async function fixAllProjects() {
   console.log('🔍 Scanning deployment directory...\n');
 
-  if (!await fs.pathExists(DEPLOYMENTS_DIR)) {
+  if (!(await fs.pathExists(DEPLOYMENTS_DIR))) {
     console.log('❌ Deployments directory not found:', DEPLOYMENTS_DIR);
     return;
   }
@@ -104,7 +104,7 @@ fixAllProjects()
     console.log('\n✅ Done!');
     process.exit(0);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('\n❌ Fatal error:', error);
     process.exit(1);
   });

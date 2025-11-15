@@ -3,8 +3,13 @@
  * Automatically detects missing or insufficient design examples
  */
 
-import { pb, type DesignExample, type ExampleCategory, type ExampleGenerationQueue } from './database/pocketbase';
-import { STYLE_VARIANTS, INDUSTRY_CONTEXTS } from './examples/example-categories';
+import {
+  type DesignExample,
+  type ExampleCategory,
+  type ExampleGenerationQueue,
+  pb,
+} from './database/pocketbase';
+import { INDUSTRY_CONTEXTS, STYLE_VARIANTS } from './examples/example-categories';
 
 export interface Gap {
   categoryId: string;
@@ -60,7 +65,7 @@ async function getExamplesForCategory(categoryId: string): Promise<DesignExample
  * Check style variant diversity
  */
 function checkStyleDiversity(examples: DesignExample[]): string[] {
-  const existingStyles = new Set(examples.map(ex => ex.styleVariant));
+  const existingStyles = new Set(examples.map((ex) => ex.styleVariant));
   const missingStyles: string[] = [];
 
   for (const style of STYLE_VARIANTS) {
@@ -78,8 +83,8 @@ function checkStyleDiversity(examples: DesignExample[]): string[] {
 function checkIndustryDiversity(examples: DesignExample[]): string[] {
   const existingIndustries = new Set<string>();
 
-  examples.forEach(ex => {
-    ex.industryContext.forEach(industry => existingIndustries.add(industry));
+  examples.forEach((ex) => {
+    ex.industryContext.forEach((industry) => existingIndustries.add(industry));
   });
 
   const missingIndustries: string[] = [];
@@ -100,9 +105,7 @@ function checkIndustryDiversity(examples: DesignExample[]): string[] {
  * Check quality issues
  */
 function checkQualityIssues(examples: DesignExample[], minScore: number = 80): string[] {
-  return examples
-    .filter(ex => ex.qualityScore < minScore)
-    .map(ex => ex.id);
+  return examples.filter((ex) => ex.qualityScore < minScore).map((ex) => ex.id);
 }
 
 /**
@@ -207,10 +210,10 @@ export async function detectAllGaps(): Promise<GapDetectionReport> {
   }
 
   // Calculate summary
-  const criticalGaps = allGaps.filter(g => g.gapType === 'critical').length;
-  const targetNotMet = allGaps.filter(g => g.gapType === 'target_not_met').length;
-  const diversityGaps = allGaps.filter(g => g.gapType === 'diversity').length;
-  const qualityIssues = allGaps.filter(g => g.gapType === 'quality').length;
+  const criticalGaps = allGaps.filter((g) => g.gapType === 'critical').length;
+  const targetNotMet = allGaps.filter((g) => g.gapType === 'target_not_met').length;
+  const diversityGaps = allGaps.filter((g) => g.gapType === 'diversity').length;
+  const qualityIssues = allGaps.filter((g) => g.gapType === 'quality').length;
 
   const report: GapDetectionReport = {
     timestamp: new Date().toISOString(),
@@ -238,9 +241,11 @@ export async function createGenerationTasksFromGaps(
 
   for (const gap of gaps) {
     // Check if task already exists for this category
-    const existingTasks = await pb.collection('example_generation_queue').getFullList<ExampleGenerationQueue>({
-      filter: `categoryId = "${gap.categoryId}" && (status = "pending" || status = "in_progress")`,
-    });
+    const existingTasks = await pb
+      .collection('example_generation_queue')
+      .getFullList<ExampleGenerationQueue>({
+        filter: `categoryId = "${gap.categoryId}" && (status = "pending" || status = "in_progress")`,
+      });
 
     if (existingTasks.length > 0) {
       console.log(`Task already exists for ${gap.categoryName}, skipping`);
@@ -248,7 +253,7 @@ export async function createGenerationTasksFromGaps(
     }
 
     let targetCount = gap.details.required;
-    let generationConfig = {
+    const generationConfig = {
       styleVariants: Array.from(STYLE_VARIANTS),
       industryContexts: INDUSTRY_CONTEXTS.slice(0, 5),
       complexityLevels: ['simple', 'medium', 'complex'],
@@ -346,19 +351,17 @@ export async function getCoverageMatrix(): Promise<{
     const byStyle: Record<string, number> = {};
     const byIndustry: Record<string, number> = {};
 
-    examples.forEach(ex => {
+    examples.forEach((ex) => {
       byStyle[ex.styleVariant] = (byStyle[ex.styleVariant] || 0) + 1;
 
-      ex.industryContext.forEach(industry => {
+      ex.industryContext.forEach((industry) => {
         byIndustry[industry] = (byIndustry[industry] || 0) + 1;
       });
     });
 
     const avgQuality =
       examples.length > 0
-        ? Math.round(
-            examples.reduce((sum, ex) => sum + ex.qualityScore, 0) / examples.length
-          )
+        ? Math.round(examples.reduce((sum, ex) => sum + ex.qualityScore, 0) / examples.length)
         : 0;
 
     matrix.push({
@@ -399,15 +402,15 @@ export function formatGapReport(report: GapDetectionReport): string {
   output += `GAPS BY CATEGORY:\n`;
   output += `${'-'.repeat(60)}\n`;
 
-  report.gapsByCategory.forEach(gap => {
+  report.gapsByCategory.forEach((gap) => {
     const icon =
       gap.gapType === 'critical'
         ? '🚨'
         : gap.gapType === 'target_not_met'
-        ? '⚠️'
-        : gap.gapType === 'diversity'
-        ? '🎨'
-        : '⭐';
+          ? '⚠️'
+          : gap.gapType === 'diversity'
+            ? '🎨'
+            : '⭐';
 
     output += `\n${icon} ${gap.categoryName} (Priority: ${gap.priority})\n`;
     output += `   Type: ${gap.gapType}\n`;

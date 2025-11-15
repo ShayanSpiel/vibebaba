@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
+import { logAdminAction, requireAdmin } from '@/lib/auth/admin-middleware';
 import { activatePackage } from '@/lib/database/pocketbase-credits';
 
 /**
@@ -12,23 +12,14 @@ export async function POST(req: NextRequest) {
       const { userId, packageId } = await req.json();
 
       if (!userId || !packageId) {
-        return NextResponse.json(
-          { error: 'userId and packageId are required' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'userId and packageId are required' }, { status: 400 });
       }
 
       // Activate package for user
       await activatePackage(userId, packageId);
 
       // Log admin action
-      await logAdminAction(
-        admin.id,
-        'assign_package',
-        'user',
-        userId,
-        { packageId }
-      );
+      await logAdminAction(admin.id, 'assign_package', 'user', userId, { packageId });
 
       return NextResponse.json({
         success: true,

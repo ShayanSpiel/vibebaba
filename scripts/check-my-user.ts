@@ -41,13 +41,12 @@ async function checkUser() {
         console.log('\nTrying to update role to admin...');
 
         const updated = await pb.collection('users').update(authData.record.id, {
-          role: 'admin'
+          role: 'admin',
         });
 
         console.log('✅ Role updated to admin!');
         console.log(`New role: ${updated.role}`);
       }
-
     } catch (authError: any) {
       if (authError.status === 400) {
         console.log('❌ Authentication failed - incorrect password');
@@ -58,7 +57,6 @@ async function checkUser() {
         throw authError;
       }
     }
-
   } catch (error: any) {
     console.error('❌ Error:', error.message);
     if (error.data) {

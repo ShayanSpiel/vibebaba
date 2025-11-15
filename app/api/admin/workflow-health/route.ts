@@ -4,7 +4,7 @@
  * Provides comprehensive workflow monitoring data for admin dashboard
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-middleware';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
@@ -35,10 +35,20 @@ function getTimeframeFilter(timeframe: string): string {
 
 // Helper to categorize nodes
 function categorizeNode(nodeName: string): string {
-  const appGenNodes = ['founder', 'pm', 'ux', 'frontend', 'backend', 'qa', 'devops', 'frontend_router'];
+  const appGenNodes = [
+    'founder',
+    'pm',
+    'ux',
+    'frontend',
+    'backend',
+    'qa',
+    'devops',
+    'frontend_router',
+  ];
 
   if (appGenNodes.includes(nodeName)) return 'app_generation';
-  if (nodeName === 'editor' || nodeName === 'context_analyzer' || nodeName === 'input_detector') return 'editor';
+  if (nodeName === 'editor' || nodeName === 'context_analyzer' || nodeName === 'input_detector')
+    return 'editor';
 
   return 'other';
 }
@@ -78,7 +88,9 @@ export async function GET(req: NextRequest) {
         });
       } catch (error: any) {
         if (error.status === 404) {
-          console.warn('[Workflow Health] workflow_execution_logs collection not found - returning empty data');
+          console.warn(
+            '[Workflow Health] workflow_execution_logs collection not found - returning empty data'
+          );
         } else {
           throw error;
         }
@@ -94,7 +106,9 @@ export async function GET(req: NextRequest) {
         });
       } catch (error: any) {
         if (error.status === 404) {
-          console.warn('[Workflow Health] editor_operation_logs collection not found - returning empty data');
+          console.warn(
+            '[Workflow Health] editor_operation_logs collection not found - returning empty data'
+          );
         } else {
           throw error;
         }
@@ -110,7 +124,9 @@ export async function GET(req: NextRequest) {
         });
       } catch (error: any) {
         if (error.status === 404) {
-          console.warn('[Workflow Health] deployment_logs collection not found - returning empty data');
+          console.warn(
+            '[Workflow Health] deployment_logs collection not found - returning empty data'
+          );
         } else {
           throw error;
         }
@@ -126,7 +142,9 @@ export async function GET(req: NextRequest) {
         });
       } catch (error: any) {
         if (error.status === 404) {
-          console.warn('[Workflow Health] validation_errors collection not found - returning empty data');
+          console.warn(
+            '[Workflow Health] validation_errors collection not found - returning empty data'
+          );
         } else {
           throw error;
         }
@@ -137,14 +155,15 @@ export async function GET(req: NextRequest) {
       const workflowWarnings = workflowLogs.filter((log: any) => log.status === 'warning');
       const editorErrors = editorLogs.filter((log: any) => log.status === 'error');
       const deploymentFailures = deploymentLogs.filter((log: any) => log.build_status === 'failed');
-      const validationErrorsCount = validationErrors.filter((e: any) => e.severity === 'error').length;
+      const validationErrorsCount = validationErrors.filter(
+        (e: any) => e.severity === 'error'
+      ).length;
 
       const totalExecutions = workflowLogs.length;
       const totalErrors = workflowErrors.length;
       const totalWarnings = workflowWarnings.length;
-      const successRate = totalExecutions > 0
-        ? ((totalExecutions - totalErrors) / totalExecutions) * 100
-        : 100;
+      const successRate =
+        totalExecutions > 0 ? ((totalExecutions - totalErrors) / totalExecutions) * 100 : 100;
 
       // Determine health status
       let healthStatus: 'healthy' | 'degraded' | 'critical';
@@ -174,18 +193,20 @@ export async function GET(req: NextRequest) {
         stats.total_duration_ms += log.duration_ms || 0;
       });
 
-      const nodeBreakdown = Array.from(nodeStats.values()).map(stats => ({
+      const nodeBreakdown = Array.from(nodeStats.values()).map((stats) => ({
         ...stats,
-        success_rate: stats.executions > 0
-          ? parseFloat((((stats.executions - stats.errors) / stats.executions) * 100).toFixed(2))
-          : 100,
-        avg_duration_ms: stats.executions > 0
-          ? Math.round(stats.total_duration_ms / stats.executions)
-          : 0,
+        success_rate:
+          stats.executions > 0
+            ? parseFloat((((stats.executions - stats.errors) / stats.executions) * 100).toFixed(2))
+            : 100,
+        avg_duration_ms:
+          stats.executions > 0 ? Math.round(stats.total_duration_ms / stats.executions) : 0,
       }));
 
       // Most common errors
-      const errorMessages = workflowErrors.map((log: any) => log.error_message || log.error_type || 'Unknown error');
+      const errorMessages = workflowErrors.map(
+        (log: any) => log.error_message || log.error_type || 'Unknown error'
+      );
       const errorCounts = errorMessages.reduce((acc: any, msg: string) => {
         acc[msg] = (acc[msg] || 0) + 1;
         return acc;
@@ -197,7 +218,10 @@ export async function GET(req: NextRequest) {
         .map(([error, count]) => ({ error, count }));
 
       // Recent errors (last 10)
-      const recentErrors = [...workflowErrors, ...editorErrors.filter((l: any) => l.status === 'error')]
+      const recentErrors = [
+        ...workflowErrors,
+        ...editorErrors.filter((l: any) => l.status === 'error'),
+      ]
         .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, 10)
         .map((log: any) => ({
@@ -215,11 +239,12 @@ export async function GET(req: NextRequest) {
 
       workflowErrors.forEach((log: any) => {
         const date = new Date(log.timestamp);
-        const bucket = timeframe === '1h'
-          ? `${date.getHours()}:${Math.floor(date.getMinutes() / 5) * 5}`
-          : timeframe === '24h'
-          ? `${date.getHours()}:00`
-          : date.toISOString().split('T')[0];
+        const bucket =
+          timeframe === '1h'
+            ? `${date.getHours()}:${Math.floor(date.getMinutes() / 5) * 5}`
+            : timeframe === '24h'
+              ? `${date.getHours()}:00`
+              : date.toISOString().split('T')[0];
 
         trends[bucket] = (trends[bucket] || 0) + 1;
       });
@@ -259,7 +284,6 @@ export async function GET(req: NextRequest) {
           },
         },
       });
-
     } catch (error: any) {
       console.error('[Admin Workflow Health API] Error:', error);
       return NextResponse.json(
@@ -294,10 +318,12 @@ export async function POST(req: NextRequest) {
 
         try {
           if (category === 'app_generation' || category === 'all') {
-            const workflowLogs = await pb.collection('workflow_execution_logs').getList(page, limit, {
-              filter: timeframeFilter,
-              sort: '-timestamp',
-            });
+            const workflowLogs = await pb
+              .collection('workflow_execution_logs')
+              .getList(page, limit, {
+                filter: timeframeFilter,
+                sort: '-timestamp',
+              });
             logs = workflowLogs.items;
             total = workflowLogs.totalItems;
           } else if (category === 'editor') {
@@ -317,7 +343,9 @@ export async function POST(req: NextRequest) {
           }
         } catch (error: any) {
           if (error.status === 404) {
-            console.warn(`[Workflow Health] Collection not found for category: ${category} - returning empty data`);
+            console.warn(
+              `[Workflow Health] Collection not found for category: ${category} - returning empty data`
+            );
             logs = [];
             total = 0;
           } else {
@@ -337,7 +365,6 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-
     } catch (error: any) {
       console.error('[Admin Workflow Health API POST] Error:', error);
       return NextResponse.json(

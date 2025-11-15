@@ -44,10 +44,13 @@ export default function GoogleCallbackPage() {
         }
 
         // Store auth in localStorage
-        localStorage.setItem('pocketbase_auth', JSON.stringify({
-          token: pb.authStore.token,
-          model: pb.authStore.model
-        }));
+        localStorage.setItem(
+          'pocketbase_auth',
+          JSON.stringify({
+            token: pb.authStore.token,
+            model: pb.authStore.model,
+          })
+        );
 
         setStatus('success');
 
@@ -99,8 +102,18 @@ export default function GoogleCallbackPage() {
         {status === 'success' && (
           <div className="space-y-4">
             <div className="w-16 h-16 bg-gradient-brand rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
             <p className="text-text-primary font-medium">Sign-in successful!</p>
@@ -111,8 +124,18 @@ export default function GoogleCallbackPage() {
         {status === 'error' && (
           <div className="space-y-4">
             <div className="w-16 h-16 bg-gradient-error rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </div>
             <p className="text-error font-medium">Sign-in failed</p>

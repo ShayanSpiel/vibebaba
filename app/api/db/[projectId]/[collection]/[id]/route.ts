@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { pb, ensureAuth } from '@/lib/database/pocketbase';
+import { type NextRequest, NextResponse } from 'next/server';
+import { ensureAuth, pb } from '@/lib/database/pocketbase';
 
 // Helper to get file path
 const getFilePath = (collection: string) => `database/${collection}.json`;
@@ -39,7 +39,7 @@ export async function PATCH(
         return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
       }
 
-      let data = JSON.parse(files[0].content);
+      const data = JSON.parse(files[0].content);
 
       // Find and update the record
       const index = data.findIndex((r: any) => r.id === id);
@@ -122,7 +122,10 @@ export async function DELETE(
         size: content.length,
       });
 
-      console.log(`[DB API] ✅ Deleted record ${id} from ${collection} - PocketBase ID:`, updated.id);
+      console.log(
+        `[DB API] ✅ Deleted record ${id} from ${collection} - PocketBase ID:`,
+        updated.id
+      );
       console.log(`[DB API] 📡 PocketBase should broadcast this change via WebSocket`);
       return NextResponse.json({ success: true });
     } catch (pbError) {

@@ -1,8 +1,8 @@
 // app/api/langgraph/status/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { PocketBaseCheckpointer } from "@/lib/langgraph/checkpointer";
-import { updateProject } from "@/lib/project-helpers";
+import { type NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { PocketBaseCheckpointer } from '@/lib/langgraph/checkpointer';
+import { updateProject } from '@/lib/project-helpers';
 
 /**
  * Get workflow status for a project
@@ -14,14 +14,14 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
 
     if (!projectId) {
-      return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     // Load checkpoints
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         status: 'not_started',
         projectId,
         checkpoints: [],
-        message: 'No workflow checkpoints found for this project'
+        message: 'No workflow checkpoints found for this project',
       });
     }
 
@@ -45,14 +45,18 @@ export async function GET(req: NextRequest) {
       projectId,
       hasStylingConfig: !!latest.state?.stylingConfig,
       completedNodes: latest.completedNodes,
-      hasUxNode: latest.completedNodes?.includes('ux')
+      hasUxNode: latest.completedNodes?.includes('ux'),
     });
 
     // ✨ Save stylingConfig to project if UX node has completed
     if (latest.state?.stylingConfig && latest.completedNodes?.includes('ux')) {
       try {
-        console.log('[Status] 💾 Saving stylingConfig to project:', projectId,
-          'Keys:', Object.keys(latest.state.stylingConfig));
+        console.log(
+          '[Status] 💾 Saving stylingConfig to project:',
+          projectId,
+          'Keys:',
+          Object.keys(latest.state.stylingConfig)
+        );
         await updateProject(projectId, { stylingConfig: latest.state.stylingConfig });
         console.log('[Status] ✅ Saved stylingConfig successfully');
       } catch (error) {
@@ -71,21 +75,17 @@ export async function GET(req: NextRequest) {
       currentStage: latest.stage,
       lastNode: latest.lastNode,
       completedNodes: latest.completedNodes,
-      checkpoints: checkpoints.map(cp => ({
+      checkpoints: checkpoints.map((cp) => ({
         id: cp.id,
         stage: cp.stage,
         lastNode: cp.lastNode,
-        timestamp: cp.timestamp
+        timestamp: cp.timestamp,
       })),
-      canResume: status === 'paused' || status === 'failed'
+      canResume: status === 'paused' || status === 'failed',
     });
-
   } catch (error: any) {
-    console.error("[LangGraph] Status check failed:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('[LangGraph] Status check failed:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 

@@ -2,7 +2,11 @@
  * Test workflow logging
  */
 
-import { logNodeExecution, logEditorOperation, logDeployment } from '../lib/services/workflow-logger';
+import {
+  logDeployment,
+  logEditorOperation,
+  logNodeExecution,
+} from '../lib/services/workflow-logger';
 
 async function testLogging() {
   console.log('🧪 Testing workflow logging...\n');

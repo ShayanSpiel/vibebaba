@@ -7,9 +7,10 @@
 // Load environment variables
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
-import { createDataset, addDatasetExample } from '../client';
+import { addDatasetExample, createDataset } from '../client';
 
 /**
  * FOUNDER NODE TEST CASES
@@ -164,8 +165,14 @@ const QA_TEST_CASES = [
   {
     inputs: {
       files: [
-        { path: 'app/page.tsx', content: 'export default function Home() { return <div>Hello</div> }' },
-        { path: 'app/api/tasks/route.ts', content: 'export async function GET() { return Response.json([]) }' }
+        {
+          path: 'app/page.tsx',
+          content: 'export default function Home() { return <div>Hello</div> }',
+        },
+        {
+          path: 'app/api/tasks/route.ts',
+          content: 'export async function GET() { return Response.json([]) }',
+        },
       ],
       backendConfig: { collections: ['tasks'] },
     },
@@ -177,9 +184,7 @@ const QA_TEST_CASES = [
   },
   {
     inputs: {
-      files: [
-        { path: 'app/page.tsx', content: 'import { missing } from "nonexistent"' }
-      ],
+      files: [{ path: 'app/page.tsx', content: 'import { missing } from "nonexistent"' }],
       backendConfig: null,
     },
     outputs: {
@@ -198,9 +203,7 @@ const DEVOPS_TEST_CASES = [
     inputs: {
       projectId: 'test-project-123',
       appName: 'Task Manager',
-      files: [
-        { path: 'app/page.tsx', content: 'export default function Home() {}' }
-      ],
+      files: [{ path: 'app/page.tsx', content: 'export default function Home() {}' }],
       backendConfig: { collections: ['tasks'] },
     },
     outputs: {
@@ -215,7 +218,7 @@ const DEVOPS_TEST_CASES = [
       appName: 'My Blog',
       files: [
         { path: 'app/page.tsx', content: 'export default function Home() {}' },
-        { path: 'app/posts/page.tsx', content: 'export default function Posts() {}' }
+        { path: 'app/posts/page.tsx', content: 'export default function Posts() {}' },
       ],
       backendConfig: { collections: ['posts', 'users'] },
     },
@@ -234,9 +237,7 @@ const EDITOR_TEST_CASES = [
   {
     inputs: {
       userRequest: 'Change the title from "Hello" to "Welcome"',
-      files: [
-        { path: 'app/page.tsx', content: '<h1>Hello</h1>' }
-      ],
+      files: [{ path: 'app/page.tsx', content: '<h1>Hello</h1>' }],
       backendConfig: null,
     },
     outputs: {
@@ -248,9 +249,7 @@ const EDITOR_TEST_CASES = [
   {
     inputs: {
       userRequest: 'Add a new button that says "Submit"',
-      files: [
-        { path: 'app/page.tsx', content: '<div><input /></div>' }
-      ],
+      files: [{ path: 'app/page.tsx', content: '<div><input /></div>' }],
       backendConfig: null,
     },
     outputs: {
@@ -270,7 +269,7 @@ const CONTEXT_ANALYZER_TEST_CASES = [
       userRequest: 'Change the homepage background to blue',
       files: [
         { path: 'app/page.tsx', content: 'export default function Home() {}' },
-        { path: 'app/globals.css', content: 'body { background: white; }' }
+        { path: 'app/globals.css', content: 'body { background: white; }' },
       ],
     },
     outputs: {
@@ -283,9 +282,7 @@ const CONTEXT_ANALYZER_TEST_CASES = [
   {
     inputs: {
       userRequest: 'Add a new page for user profiles',
-      files: [
-        { path: 'app/page.tsx', content: 'export default function Home() {}' }
-      ],
+      files: [{ path: 'app/page.tsx', content: 'export default function Home() {}' }],
     },
     outputs: {
       scope: 'new-feature',

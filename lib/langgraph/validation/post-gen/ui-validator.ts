@@ -28,15 +28,12 @@ export interface ValidationResult {
 /**
  * Validate generated UI code for common issues
  */
-export async function validateGeneratedUI(
-  code: string,
-  uxConfig?: any
-): Promise<ValidationResult> {
+export async function validateGeneratedUI(code: string, uxConfig?: any): Promise<ValidationResult> {
   const result: ValidationResult = {
     contrastIssues: [],
     animationWarnings: [],
     alignmentWarnings: [],
-    fixes: []
+    fixes: [],
   };
 
   // 1. Contrast validation
@@ -71,7 +68,7 @@ function validateContrast(code: string): ContrastIssue[] {
         foreground: 'text-muted-foreground',
         contrast: 2.5, // Estimated low contrast
         wcagLevel: 'fail',
-        suggestion: 'Change text-muted-foreground to text-foreground for better contrast'
+        suggestion: 'Change text-muted-foreground to text-foreground for better contrast',
       });
     }
 
@@ -84,7 +81,7 @@ function validateContrast(code: string): ContrastIssue[] {
         foreground: 'text-muted-foreground',
         contrast: 2.0, // Estimated very low contrast
         wcagLevel: 'fail',
-        suggestion: 'Change text-muted-foreground to text-foreground for better contrast'
+        suggestion: 'Change text-muted-foreground to text-foreground for better contrast',
       });
     }
 
@@ -97,7 +94,7 @@ function validateContrast(code: string): ContrastIssue[] {
         foreground: 'text-muted-foreground',
         contrast: 3.0, // Estimated borderline contrast
         wcagLevel: 'AA',
-        suggestion: 'Consider using text-foreground instead of text-muted-foreground'
+        suggestion: 'Consider using text-foreground instead of text-muted-foreground',
       });
     }
   });
@@ -140,7 +137,7 @@ function generateFixes(result: ValidationResult): string[] {
   const fixes: string[] = [];
 
   // Generate fix for each contrast issue
-  result.contrastIssues.forEach(issue => {
+  result.contrastIssues.forEach((issue) => {
     fixes.push(`Line ${issue.line}: ${issue.suggestion}`);
   });
 
@@ -158,7 +155,7 @@ export function applyAutoFixes(code: string, issues: ContrastIssue[]): string {
   const lines = fixedCode.split('\n');
   const fixedLines = lines.map((line, index) => {
     // Check if this line has a contrast issue
-    const lineIssue = issues.find(issue => issue.line === index + 1);
+    const lineIssue = issues.find((issue) => issue.line === index + 1);
 
     if (lineIssue) {
       // Fix grey-on-grey by replacing text-muted-foreground with text-foreground
@@ -181,7 +178,7 @@ export function applyAutoFixes(code: string, issues: ContrastIssue[]): string {
  */
 export function hasQualityIssues(result: ValidationResult): boolean {
   return (
-    result.contrastIssues.filter(i => i.wcagLevel === 'fail').length > 0 ||
+    result.contrastIssues.filter((i) => i.wcagLevel === 'fail').length > 0 ||
     result.alignmentWarnings.length > 0
   );
 }

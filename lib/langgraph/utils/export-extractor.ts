@@ -5,9 +5,9 @@ export interface ExportInfo {
   exports: Array<{
     name: string;
     kind: 'default' | 'named';
-    type?: string;  // For named exports (function, const, etc.)
+    type?: string; // For named exports (function, const, etc.)
   }>;
-  summary: string;  // Human-readable summary
+  summary: string; // Human-readable summary
 }
 
 /**
@@ -40,9 +40,9 @@ export function extractExports(path: string, code: string): ExportInfo {
     // Extract default export
     // Patterns: export default X, export default function X, export default class X
     const defaultPatterns = [
-      /export\s+default\s+function\s+(\w+)/,  // export default function Foo
-      /export\s+default\s+class\s+(\w+)/,     // export default class Foo
-      /export\s+default\s+(\w+)/,              // export default foo
+      /export\s+default\s+function\s+(\w+)/, // export default function Foo
+      /export\s+default\s+class\s+(\w+)/, // export default class Foo
+      /export\s+default\s+(\w+)/, // export default foo
     ];
 
     for (const pattern of defaultPatterns) {
@@ -64,7 +64,7 @@ export function extractExports(path: string, code: string): ExportInfo {
     // Also check for: export { X, Y, Z }
     const exportListPattern = /export\s+\{([^}]+)\}/g;
     while ((match = exportListPattern.exec(code)) !== null) {
-      const names = match[1].split(',').map(n => n.trim());
+      const names = match[1].split(',').map((n) => n.trim());
       for (const name of names) {
         // Handle "X as Y" syntax
         const asMatch = name.match(/(\w+)\s+as\s+(\w+)/);
@@ -80,15 +80,15 @@ export function extractExports(path: string, code: string): ExportInfo {
   }
 
   // Generate summary
-  const defaultExp = exports.find(e => e.kind === 'default');
-  const namedExps = exports.filter(e => e.kind === 'named');
+  const defaultExp = exports.find((e) => e.kind === 'default');
+  const namedExps = exports.filter((e) => e.kind === 'named');
 
   let summary = '';
   if (defaultExp) {
     summary = `default: ${defaultExp.name}`;
   }
   if (namedExps.length > 0) {
-    const named = namedExps.map(e => e.name).join(', ');
+    const named = namedExps.map((e) => e.name).join(', ');
     summary += summary ? `, named: { ${named} }` : `named: { ${named} }`;
   }
 
@@ -120,8 +120,8 @@ export function formatExportsForContext(
       context += `  Exports: ${exportInfo.summary}\n`;
 
       // Add import examples
-      const defaultExp = exportInfo.exports.find(e => e.kind === 'default');
-      const namedExps = exportInfo.exports.filter(e => e.kind === 'named');
+      const defaultExp = exportInfo.exports.find((e) => e.kind === 'default');
+      const namedExps = exportInfo.exports.filter((e) => e.kind === 'named');
 
       const importPath = `@/${file.path.replace(/\.tsx?$/, '')}`;
 
@@ -129,7 +129,7 @@ export function formatExportsForContext(
         context += `  Import: import ${defaultExp.name} from '${importPath}'\n`;
       }
       if (namedExps.length > 0) {
-        const names = namedExps.map(e => e.name).join(', ');
+        const names = namedExps.map((e) => e.name).join(', ');
         context += `  Import: import { ${names} } from '${importPath}'\n`;
       }
     }

@@ -1,12 +1,12 @@
 // @ts-nocheck
 // lib/langgraph/nodes/founder-node.ts
 import { generateWithFallback } from '@/lib/ai/ai';
-import type { AppGenState } from '../../types';
-import { emitNodeStart, emitNodeComplete, emitNodeError } from '../../utils/logging/events';
+import { traceAICall, withLangSmithTracing } from '@/lib/langsmith/tracing';
 import { getConversationContext } from '@/lib/memory/conversation-memory';
-import { generateWithLogging, estimateTokens } from '../../utils/logging/ai-with-logging';
+import type { AppGenState } from '../../types';
 import { extractAndParseJson } from '../../utils/json-parser';
-import { withLangSmithTracing, traceAICall } from '@/lib/langsmith/tracing';
+import { estimateTokens, generateWithLogging } from '../../utils/logging/ai-with-logging';
+import { emitNodeComplete, emitNodeError, emitNodeStart } from '../../utils/logging/events';
 
 async function founderNodeImpl(state: AppGenState): Promise<Partial<AppGenState>> {
   const startTime = Date.now();
@@ -16,13 +16,16 @@ async function founderNodeImpl(state: AppGenState): Promise<Partial<AppGenState>
 
   try {
     console.log('[Founder] 🚀 Starting founder node (CEO/Business Analyst)');
-    console.log(`[Founder] 📝 User Description: "${userDescription.substring(0, 100)}${userDescription.length > 100 ? '...' : ''}"`);
+    console.log(
+      `[Founder] 📝 User Description: "${userDescription.substring(0, 100)}${userDescription.length > 100 ? '...' : ''}"`
+    );
 
     // Emit thinking process before starting
     emitNodeStart('founder', state, {
       userInput: userDescription,
-      interpretation: 'Analyzing the user request to understand the business context, target audience, and core objectives.',
-      plan: 'I will extract key requirements, identify the target audience, define primary goals, and assess the complexity level to provide a clear foundation for the product team.'
+      interpretation:
+        'Analyzing the user request to understand the business context, target audience, and core objectives.',
+      plan: 'I will extract key requirements, identify the target audience, define primary goals, and assess the complexity level to provide a clear foundation for the product team.',
     });
 
     // Load conversation context for LangSmith tracing metadata
@@ -49,22 +52,28 @@ Extract and return JSON:
 }`;
 
     const estimatedTokens = estimateTokens(prompt);
-    console.log(`[Founder] 🤖 AI Call: Business Analysis (~${estimatedTokens} tokens, gemini-2.0-flash)`);
+    console.log(
+      `[Founder] 🤖 AI Call: Business Analysis (~${estimatedTokens} tokens, gemini-2.0-flash)`
+    );
 
-    const result = await traceAICall('founder-business-analysis', async () => {
-      return await generateWithLogging({
-        prompt,
-        projectId: state.projectId,
-        nodeName: 'founder',
-        callType: 'analysis',
+    const result = await traceAICall(
+      'founder-business-analysis',
+      async () => {
+        return await generateWithLogging({
+          prompt,
+          projectId: state.projectId,
+          nodeName: 'founder',
+          callType: 'analysis',
+          estimatedTokens,
+          attempt: 1,
+        });
+      },
+      {
+        userDescription: userDescription.substring(0, 200),
         estimatedTokens,
-        attempt: 1
-      });
-    }, {
-      userDescription: userDescription.substring(0, 200),
-      estimatedTokens,
-      hasConversationContext: !!conversationContext
-    });
+        hasConversationContext: !!conversationContext,
+      }
+    );
 
     // Parse JSON safely (handles control characters from AI responses)
     const parsed = extractAndParseJson(result, {
@@ -72,30 +81,33 @@ Extract and return JSON:
       businessContext: {
         targetAudience: 'General users',
         primaryGoal: 'Provide value',
-        successMetrics: ['User engagement']
+        successMetrics: ['User engagement'],
       },
-      complexity: 'moderate'
+      complexity: 'moderate',
     });
 
     const duration = Date.now() - startTime;
     console.log(`[Founder] ✅ Completed in ${duration}ms`);
 
     // Log analysis results
-    console.log(`[Founder] 📊 Target Audience: ${parsed.businessContext?.targetAudience || 'General users'}`);
+    console.log(
+      `[Founder] 📊 Target Audience: ${parsed.businessContext?.targetAudience || 'General users'}`
+    );
     console.log(`[Founder] 📊 Complexity: ${parsed.complexity || 'moderate'}`);
-    console.log(`[Founder] 📊 Success Metrics: ${parsed.businessContext?.successMetrics?.length || 0} defined`);
+    console.log(
+      `[Founder] 📊 Success Metrics: ${parsed.businessContext?.successMetrics?.length || 0} defined`
+    );
 
     // Emit completion with detailed task information
     // Extract values safely to avoid [object Object] display
-    const targetAudience = typeof parsed.businessContext?.targetAudience === 'string'
-      ? parsed.businessContext.targetAudience
-      : 'target users';
+    const targetAudience =
+      typeof parsed.businessContext?.targetAudience === 'string'
+        ? parsed.businessContext.targetAudience
+        : 'target users';
     const metricsCount = Array.isArray(parsed.businessContext?.successMetrics)
       ? parsed.businessContext.successMetrics.length
       : 0;
-    const complexity = typeof parsed.complexity === 'string'
-      ? parsed.complexity
-      : 'moderate';
+    const complexity = typeof parsed.complexity === 'string' ? parsed.complexity : 'moderate';
 
     emitNodeComplete('founder', state, duration, {
       taskDescription: 'Analyzed user requirements and defined business context',
@@ -103,9 +115,9 @@ Extract and return JSON:
       output: {
         refinedRequirements: parsed.refinedRequirements,
         targetAudience,
-        complexity
+        complexity,
       },
-      summary: `Successfully refined requirements for ${targetAudience}. Identified ${metricsCount} key success metrics. Complexity assessed as ${complexity}.`
+      summary: `Successfully refined requirements for ${targetAudience}. Identified ${metricsCount} key success metrics. Complexity assessed as ${complexity}.`,
     });
 
     // MEMORY: Store founder analysis in conversation memory
@@ -116,10 +128,10 @@ Extract and return JSON:
       businessContext: parsed.businessContext || {
         targetAudience: 'General users',
         primaryGoal: 'Provide value',
-        successMetrics: ['User engagement']
+        successMetrics: ['User engagement'],
       },
       stage: 'planning',
-      completedNodes: ['founder'] // Reducer auto-appends
+      completedNodes: ['founder'], // Reducer auto-appends
     };
   } catch (error) {
     emitNodeError('founder', error as Error, state);
@@ -130,11 +142,11 @@ Extract and return JSON:
       businessContext: {
         targetAudience: 'General users',
         primaryGoal: 'Provide value',
-        successMetrics: ['User engagement']
+        successMetrics: ['User engagement'],
       },
       stage: 'planning',
       completedNodes: ['founder'], // Reducer auto-appends
-      errors: [{ node: 'founder', message: (error as Error).message }] // Reducer auto-appends
+      errors: [{ node: 'founder', message: (error as Error).message }], // Reducer auto-appends
     };
   }
 }

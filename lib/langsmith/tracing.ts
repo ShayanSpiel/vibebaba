@@ -88,7 +88,9 @@ export function isLangSmithEnabled(): boolean {
 export function markLangSmithUnhealthy(error: string) {
   langSmithHealthy = false;
   lastHealthCheck = Date.now();
-  console.warn(`[LangSmith] ⚠️ Temporarily disabled due to error: ${error}. Will retry in ${HEALTH_CHECK_INTERVAL/1000}s`);
+  console.warn(
+    `[LangSmith] ⚠️ Temporarily disabled due to error: ${error}. Will retry in ${HEALTH_CHECK_INTERVAL / 1000}s`
+  );
 }
 
 /**
@@ -105,7 +107,6 @@ export function withLangSmithTracing<T extends AppGenState>(
   nodeName: string,
   nodeFunction: (state: T) => Promise<Partial<T>>
 ): (state: T) => Promise<Partial<T>> {
-
   if (!isLangSmithEnabled()) {
     // Tracing disabled - return unwrapped function (no overhead)
     return nodeFunction;
@@ -123,19 +124,16 @@ export function withLangSmithTracing<T extends AppGenState>(
     }
 
     // Wrap with traceable (creates trace span)
-    const traced = traceable(
-      nodeFunction,
-      {
-        name: `langgraph-${nodeName}-node`,
-        project: process.env.LANGCHAIN_PROJECT || 'vibebaba-app-gen',
-        tags: ['langgraph', 'node', nodeName],
-        metadata: {
-          nodeType: nodeName,
-          framework: 'langgraph',
-          version: '1.0.0'
-        }
-      }
-    );
+    const traced = traceable(nodeFunction, {
+      name: `langgraph-${nodeName}-node`,
+      project: process.env.LANGCHAIN_PROJECT || 'vibebaba-app-gen',
+      tags: ['langgraph', 'node', nodeName],
+      metadata: {
+        nodeType: nodeName,
+        framework: 'langgraph',
+        version: '1.0.0',
+      },
+    });
 
     console.log(`[LangSmith] 🔍 Tracing ${nodeName} node`);
 
@@ -145,8 +143,11 @@ export function withLangSmithTracing<T extends AppGenState>(
       return result;
     } catch (error: any) {
       // Check for rate limiting or auth errors
-      const is403or429 = error?.message?.includes('403') || error?.message?.includes('429') ||
-                         error?.status === 403 || error?.status === 429;
+      const is403or429 =
+        error?.message?.includes('403') ||
+        error?.message?.includes('429') ||
+        error?.status === 403 ||
+        error?.status === 429;
 
       if (is403or429) {
         markLangSmithUnhealthy(error?.message || 'Rate limit or auth error');
@@ -177,7 +178,6 @@ export async function traceAICall<T>(
   operation: () => Promise<T>,
   metadata?: Record<string, any>
 ): Promise<T> {
-
   if (!isLangSmithEnabled()) {
     return operation();
   }
@@ -190,18 +190,15 @@ export async function traceAICall<T>(
     return operation();
   }
 
-  const traced = traceable(
-    operation,
-    {
-      name: operationName,
-      project: process.env.LANGCHAIN_PROJECT || 'vibebaba-app-gen',
-      tags: ['ai-call', 'generation'],
-      metadata: {
-        ...metadata,
-        timestamp: new Date().toISOString()
-      }
-    }
-  );
+  const traced = traceable(operation, {
+    name: operationName,
+    project: process.env.LANGCHAIN_PROJECT || 'vibebaba-app-gen',
+    tags: ['ai-call', 'generation'],
+    metadata: {
+      ...metadata,
+      timestamp: new Date().toISOString(),
+    },
+  });
 
   return traced();
 }
@@ -224,7 +221,7 @@ export function logNodeMetrics(
 
   console.log(`[LangSmith] 📊 ${nodeName} metrics:`, {
     node: nodeName,
-    ...metrics
+    ...metrics,
   });
 }
 

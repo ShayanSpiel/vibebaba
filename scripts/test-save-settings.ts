@@ -27,22 +27,22 @@ async function testSave() {
       brand: {
         brandName: 'Test App',
         designSystem: 'Shadcn/Tailwind',
-        stylingFramework: 'Tailwind CSS'
+        stylingFramework: 'Tailwind CSS',
       },
       enhancedColors: {
         semantic: {
           textDefault: '#000000',
           textSecondary: '#6B7280',
-          bgDefault: '#FFFFFF'
-        }
+          bgDefault: '#FFFFFF',
+        },
       },
       components: {
         button: {
           variants: {
-            primary: { bg: '#3B82F6', text: '#FFFFFF' }
-          }
-        }
-      }
+            primary: { bg: '#3B82F6', text: '#FFFFFF' },
+          },
+        },
+      },
     };
 
     const testData = {
@@ -52,7 +52,7 @@ async function testSave() {
       initialPrompt: 'A test application',
       stylingConfig: JSON.stringify(testStylingConfig),
       timestamp: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     console.log('[Test] 💾 Saving test data...');
@@ -62,9 +62,10 @@ async function testSave() {
     // Read it back
     console.log('[Test] 📖 Reading data back...');
     const retrieved = await pb.collection('project_settings_memory').getOne(saved.id);
-    const parsedConfig = typeof retrieved.stylingConfig === 'string'
-      ? JSON.parse(retrieved.stylingConfig)
-      : retrieved.stylingConfig;
+    const parsedConfig =
+      typeof retrieved.stylingConfig === 'string'
+        ? JSON.parse(retrieved.stylingConfig)
+        : retrieved.stylingConfig;
 
     console.log('[Test] ✅ Retrieved successfully!');
     console.log('[Test] 🎨 Styling config has:');
@@ -77,7 +78,6 @@ async function testSave() {
     console.log('[Test] 🗑️  Cleaned up test data');
 
     console.log('\n[Test] 🎉 All tests passed! The schema is working correctly.');
-
   } catch (error: any) {
     console.error('[Test] ❌ Error:', error.message);
     if (error.data) {

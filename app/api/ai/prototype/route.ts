@@ -22,14 +22,18 @@
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
-import type { AppGenState } from "@/lib/langgraph/types";
-import { customAlphabet } from "nanoid";
+import { customAlphabet } from 'nanoid';
+import { type NextRequest, NextResponse } from 'next/server';
+import {
+  checkAndResetDailyTokens,
+  consumeTokens,
+  getAvailableTokens,
+} from '@/lib/database/pocketbase-credits';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import type { AppGenState } from '@/lib/langgraph/types';
+import { unifiedSearch } from '@/lib/mcp/unified-search';
 // Memory loader functions removed - using conversation-memory instead
-import { getConversationContext } from "@/lib/memory/conversation-memory";
-import { unifiedSearch } from "@/lib/mcp/unified-search";
+import { getConversationContext } from '@/lib/memory/conversation-memory';
 
 // PocketBase-compatible ID generator (alphanumeric only, no hyphens)
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 15);
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     let plan: string | undefined;
@@ -64,10 +68,7 @@ export async function POST(req: NextRequest) {
       context = body.context;
     } catch (parseError: any) {
       console.error('[Prototype] Failed to parse request body:', parseError);
-      return NextResponse.json(
-        { error: "Invalid request body. Expected JSON." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid request body. Expected JSON.' }, { status: 400 });
     }
 
     // Estimate tokens needed (larger for prototype generation)
@@ -78,13 +79,13 @@ export async function POST(req: NextRequest) {
     const availableTokens = getAvailableTokens(freshUser);
     if (availableTokens < estimatedTokens) {
       return NextResponse.json(
-        { error: "Insufficient tokens. Please purchase more credits.", insufficientTokens: true },
+        { error: 'Insufficient tokens. Please purchase more credits.', insufficientTokens: true },
         { status: 402 }
       );
     }
 
     // #done Load Memory Context
-    const finalProjectId = projectId || nanoid();  // Exactly 15 chars, alphanumeric only (no hyphens)
+    const finalProjectId = projectId || nanoid(); // Exactly 15 chars, alphanumeric only (no hyphens)
     console.log('[Prototype] Loading memory context...');
     const memoryContext = projectId ? await getConversationContext(projectId) : null;
 
@@ -96,15 +97,16 @@ export async function POST(req: NextRequest) {
         useCache: true,
         minStars: 10, // Lowered from 20 to get more results
         maxResults: 5,
-        timeout: 10000 // Increased to 10 seconds for better results
+        timeout: 10000, // Increased to 10 seconds for better results
       });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // IMPORT AGENTIC NODES (all exported from index)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const { uxNode, frontendRouter, backendNode, qaNode, devopsNode } =
-      await import('@/lib/langgraph/nodes');
+    const { uxNode, frontendRouter, backendNode, qaNode, devopsNode } = await import(
+      '@/lib/langgraph/nodes'
+    );
 
     // Resume from where /api/ai/plan left off
     let state: AppGenState = {
@@ -114,12 +116,14 @@ export async function POST(req: NextRequest) {
       plan,
       context,
       memoryContext: memoryContext ? { conversationHistory: [memoryContext] } : undefined, // Wrap string in object
-      backgroundContext: searchResult?.success ? searchResult : (context?.backgroundContext || undefined), // #done Unified search
+      backgroundContext: searchResult?.success
+        ? searchResult
+        : context?.backgroundContext || undefined, // #done Unified search
       backendConfig, // May be pre-generated or null
       completedNodes: ['founder', 'pm'], // Already completed in planning phase
       errors: [],
       artifacts: new Map(),
-      stage: 'designing'
+      stage: 'designing',
     };
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -144,7 +148,7 @@ export async function POST(req: NextRequest) {
     console.log('[Prototype] 🚀 Executing Frontend Router & Backend nodes in parallel...');
     const [frontendResult, backendResult] = await Promise.all([
       frontendRouter(state), // ✅ Uses intelligent routing
-      backendNode(state)
+      backendNode(state),
     ]);
     console.log('[Prototype] ✅ Frontend Router & Backend complete');
 
@@ -153,7 +157,13 @@ export async function POST(req: NextRequest) {
       ...state,
       ...frontendResult,
       backendConfig: backendResult.backendConfig || state.backendConfig,
-      completedNodes: [...new Set([...state.completedNodes, ...(frontendResult.completedNodes || []), ...(backendResult.completedNodes || [])])]
+      completedNodes: [
+        ...new Set([
+          ...state.completedNodes,
+          ...(frontendResult.completedNodes || []),
+          ...(backendResult.completedNodes || []),
+        ]),
+      ],
     };
 
     console.log('[Prototype] Files generated:', state.files?.length || 0);
@@ -187,7 +197,7 @@ export async function POST(req: NextRequest) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     // Consume tokens after successful generation
-    await consumeTokens(user.id, estimatedTokens, "/api/ai/prototype", state.projectId);
+    await consumeTokens(user.id, estimatedTokens, '/api/ai/prototype', state.projectId);
 
     // Prepare response
     const response = {
@@ -200,8 +210,8 @@ export async function POST(req: NextRequest) {
         debugAttempts: state.debugAttempts || 0,
         completedNodes: state.completedNodes,
         usedLangGraph: true,
-        fullyAgentic: true
-      }
+        fullyAgentic: true,
+      },
     };
 
     console.log('[Prototype] 📤 Returning response with', response.files.length, 'files');
@@ -212,12 +222,8 @@ export async function POST(req: NextRequest) {
 
     // Return same format as before (BACKWARD COMPATIBLE)
     return NextResponse.json(response);
-
   } catch (error: any) {
-    console.error("Error generating prototype:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('Error generating prototype:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

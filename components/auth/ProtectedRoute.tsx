@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { type ReactNode, useEffect } from 'react';
 import { useAuth } from './PocketBaseAuthProvider';
 
 interface ProtectedRouteProps {
@@ -15,11 +15,7 @@ interface ProtectedRouteProps {
  * Wraps pages that require authentication
  * Provides loading state and prevents flash of unauthorized content
  */
-export function ProtectedRoute({
-  children,
-  fallback,
-  redirectTo = '/'
-}: ProtectedRouteProps) {
+export function ProtectedRoute({ children, fallback, redirectTo = '/' }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 

@@ -27,10 +27,14 @@ export interface DuckDuckGoResult {
  */
 function mapSafeSearch(level: 'off' | 'moderate' | 'strict'): -2 | -1 | 0 {
   switch (level) {
-    case 'off': return -2;
-    case 'moderate': return -1;
-    case 'strict': return 0;
-    default: return -1;
+    case 'off':
+      return -2;
+    case 'moderate':
+      return -1;
+    case 'strict':
+      return 0;
+    default:
+      return -1;
   }
 }
 
@@ -42,7 +46,7 @@ const MIN_REQUEST_INTERVAL = 5000; // 5 seconds between requests (increased to a
  * Sleep for a given number of milliseconds
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -53,48 +57,50 @@ async function searchDuckDuckGoAPI(query: string, maxResults: number): Promise<D
     const encodedQuery = encodeURIComponent(query);
     const url = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1`;
 
-    https.get(url, (res) => {
-      let data = '';
+    https
+      .get(url, (res) => {
+        let data = '';
 
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
 
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          const results: DuckDuckGoResult[] = [];
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            const results: DuckDuckGoResult[] = [];
 
-          // Add abstract if available
-          if (json.Abstract && json.AbstractText) {
-            results.push({
-              title: json.Heading || query,
-              href: json.AbstractURL || '',
-              body: json.AbstractText
-            });
+            // Add abstract if available
+            if (json.Abstract && json.AbstractText) {
+              results.push({
+                title: json.Heading || query,
+                href: json.AbstractURL || '',
+                body: json.AbstractText,
+              });
+            }
+
+            // Add related topics
+            if (json.RelatedTopics && Array.isArray(json.RelatedTopics)) {
+              json.RelatedTopics.forEach((topic: any) => {
+                if (topic.Text && topic.FirstURL) {
+                  results.push({
+                    title: topic.Text.split(' - ')[0] || topic.Text,
+                    href: topic.FirstURL,
+                    body: topic.Text,
+                  });
+                }
+              });
+            }
+
+            resolve(results.slice(0, maxResults));
+          } catch (err) {
+            reject(new Error('Failed to parse DuckDuckGo API response'));
           }
-
-          // Add related topics
-          if (json.RelatedTopics && Array.isArray(json.RelatedTopics)) {
-            json.RelatedTopics.forEach((topic: any) => {
-              if (topic.Text && topic.FirstURL) {
-                results.push({
-                  title: topic.Text.split(' - ')[0] || topic.Text,
-                  href: topic.FirstURL,
-                  body: topic.Text
-                });
-              }
-            });
-          }
-
-          resolve(results.slice(0, maxResults));
-        } catch (err) {
-          reject(new Error('Failed to parse DuckDuckGo API response'));
-        }
+        });
+      })
+      .on('error', (err) => {
+        reject(err);
       });
-    }).on('error', (err) => {
-      reject(err);
-    });
   });
 }
 
@@ -106,10 +112,7 @@ export async function searchDuckDuckGo(
   query: string,
   options: DuckDuckGoSearchOptions = {}
 ): Promise<DuckDuckGoResult[]> {
-  const {
-    maxResults = 10,
-    safeSearch = 'moderate',
-  } = options;
+  const { maxResults = 10, safeSearch = 'moderate' } = options;
 
   // Rate limiting: ensure minimum interval between requests
   const now = Date.now();
@@ -131,16 +134,16 @@ export async function searchDuckDuckGo(
       safeSearch: mapSafeSearch(safeSearch),
     });
 
-    console.log(`[DuckDuckGo] ✅ Scrape succeeded - found ${searchResults.results?.length || 0} results`);
+    console.log(
+      `[DuckDuckGo] ✅ Scrape succeeded - found ${searchResults.results?.length || 0} results`
+    );
 
     // Format results and limit to maxResults
-    const results = (searchResults.results || [])
-      .slice(0, maxResults)
-      .map((result: any) => ({
-        title: result.title || '',
-        href: result.url || '',
-        body: result.description || ''
-      }));
+    const results = (searchResults.results || []).slice(0, maxResults).map((result: any) => ({
+      title: result.title || '',
+      href: result.url || '',
+      body: result.description || '',
+    }));
 
     if (results.length > 0) {
       return results;
@@ -179,35 +182,40 @@ export const duckDuckGoMCPTool = {
     properties: {
       query: {
         type: 'string',
-        description: 'The search query'
+        description: 'The search query',
       },
       maxResults: {
         type: 'number',
         description: 'Maximum number of results to return (default: 10)',
-        default: 10
+        default: 10,
       },
       region: {
         type: 'string',
         description: 'Region for search results (default: wt-wt for worldwide)',
-        default: 'wt-wt'
+        default: 'wt-wt',
       },
       safeSearch: {
         type: 'string',
         enum: ['off', 'moderate', 'strict'],
         description: 'Safe search level',
-        default: 'moderate'
-      }
+        default: 'moderate',
+      },
     },
-    required: ['query']
+    required: ['query'],
   },
 
-  async execute(args: { query: string; maxResults?: number; region?: string; safeSearch?: 'off' | 'moderate' | 'strict' }) {
+  async execute(args: {
+    query: string;
+    maxResults?: number;
+    region?: string;
+    safeSearch?: 'off' | 'moderate' | 'strict';
+  }) {
     return await searchDuckDuckGo(args.query, {
       maxResults: args.maxResults,
       region: args.region,
-      safeSearch: args.safeSearch
+      safeSearch: args.safeSearch,
     });
-  }
+  },
 };
 
 /**

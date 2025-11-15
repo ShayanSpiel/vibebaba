@@ -16,7 +16,7 @@ export function getLangSmithClient(): Client {
     if (!apiKey) {
       throw new Error(
         'LANGCHAIN_API_KEY not found in environment variables. ' +
-        'Please set it in .env.local to use LangSmith features.'
+          'Please set it in .env.local to use LangSmith features.'
       );
     }
 

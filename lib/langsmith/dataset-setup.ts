@@ -3,14 +3,10 @@
 // Load environment variables from .env.local
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
-import {
-  createDataset,
-  addDatasetExample,
-  listDatasets,
-  getDataset,
-} from './client';
+import { addDatasetExample, createDataset, getDataset, listDatasets } from './client';
 
 /**
  * Example test cases for app generation workflow
@@ -34,7 +30,8 @@ const APP_GEN_TEST_CASES = [
   },
   {
     inputs: {
-      userDescription: 'Create a landing page for a SaaS product with hero section, features, pricing, and contact form',
+      userDescription:
+        'Create a landing page for a SaaS product with hero section, features, pricing, and contact form',
       userId: 'test-user-2',
       projectId: 'test-project-2',
     },
@@ -50,7 +47,8 @@ const APP_GEN_TEST_CASES = [
   },
   {
     inputs: {
-      userDescription: 'Build a blog with posts list, individual post pages, categories, and search',
+      userDescription:
+        'Build a blog with posts list, individual post pages, categories, and search',
       userId: 'test-user-3',
       projectId: 'test-project-3',
     },
@@ -115,18 +113,15 @@ export async function setupAppGenDataset() {
 
     // Add examples
     for (const testCase of APP_GEN_TEST_CASES) {
-      await addDatasetExample(
-        dataset.id,
-        testCase.inputs,
-        testCase.outputs,
-        testCase.metadata
-      );
+      await addDatasetExample(dataset.id, testCase.inputs, testCase.outputs, testCase.metadata);
 
       console.log(`  ✓ Added test case: ${testCase.metadata.category}`);
     }
 
     console.log(`\n✅ Dataset setup complete! Added ${APP_GEN_TEST_CASES.length} test cases`);
-    console.log(`\n🔗 View in LangSmith: https://smith.langchain.com/o/YOUR_ORG/datasets/${dataset.id}`);
+    console.log(
+      `\n🔗 View in LangSmith: https://smith.langchain.com/o/YOUR_ORG/datasets/${dataset.id}`
+    );
 
     return dataset;
   } catch (error) {
@@ -191,12 +186,7 @@ export async function setupPMNodeDataset() {
     console.log(`✅ Dataset created: ${dataset.name} (ID: ${dataset.id})`);
 
     for (const testCase of PM_TEST_CASES) {
-      await addDatasetExample(
-        dataset.id,
-        testCase.inputs,
-        testCase.outputs,
-        testCase.metadata
-      );
+      await addDatasetExample(dataset.id, testCase.inputs, testCase.outputs, testCase.metadata);
 
       console.log(`  ✓ Added test case: ${testCase.metadata.category}`);
     }
@@ -221,7 +211,10 @@ export async function setupQANodeDataset() {
       inputs: {
         files: [
           { path: 'page.tsx', content: 'const Comp = () => { return <div>Test</div> }' },
-          { path: 'api.ts', content: 'export const getData = async () => { await fetch("/api/data") }' },
+          {
+            path: 'api.ts',
+            content: 'export const getData = async () => { await fetch("/api/data") }',
+          },
         ],
         backendConfig: {
           collections: [{ name: 'tasks', fields: [{ name: 'title', type: 'text' }] }],
@@ -240,7 +233,11 @@ export async function setupQANodeDataset() {
     {
       inputs: {
         files: [
-          { path: 'component.tsx', content: 'import { useState } from "react"\n\nconst Comp = () => { const [state, setState] = useState() }' },
+          {
+            path: 'component.tsx',
+            content:
+              'import { useState } from "react"\n\nconst Comp = () => { const [state, setState] = useState() }',
+          },
         ],
         backendConfig: null,
       },
@@ -268,12 +265,7 @@ export async function setupQANodeDataset() {
     console.log(`✅ Dataset created: ${dataset.name} (ID: ${dataset.id})`);
 
     for (const testCase of QA_TEST_CASES) {
-      await addDatasetExample(
-        dataset.id,
-        testCase.inputs,
-        testCase.outputs,
-        testCase.metadata
-      );
+      await addDatasetExample(dataset.id, testCase.inputs, testCase.outputs, testCase.metadata);
 
       console.log(`  ✓ Added test case: ${testCase.metadata.category}`);
     }
@@ -318,9 +310,7 @@ export async function setupDevOpsNodeDataset() {
     {
       inputs: {
         appName: 'landing-page',
-        files: [
-          { path: 'page.tsx', content: '<div>Landing</div>' },
-        ],
+        files: [{ path: 'page.tsx', content: '<div>Landing</div>' }],
         backendConfig: null,
       },
       outputs: {
@@ -344,17 +334,14 @@ export async function setupDevOpsNodeDataset() {
     console.log(`✅ Dataset created: ${dataset.name} (ID: ${dataset.id})`);
 
     for (const testCase of DEVOPS_TEST_CASES) {
-      await addDatasetExample(
-        dataset.id,
-        testCase.inputs,
-        testCase.outputs,
-        testCase.metadata
-      );
+      await addDatasetExample(dataset.id, testCase.inputs, testCase.outputs, testCase.metadata);
 
       console.log(`  ✓ Added test case: ${testCase.metadata.category}`);
     }
 
-    console.log(`\n✅ DevOps node dataset setup complete! Added ${DEVOPS_TEST_CASES.length} test cases`);
+    console.log(
+      `\n✅ DevOps node dataset setup complete! Added ${DEVOPS_TEST_CASES.length} test cases`
+    );
 
     return dataset;
   } catch (error) {
@@ -374,7 +361,10 @@ export async function setupEditorNodeDataset() {
       inputs: {
         userRequest: 'Add a dark mode toggle button to the header',
         files: [
-          { path: 'page.tsx', content: 'export default function Page() { return <div><h1>Header</h1></div> }' },
+          {
+            path: 'page.tsx',
+            content: 'export default function Page() { return <div><h1>Header</h1></div> }',
+          },
         ],
         backendConfig: null,
       },
@@ -393,7 +383,10 @@ export async function setupEditorNodeDataset() {
       inputs: {
         userRequest: 'Create a new contact form page',
         files: [
-          { path: 'page.tsx', content: 'export default function Page() { return <div>Home</div> }' },
+          {
+            path: 'page.tsx',
+            content: 'export default function Page() { return <div>Home</div> }',
+          },
         ],
         backendConfig: {
           collections: [{ name: 'contacts', fields: [{ name: 'email', type: 'email' }] }],
@@ -421,17 +414,14 @@ export async function setupEditorNodeDataset() {
     console.log(`✅ Dataset created: ${dataset.name} (ID: ${dataset.id})`);
 
     for (const testCase of EDITOR_TEST_CASES) {
-      await addDatasetExample(
-        dataset.id,
-        testCase.inputs,
-        testCase.outputs,
-        testCase.metadata
-      );
+      await addDatasetExample(dataset.id, testCase.inputs, testCase.outputs, testCase.metadata);
 
       console.log(`  ✓ Added test case: ${testCase.metadata.category}`);
     }
 
-    console.log(`\n✅ Editor node dataset setup complete! Added ${EDITOR_TEST_CASES.length} test cases`);
+    console.log(
+      `\n✅ Editor node dataset setup complete! Added ${EDITOR_TEST_CASES.length} test cases`
+    );
 
     return dataset;
   } catch (error) {
@@ -449,11 +439,12 @@ export async function setupAutogenNodeDataset() {
   const AUTOGEN_TEST_CASES = [
     {
       inputs: {
-        errors: [
-          { file: 'page.tsx', line: 10, message: 'Cannot find name "unknownVar"' },
-        ],
+        errors: [{ file: 'page.tsx', line: 10, message: 'Cannot find name "unknownVar"' }],
         files: [
-          { path: 'page.tsx', content: 'export default function Page() { return <div>{unknownVar}</div> }' },
+          {
+            path: 'page.tsx',
+            content: 'export default function Page() { return <div>{unknownVar}</div> }',
+          },
         ],
         backendConfig: null,
       },
@@ -470,9 +461,7 @@ export async function setupAutogenNodeDataset() {
     },
     {
       inputs: {
-        errors: [
-          { file: 'api.ts', line: 5, message: 'Missing await for async function' },
-        ],
+        errors: [{ file: 'api.ts', line: 5, message: 'Missing await for async function' }],
         files: [
           { path: 'api.ts', content: 'export const getData = async () => { fetch("/api/data") }' },
         ],
@@ -502,17 +491,14 @@ export async function setupAutogenNodeDataset() {
     console.log(`✅ Dataset created: ${dataset.name} (ID: ${dataset.id})`);
 
     for (const testCase of AUTOGEN_TEST_CASES) {
-      await addDatasetExample(
-        dataset.id,
-        testCase.inputs,
-        testCase.outputs,
-        testCase.metadata
-      );
+      await addDatasetExample(dataset.id, testCase.inputs, testCase.outputs, testCase.metadata);
 
       console.log(`  ✓ Added test case: ${testCase.metadata.category}`);
     }
 
-    console.log(`\n✅ Autogen node dataset setup complete! Added ${AUTOGEN_TEST_CASES.length} test cases`);
+    console.log(
+      `\n✅ Autogen node dataset setup complete! Added ${AUTOGEN_TEST_CASES.length} test cases`
+    );
 
     return dataset;
   } catch (error) {

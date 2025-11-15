@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
 
 interface PrototypeViewProps {
   projectId: string;
@@ -9,7 +9,7 @@ interface PrototypeViewProps {
 }
 
 export default function PrototypeView({ projectId, project, onUpdateProject }: PrototypeViewProps) {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +26,9 @@ export default function PrototypeView({ projectId, project, onUpdateProject }: P
     setError(null);
 
     try {
-      const response = await fetch("/api/ai/prototype", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/ai/prototype', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan: project.plan,
           description: project.description,
@@ -44,8 +44,8 @@ export default function PrototypeView({ projectId, project, onUpdateProject }: P
       setCode(data.code);
       onUpdateProject({ prototype: data.code });
     } catch (err: any) {
-      console.error("Error generating prototype:", err);
-      setError(err.message || "Failed to generate prototype");
+      console.error('Error generating prototype:', err);
+      setError(err.message || 'Failed to generate prototype');
     } finally {
       setIsGenerating(false);
     }
@@ -78,14 +78,16 @@ export default function PrototypeView({ projectId, project, onUpdateProject }: P
       <div className="text-center mb-8">
         <h1 className="text-5xl font-bold mb-2 tracking-tight">Vibebaba</h1>
         <p className="text-lg text-text-secondary">
-          {isGenerating ? "Generating prototype..." : "Frontend Prototype"}
+          {isGenerating ? 'Generating prototype...' : 'Frontend Prototype'}
         </p>
       </div>
 
       {isGenerating ? (
         <div className="border border-light rounded-xl p-12 bg-background-raised flex flex-col items-center justify-center min-h-[500px]">
           <div className="w-16 h-16 border-4 border-default border-t-brand-primary rounded-full animate-spin mb-6"></div>
-          <p className="text-text-secondary text-xl font-semibold">Generating your frontend prototype...</p>
+          <p className="text-text-secondary text-xl font-semibold">
+            Generating your frontend prototype...
+          </p>
           <p className="text-text-tertiary text-sm mt-2">This may take 30-60 seconds</p>
         </div>
       ) : code ? (
@@ -129,7 +131,7 @@ export default function PrototypeView({ projectId, project, onUpdateProject }: P
               </button>
               <button
                 className="flex-1 px-6 py-4 bg-gradient-to-r from-amber-400 to-yellow-600 text-text-inverse rounded-xl hover:bg-gradient-to-r from-amber-500 to-yellow-700 font-semibold text-lg transition-colors"
-                onClick={() => alert("Backend integration coming soon!")}
+                onClick={() => alert('Backend integration coming soon!')}
               >
                 Add Backend →
               </button>

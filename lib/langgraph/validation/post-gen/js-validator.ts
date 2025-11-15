@@ -20,7 +20,6 @@ export function validateJavaScript(content: string, filePath: string): Validatio
     for (const { js, startLine } of scriptBlocks) {
       errors.push(...validateJSBlock(js, filePath, startLine));
     }
-
   } catch (error: any) {
     errors.push({
       file: filePath,
@@ -102,7 +101,8 @@ function validateJSBlock(js: string, filePath: string, offsetLine: number): Vali
   }
 
   // 2. Check for missing await on window.db calls
-  const dbCallRegex = /(?:const|let|var)\s+(\w+)\s*=\s*window\.db\.(get|add|update|delete|find|findOne)\(/g;
+  const dbCallRegex =
+    /(?:const|let|var)\s+(\w+)\s*=\s*window\.db\.(get|add|update|delete|find|findOne)\(/g;
   const matches = js.matchAll(dbCallRegex);
 
   for (const match of matches) {

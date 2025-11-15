@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
@@ -42,14 +42,14 @@ async function getAuthenticatedUser(req: NextRequest): Promise<AdminUser | null>
     console.log('[Admin Middleware] User authenticated:', {
       email: pbUser.email,
       role: role,
-      hasRoleField: !!pbUser.role
+      hasRoleField: !!pbUser.role,
     });
 
     return {
       id: pbUser.id,
       email: pbUser.email,
       name: pbUser.name || pbUser.username || '',
-      role: role
+      role: role,
     };
   } catch (error) {
     console.error('[Admin Middleware] Auth error:', error);
@@ -82,17 +82,11 @@ export async function requireAdmin(
   const user = await getAuthenticatedUser(req);
 
   if (!user) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   if (user.role !== 'admin') {
-    return NextResponse.json(
-      { error: 'Forbidden: Admin access required' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
   }
 
   return handler(req, user);
@@ -117,7 +111,7 @@ export async function logAdminAction(
       action,
       targetType: targetType || '',
       targetId: targetId || '',
-      metadata: metadata ? JSON.stringify(metadata) : ''
+      metadata: metadata ? JSON.stringify(metadata) : '',
     });
 
     console.log(`[Audit] Admin ${adminId} performed action: ${action}`);

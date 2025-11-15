@@ -67,8 +67,8 @@ class PromptMetricsTracker {
    * Get comparison statistics
    */
   getComparison() {
-    const verboseMetrics = this.metrics.filter(m => m.strategy === 'verbose');
-    const simplifiedMetrics = this.metrics.filter(m => m.strategy === 'simplified');
+    const verboseMetrics = this.metrics.filter((m) => m.strategy === 'verbose');
+    const simplifiedMetrics = this.metrics.filter((m) => m.strategy === 'simplified');
 
     if (verboseMetrics.length === 0 || simplifiedMetrics.length === 0) {
       return null;
@@ -77,28 +77,37 @@ class PromptMetricsTracker {
     const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
     const verboseAvg = {
-      tokens: avg(verboseMetrics.map(m => m.frontendPromptTokens)),
-      time: avg(verboseMetrics.map(m => m.generationTimeMs)),
-      errors: avg(verboseMetrics.map(m => m.initialErrors)),
-      successRate: verboseMetrics.filter(m => m.validationPassed).length / verboseMetrics.length
+      tokens: avg(verboseMetrics.map((m) => m.frontendPromptTokens)),
+      time: avg(verboseMetrics.map((m) => m.generationTimeMs)),
+      errors: avg(verboseMetrics.map((m) => m.initialErrors)),
+      successRate: verboseMetrics.filter((m) => m.validationPassed).length / verboseMetrics.length,
     };
 
     const simplifiedAvg = {
-      tokens: avg(simplifiedMetrics.map(m => m.frontendPromptTokens)),
-      time: avg(simplifiedMetrics.map(m => m.generationTimeMs)),
-      errors: avg(simplifiedMetrics.map(m => m.initialErrors)),
-      successRate: simplifiedMetrics.filter(m => m.validationPassed).length / simplifiedMetrics.length
+      tokens: avg(simplifiedMetrics.map((m) => m.frontendPromptTokens)),
+      time: avg(simplifiedMetrics.map((m) => m.generationTimeMs)),
+      errors: avg(simplifiedMetrics.map((m) => m.initialErrors)),
+      successRate:
+        simplifiedMetrics.filter((m) => m.validationPassed).length / simplifiedMetrics.length,
     };
 
     return {
       verbose: verboseAvg,
       simplified: simplifiedAvg,
       improvement: {
-        tokenReduction: ((verboseAvg.tokens - simplifiedAvg.tokens) / verboseAvg.tokens * 100).toFixed(1),
-        timeImprovement: ((verboseAvg.time - simplifiedAvg.time) / verboseAvg.time * 100).toFixed(1),
-        errorReduction: ((verboseAvg.errors - simplifiedAvg.errors) / verboseAvg.errors * 100).toFixed(1),
-        successRateChange: ((simplifiedAvg.successRate - verboseAvg.successRate) * 100).toFixed(1)
-      }
+        tokenReduction: (
+          ((verboseAvg.tokens - simplifiedAvg.tokens) / verboseAvg.tokens) *
+          100
+        ).toFixed(1),
+        timeImprovement: (((verboseAvg.time - simplifiedAvg.time) / verboseAvg.time) * 100).toFixed(
+          1
+        ),
+        errorReduction: (
+          ((verboseAvg.errors - simplifiedAvg.errors) / verboseAvg.errors) *
+          100
+        ).toFixed(1),
+        successRateChange: ((simplifiedAvg.successRate - verboseAvg.successRate) * 100).toFixed(1),
+      },
     };
   }
 

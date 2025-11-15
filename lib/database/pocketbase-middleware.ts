@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { pb, User } from './pocketbase';
+import { type NextRequest, NextResponse } from 'next/server';
+import { pb, type User } from './pocketbase';
 
 /**
  * Get authenticated user from request
@@ -56,10 +56,7 @@ export async function requireAuth(
   const user = await getAuthenticatedUser(req);
 
   if (!user) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   return handler(req, user);

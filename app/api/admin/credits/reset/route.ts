@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { logAdminAction, requireAdmin } from '@/lib/auth/admin-middleware';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
@@ -14,10 +14,7 @@ export async function POST(req: NextRequest) {
       const { userId, resetType } = await req.json();
 
       if (!userId || !resetType) {
-        return NextResponse.json(
-          { error: 'userId and resetType are required' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'userId and resetType are required' }, { status: 400 });
       }
 
       const pb = new PocketBase(PB_URL);
@@ -72,21 +69,15 @@ export async function POST(req: NextRequest) {
       await pb.collection('users').update(userId, updateData);
 
       // Log admin action
-      await logAdminAction(
-        admin.id,
-        `reset_credits_${resetType}`,
-        'user',
-        userId,
-        {
-          resetType,
-          previousState: {
-            totalTokens: user.totalTokens,
-            usedTokens: user.usedTokens,
-            dailyTokens: user.dailyTokens,
-            packageId: user.packageId,
-          },
-        }
-      );
+      await logAdminAction(admin.id, `reset_credits_${resetType}`, 'user', userId, {
+        resetType,
+        previousState: {
+          totalTokens: user.totalTokens,
+          usedTokens: user.usedTokens,
+          dailyTokens: user.dailyTokens,
+          packageId: user.packageId,
+        },
+      });
 
       return NextResponse.json({
         success: true,
@@ -95,10 +86,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (error: any) {
       console.error('Error resetting credits:', error);
-      return NextResponse.json(
-        { error: 'Failed to reset credits' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to reset credits' }, { status: 500 });
     }
   });
 }

@@ -1,22 +1,25 @@
 // lib/langgraph/utils/type-extractor.ts
 
 export interface TypeDefinition {
-  name: string;           // e.g., "Task"
+  name: string; // e.g., "Task"
   kind: 'interface' | 'type';
   properties: Array<{
-    name: string;        // e.g., "completedAt"
-    type: string;        // e.g., "string"
-    optional: boolean;   // e.g., false
+    name: string; // e.g., "completedAt"
+    type: string; // e.g., "string"
+    optional: boolean; // e.g., false
   }>;
-  raw: string;          // Full definition for context
+  raw: string; // Full definition for context
 }
 
 /**
  * Parse property definitions from a type/interface body
  */
-function parseProperties(body: string): Array<{name: string, type: string, optional: boolean}> {
+function parseProperties(body: string): Array<{ name: string; type: string; optional: boolean }> {
   const properties = [];
-  const lines = body.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//'));
+  const lines = body
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('//'));
 
   for (const line of lines) {
     // Match: propertyName?: type
@@ -27,7 +30,7 @@ function parseProperties(body: string): Array<{name: string, type: string, optio
       properties.push({
         name,
         type: type.trim(),
-        optional: optional === '?'
+        optional: optional === '?',
       });
     }
   }
@@ -73,7 +76,7 @@ export function extractTypeDefinitions(code: string): TypeDefinition[] {
         name,
         kind: 'interface',
         properties,
-        raw: raw.trim()
+        raw: raw.trim(),
       });
     }
 
@@ -86,11 +89,13 @@ export function extractTypeDefinitions(code: string): TypeDefinition[] {
         name,
         kind: 'type',
         properties,
-        raw: raw.trim()
+        raw: raw.trim(),
       });
     }
 
-    console.log(`[TypeExtractor] Extracted ${definitions.length} type definitions: ${definitions.map(d => d.name).join(', ')}`);
+    console.log(
+      `[TypeExtractor] Extracted ${definitions.length} type definitions: ${definitions.map((d) => d.name).join(', ')}`
+    );
   } catch (error) {
     console.error('[TypeExtractor] Error extracting types:', error);
     // Return empty array on error (graceful degradation)
@@ -114,16 +119,16 @@ export function formatTypeDefinitionsForContext(types: TypeDefinition[]): string
 
   for (const type of types) {
     // Show property names with types and optional indicator
-    const propList = type.properties.map(p =>
-      `${p.name}${p.optional ? '?' : ''}: ${p.type}`
-    );
+    const propList = type.properties.map((p) => `${p.name}${p.optional ? '?' : ''}: ${p.type}`);
     context += `${type.name}: { ${propList.join(', ')} }\n`;
   }
 
   context += '\n❌ CRITICAL: Do NOT access properties not listed above\n';
   context += '❌ CRITICAL: Do NOT guess property names - use ONLY listed properties\n';
-  context += '❌ CRITICAL: Do NOT hallucinate properties (e.g., price, timeRange) not in type definition\n';
-  context += '⚠️  CRITICAL: Properties with ? are optional - check before use (e.g., post.created || \'fallback\')\n';
+  context +=
+    '❌ CRITICAL: Do NOT hallucinate properties (e.g., price, timeRange) not in type definition\n';
+  context +=
+    "⚠️  CRITICAL: Properties with ? are optional - check before use (e.g., post.created || 'fallback')\n";
   context += '✅ These types are imported from @/lib/api - do not redefine them\n';
 
   return context;

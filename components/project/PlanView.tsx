@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import PrototypeView from "./PrototypeView";
+import { useEffect, useState } from 'react';
+import PrototypeView from './PrototypeView';
 
 interface PlanViewProps {
   projectId: string;
@@ -10,14 +10,14 @@ interface PlanViewProps {
 }
 
 export default function PlanView({ projectId, project, onUpdateProject }: PlanViewProps) {
-  const [planText, setPlanText] = useState("");
+  const [planText, setPlanText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (project.plan) {
       setPlanText(project.plan);
-    } else if (project.stage === "planning") {
+    } else if (project.stage === 'planning') {
       generatePlan();
     }
   }, []);
@@ -27,9 +27,9 @@ export default function PlanView({ projectId, project, onUpdateProject }: PlanVi
     setError(null);
 
     try {
-      const response = await fetch("/api/ai/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/ai/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: project.description }),
       });
 
@@ -42,20 +42,22 @@ export default function PlanView({ projectId, project, onUpdateProject }: PlanVi
       setPlanText(data.plan);
       onUpdateProject({ plan: data.plan });
     } catch (err: any) {
-      console.error("Error generating plan:", err);
-      setError(err.message || "Failed to generate plan");
+      console.error('Error generating plan:', err);
+      setError(err.message || 'Failed to generate plan');
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleConfirm = () => {
-    onUpdateProject({ stage: "design" });
+    onUpdateProject({ stage: 'design' });
   };
 
   // Show prototype view if in design stage
-  if (project.stage === "design") {
-    return <PrototypeView projectId={projectId} project={project} onUpdateProject={onUpdateProject} />;
+  if (project.stage === 'design') {
+    return (
+      <PrototypeView projectId={projectId} project={project} onUpdateProject={onUpdateProject} />
+    );
   }
 
   if (error) {
@@ -85,7 +87,7 @@ export default function PlanView({ projectId, project, onUpdateProject }: PlanVi
       <div className="text-center mb-8">
         <h1 className="text-5xl font-bold mb-2 tracking-tight">Vibebaba</h1>
         <p className="text-lg text-text-secondary">
-          {isGenerating ? "Generating plan..." : "Planning Stage"}
+          {isGenerating ? 'Generating plan...' : 'Planning Stage'}
         </p>
       </div>
 
@@ -113,9 +115,7 @@ export default function PlanView({ projectId, project, onUpdateProject }: PlanVi
         <div className="border border-light rounded-xl p-6 bg-background-raised">
           <h3 className="text-lg font-bold mb-4 text-text-primary">Ready to proceed?</h3>
           <div className="flex gap-4">
-            <button
-              className="flex-1 px-6 py-4 border border-default bg-background-subtle rounded-xl hover:bg-background-overlay font-semibold text-lg transition-colors text-text-primary"
-            >
+            <button className="flex-1 px-6 py-4 border border-default bg-background-subtle rounded-xl hover:bg-background-overlay font-semibold text-lg transition-colors text-text-primary">
               ← Continue Planning
             </button>
             <button

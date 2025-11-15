@@ -1,8 +1,9 @@
 // lib/credits/reservation-manager.ts
 // PHASE 3: Credit Reservation System
-import { getAvailableTokens, consumeTokens } from '../database/pocketbase-credits';
+
 import { creditsCache } from '../credits-cache';
-import { pb, User } from '../database/pocketbase';
+import { pb, type User } from '../database/pocketbase';
+import { consumeTokens, getAvailableTokens } from '../database/pocketbase-credits';
 
 interface CreditReservation {
   id: string;
@@ -70,9 +71,7 @@ export async function reserveCredits(
 /**
  * Get available tokens accounting for active reservations
  */
-export async function getAvailableTokensWithReservations(
-  userId: string
-): Promise<number> {
+export async function getAvailableTokensWithReservations(userId: string): Promise<number> {
   const user = await pb.collection('users').getOne<User>(userId);
   const totalAvailable = getAvailableTokens(user);
 
@@ -107,13 +106,8 @@ export async function consumeFromReservation(
       `Exceeding reserved tokens for ${reservationId}: used ${reservation.tokensUsed + tokensUsed}, reserved ${reservation.tokensReserved}`
     );
     // Allow slight overage (5%) but log warning
-    if (
-      reservation.tokensUsed + tokensUsed >
-      reservation.tokensReserved * 1.05
-    ) {
-      console.error(
-        `Exceeded 5% tolerance for reservation ${reservationId}, rejecting`
-      );
+    if (reservation.tokensUsed + tokensUsed > reservation.tokensReserved * 1.05) {
+      console.error(`Exceeded 5% tolerance for reservation ${reservationId}, rejecting`);
       return false;
     }
   }
@@ -170,9 +164,12 @@ export async function completeReservation(reservationId: string): Promise<void> 
   creditsCache.invalidate(`credits:${reservation.userId}`);
 
   // Clean up after 1 hour
-  setTimeout(() => {
-    reservations.delete(reservationId);
-  }, 60 * 60 * 1000);
+  setTimeout(
+    () => {
+      reservations.delete(reservationId);
+    },
+    60 * 60 * 1000
+  );
 }
 
 /**
@@ -197,9 +194,7 @@ export async function releaseReservation(reservationId: string): Promise<void> {
 /**
  * Get reservation info
  */
-export function getReservation(
-  reservationId: string
-): CreditReservation | null {
+export function getReservation(reservationId: string): CreditReservation | null {
   return reservations.get(reservationId) || null;
 }
 

@@ -21,7 +21,7 @@ async function checkWithAdmin() {
     // Get ALL users
     console.log('📋 Fetching users collection...');
     const users = await pb.collection('users').getFullList({
-      sort: '-created'
+      sort: '-created',
     });
 
     console.log(`\nFound ${users.length} user(s):\n`);
@@ -58,7 +58,7 @@ async function checkWithAdmin() {
           console.log(`\n   Updating to admin...`);
 
           const updated = await pb.collection('users').update(user.id, {
-            role: 'admin'
+            role: 'admin',
           });
 
           console.log(`   ✅ Updated! New role: ${updated.role}`);
@@ -68,13 +68,14 @@ async function checkWithAdmin() {
       }
       console.log('');
     }
-
   } catch (error: any) {
     console.error('❌ Error:', error.message);
 
     if (error.status === 400 || error.status === 401) {
       console.error('\n❌ Admin authentication failed!');
-      console.error('Check your POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD in .env.local');
+      console.error(
+        'Check your POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD in .env.local'
+      );
     }
   }
 }

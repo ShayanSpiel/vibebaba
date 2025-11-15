@@ -10,7 +10,7 @@ export function mergeState(current: AppGenState, updates: Partial<AppGenState>):
     ...updates,
     completedNodes: updates.completedNodes || current.completedNodes,
     errors: updates.errors || current.errors,
-    artifacts: updates.artifacts || current.artifacts
+    artifacts: updates.artifacts || current.artifacts,
   };
 }
 

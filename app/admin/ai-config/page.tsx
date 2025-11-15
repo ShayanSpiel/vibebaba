@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import {
+  CheckCircle2,
+  Clock,
+  Cloud,
+  Loader2,
+  Play,
+  Server,
+  Trash2,
+  XCircle,
+  Zap,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Server, Cloud, Trash2, Play, CheckCircle2, XCircle, Clock, Zap } from 'lucide-react';
 
 interface AIConfig {
   mode: 'serverless' | 'server';
@@ -189,17 +199,19 @@ export default function AiConfigPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <Cloud className="h-6 w-6 text-primary" />
-                    {config?.mode === 'serverless' && (
-                      <Badge variant="default">Active</Badge>
-                    )}
+                    {config?.mode === 'serverless' && <Badge variant="default">Active</Badge>}
                   </div>
                   <h3 className="font-semibold mb-2">Serverless</h3>
                   <p className="text-sm text-text-secondary mb-3">
                     Browser-based execution via Puter and HuggingFace
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-xs">Puter</Badge>
-                    <Badge variant="outline" className="text-xs">HuggingFace</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Puter
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      HuggingFace
+                    </Badge>
                   </div>
                 </button>
 
@@ -215,18 +227,22 @@ export default function AiConfigPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <Server className="h-6 w-6 text-primary" />
-                    {config?.mode === 'server' && (
-                      <Badge variant="default">Active</Badge>
-                    )}
+                    {config?.mode === 'server' && <Badge variant="default">Active</Badge>}
                   </div>
                   <h3 className="font-semibold mb-2">Server</h3>
                   <p className="text-sm text-text-secondary mb-3">
                     Server-side execution with 58 free models
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-xs">Gemini</Badge>
-                    <Badge variant="outline" className="text-xs">OpenRouter</Badge>
-                    <Badge variant="outline" className="text-xs">Groq</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Gemini
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      OpenRouter
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Groq
+                    </Badge>
                   </div>
                 </button>
               </div>
@@ -256,9 +272,7 @@ export default function AiConfigPage() {
                 <div className="p-4 rounded-lg bg-muted/50">
                   <div className="text-sm text-text-secondary mb-1">Cached Model</div>
                   <div className="font-mono text-sm">
-                    {config?.cachedModel || (
-                      <span className="text-text-secondary">None</span>
-                    )}
+                    {config?.cachedModel || <span className="text-text-secondary">None</span>}
                   </div>
                 </div>
 
@@ -306,7 +320,11 @@ export default function AiConfigPage() {
                 <div className="p-4 bg-success/10 border border-success rounded-md flex items-start gap-3">
                   <CheckCircle2 className="h-4 w-4 mt-0.5 text-success" />
                   <p className="text-sm">
-                    System is using cached model <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.cachedModel}</code> for faster responses
+                    System is using cached model{' '}
+                    <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
+                      {config.cachedModel}
+                    </code>{' '}
+                    for faster responses
                   </p>
                 </div>
               )}
@@ -317,9 +335,7 @@ export default function AiConfigPage() {
           <Card>
             <CardHeader>
               <CardTitle>Active Providers</CardTitle>
-              <CardDescription>
-                Providers available in {config?.mode} mode
-              </CardDescription>
+              <CardDescription>Providers available in {config?.mode} mode</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -384,12 +400,16 @@ export default function AiConfigPage() {
 
                     <div className="p-3 rounded-lg bg-info/10 border border-info/20">
                       <div className="text-xs text-info mb-1">Model</div>
-                      <div className="font-semibold text-info text-sm truncate">{testResult.model}</div>
+                      <div className="font-semibold text-info text-sm truncate">
+                        {testResult.model}
+                      </div>
                     </div>
 
                     <div className="p-3 rounded-lg bg-brand-primary/10 border border-brand-primary/20">
                       <div className="text-xs text-brand-primary mb-1">Duration</div>
-                      <div className="font-semibold text-brand-primary">{testResult.duration}ms</div>
+                      <div className="font-semibold text-brand-primary">
+                        {testResult.duration}ms
+                      </div>
                     </div>
 
                     {testResult.tokenCount && (
@@ -409,7 +429,16 @@ export default function AiConfigPage() {
                     <summary className="cursor-pointer font-medium mb-2">View Attempts Log</summary>
                     <div className="mt-2 p-3 rounded-lg bg-muted font-mono text-xs space-y-1">
                       {testResult.attemptsLog.map((log, i) => (
-                        <div key={i} className={log.includes('✅') ? 'text-success' : log.includes('❌') ? 'text-error' : ''}>
+                        <div
+                          key={i}
+                          className={
+                            log.includes('✅')
+                              ? 'text-success'
+                              : log.includes('❌')
+                                ? 'text-error'
+                                : ''
+                          }
+                        >
                           {log}
                         </div>
                       ))}
@@ -426,9 +455,7 @@ export default function AiConfigPage() {
           <Card>
             <CardHeader>
               <CardTitle>Available Models</CardTitle>
-              <CardDescription>
-                68 free models across all providers
-              </CardDescription>
+              <CardDescription>68 free models across all providers</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Gemini */}
@@ -490,7 +517,8 @@ export default function AiConfigPage() {
               <div className="p-4 bg-muted border rounded-md flex items-start gap-3">
                 <CheckCircle2 className="h-4 w-4 mt-0.5" />
                 <p className="text-sm">
-                  All models are completely free with reasonable rate limits. The system automatically tries models in order of capability until one succeeds.
+                  All models are completely free with reasonable rate limits. The system
+                  automatically tries models in order of capability until one succeeds.
                 </p>
               </div>
             </CardContent>

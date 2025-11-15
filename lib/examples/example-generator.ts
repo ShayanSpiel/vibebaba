@@ -4,9 +4,12 @@
  */
 
 import dotenv from 'dotenv';
-import path from 'path';
 import OpenAI from 'openai';
-import { validateExampleQuality, type QualityScores } from '../langgraph/validation/post-gen/quality-validator';
+import path from 'path';
+import {
+  type QualityScores,
+  validateExampleQuality,
+} from '../langgraph/validation/post-gen/quality-validator';
 
 // Load environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -181,7 +184,8 @@ export async function generateExample(
       messages: [
         {
           role: 'system',
-          content: 'You are an expert UI/UX designer and front-end developer. You create world-class, production-ready components using Tailwind CSS. You always return valid JSON only.',
+          content:
+            'You are an expert UI/UX designer and front-end developer. You create world-class, production-ready components using Tailwind CSS. You always return valid JSON only.',
         },
         {
           role: 'user',
@@ -256,9 +260,7 @@ export async function generateExamplesWithQuality(
 
       // If meets threshold, return immediately
       if (qualityScore >= minQualityScore) {
-        console.log(
-          `✓ Quality example generated (score: ${qualityScore}) on attempt ${attempts}`
-        );
+        console.log(`✓ Quality example generated (score: ${qualityScore}) on attempt ${attempts}`);
         return example;
       }
 
@@ -268,7 +270,7 @@ export async function generateExamplesWithQuality(
 
       // Small delay before retry
       if (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error(`Attempt ${attempts} failed:`, error);
@@ -331,7 +333,7 @@ export async function generateCategoryExamples(
 
       // Rate limiting delay
       if (i < count - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error(`Failed to generate example ${i + 1}:`, error);
@@ -355,9 +357,7 @@ export async function regenerateLowQualityExamples(
     const qualityScore = example.qualityScores?.qualityScore || 0;
 
     if (qualityScore < minQualityScore) {
-      console.log(
-        `Regenerating example ${example.id} (current score: ${qualityScore})`
-      );
+      console.log(`Regenerating example ${example.id} (current score: ${qualityScore})`);
 
       try {
         // Extract original parameters (would need to be stored with example)

@@ -43,7 +43,7 @@ export default function Page() {
     </form>
   )
 }
-`
+`,
     },
     {
       path: 'src/app/layout.tsx',
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-`
+`,
     },
     {
       path: 'src/app/globals.css',
@@ -68,8 +68,8 @@ body {
   margin: 0;
   padding: 0;
 }
-`
-    }
+`,
+    },
   ];
 
   try {
@@ -77,7 +77,7 @@ body {
     const result = await validateCode(testFiles, {
       autoFix: false,
       strict: false,
-      isMultiPage: false
+      isMultiPage: false,
     });
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

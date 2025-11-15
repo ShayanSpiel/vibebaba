@@ -40,7 +40,9 @@ export default function Page() {
 `;
 
     const result = addShadcnImports(code);
-    expect(result).toContain('import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"');
+    expect(result).toContain(
+      'import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"'
+    );
   });
 
   it('should detect Input and add import', () => {
@@ -76,7 +78,9 @@ export default function Page() {
 `;
 
     const result = addShadcnImports(code);
-    expect(result).toContain('import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"');
+    expect(result).toContain(
+      'import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"'
+    );
     expect(result).toContain('import { Input } from "@/components/ui/input"');
     expect(result).toContain('import { Button } from "@/components/ui/button"');
   });
@@ -93,9 +97,9 @@ export default function Page() {
 
     const result = addShadcnImports(code);
     const lines = result.split('\n');
-    const useClientIndex = lines.findIndex(l => l.includes('use client'));
-    const buttonImportIndex = lines.findIndex(l => l.includes('import { Button }'));
-    const reactImportIndex = lines.findIndex(l => l.includes('import { useState }'));
+    const useClientIndex = lines.findIndex((l) => l.includes('use client'));
+    const buttonImportIndex = lines.findIndex((l) => l.includes('import { Button }'));
+    const reactImportIndex = lines.findIndex((l) => l.includes('import { useState }'));
 
     expect(useClientIndex).toBeLessThan(buttonImportIndex);
     expect(buttonImportIndex).toBeLessThan(reactImportIndex);
@@ -131,7 +135,9 @@ export default function Page() {
 `;
 
     const result = addShadcnImports(code);
-    expect(result).toContain('import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"');
+    expect(result).toContain(
+      'import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"'
+    );
   });
 
   it('should handle Select components', () => {
@@ -151,6 +157,8 @@ export default function Page() {
 `;
 
     const result = addShadcnImports(code);
-    expect(result).toContain('import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"');
+    expect(result).toContain(
+      'import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"'
+    );
   });
 });

@@ -8,11 +8,7 @@ export function ErrorTrendChart({ data }: ErrorTrendChartProps) {
   const entries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
   if (entries.length === 0) {
-    return (
-      <div className="text-center text-text-secondary py-8">
-        No trend data available
-      </div>
-    );
+    return <div className="text-center text-text-secondary py-8">No trend data available</div>;
   }
 
   const maxCount = Math.max(...entries.map(([, count]) => count), 1);

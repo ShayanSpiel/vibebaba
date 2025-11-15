@@ -1,31 +1,32 @@
 // @ts-nocheck
-import { pb, User, Transaction, TokenUsage } from './pocketbase';
-import { getAdminPb } from './pocketbase-admin';
+
 import { nanoid } from 'nanoid';
-import { getPackage, getCustomCreditPrice } from '../config/pricing-config';
+import { getCustomCreditPrice, getPackage } from '../config/pricing-config';
+import { pb, type TokenUsage, type Transaction, type User } from './pocketbase';
+import { getAdminPb } from './pocketbase-admin';
 
 // DEPRECATED: Use getPackage() from config/pricing-config instead
 // Kept for backward compatibility only
 export const PRICING_PACKAGES = {
   starter: {
-    id: "starter",
-    name: "Starter",
+    id: 'starter',
+    name: 'Starter',
     monthlyTokens: 500000,
     dailyTokens: 5000,
     price: 5,
     priceToman: 350000,
   },
   pro: {
-    id: "pro",
-    name: "Pro",
+    id: 'pro',
+    name: 'Pro',
     monthlyTokens: 2000000,
     dailyTokens: 20000,
     price: 15,
     priceToman: 1050000,
   },
   unlimited: {
-    id: "unlimited",
-    name: "Unlimited",
+    id: 'unlimited',
+    name: 'Unlimited',
     monthlyTokens: 10000000,
     dailyTokens: 50000,
     price: 40,
@@ -67,7 +68,7 @@ export async function checkAndResetDailyTokens(userId: string): Promise<User> {
     if (!user.needsDailyReset) {
       try {
         await pb.collection('users').update<User>(userId, {
-          needsDailyReset: true
+          needsDailyReset: true,
         });
       } catch (error) {
         console.warn(`Failed to set needsDailyReset flag for user ${userId}:`, error);
@@ -104,7 +105,7 @@ export async function consumeTokens(
 
     // Update used tokens
     await pb.collection('users').update(userId, {
-      usedTokens: user.usedTokens + tokens
+      usedTokens: user.usedTokens + tokens,
     });
 
     // Log usage
@@ -112,7 +113,7 @@ export async function consumeTokens(
       userId,
       tokensUsed: tokens,
       endpoint: endpoint || 'unknown',
-      projectId: projectId || undefined
+      projectId: projectId || undefined,
     });
 
     console.log(`✅ Consumed ${tokens} tokens for user ${userId}`);
@@ -136,7 +137,7 @@ export async function addTokens(
   const user = await adminPb.collection('users').getOne<User>(userId);
 
   await adminPb.collection('users').update(userId, {
-    totalTokens: user.totalTokens + tokens
+    totalTokens: user.totalTokens + tokens,
   });
 
   console.log(`✅ Added ${tokens} tokens to user ${userId}`);
@@ -165,7 +166,7 @@ export async function activatePackage(userId: string, packageId: string): Promis
     packageExpiry: expiry.toISOString(),
     dailyTokens: pkg.dailyTokens,
     lastDailyReset: now.toISOString(),
-    needsDailyReset: false
+    needsDailyReset: false,
   });
 
   console.log(`✅ Activated ${packageId} package for user ${userId}`);
@@ -179,11 +180,11 @@ export async function createTransaction(
   type: 'purchase' | 'subscription' | 'refund',
   amount: number,
   tokens: number,
-  currency: string = "USD",
+  currency: string = 'USD',
   packageId?: string,
   paymentProvider?: 'stripe' | 'paypal' | 'zibal' | 'zarinpal',
   paymentId?: string,
-  verifyToken?: string  // 🔒 NEW: Token for secure payment callback verification
+  verifyToken?: string // 🔒 NEW: Token for secure payment callback verification
 ): Promise<string> {
   // Use admin client for server-side operations (bypasses permission checks)
   const adminPb = await getAdminPb();
@@ -197,8 +198,8 @@ export async function createTransaction(
     packageId: packageId || undefined,
     paymentProvider: paymentProvider || undefined,
     paymentId: paymentId || undefined,
-    verifyToken: verifyToken || undefined,  // 🔒 Store verify token
-    status: 'pending'
+    verifyToken: verifyToken || undefined, // 🔒 Store verify token
+    status: 'pending',
   });
 
   console.log(`✅ Created transaction ${transaction.id} for user ${userId}`);
@@ -233,11 +234,14 @@ export async function updateTransactionStatus(
 /**
  * Get user transactions
  */
-export async function getUserTransactions(userId: string, limit: number = 10): Promise<Transaction[]> {
+export async function getUserTransactions(
+  userId: string,
+  limit: number = 10
+): Promise<Transaction[]> {
   return await pb.collection('transactions').getFullList<Transaction>({
     filter: `userId = "${userId}"`,
     sort: '-created',
-    limit
+    limit,
   });
 }
 
@@ -248,6 +252,6 @@ export async function getUserTokenUsage(userId: string, limit: number = 50): Pro
   return await pb.collection('token_usage').getFullList<TokenUsage>({
     filter: `userId = "${userId}"`,
     sort: '-created',
-    limit
+    limit,
   });
 }

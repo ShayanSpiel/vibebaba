@@ -139,7 +139,9 @@ export class CircuitBreaker {
       this.state = 'open';
       this.successes = 0;
     } else if (this.failures >= this.config.failureThreshold) {
-      console.error(`[CircuitBreaker] Failure threshold reached (${this.failures}) - opening circuit`);
+      console.error(
+        `[CircuitBreaker] Failure threshold reached (${this.failures}) - opening circuit`
+      );
       this.state = 'open';
     }
   }
@@ -160,7 +162,8 @@ export class CircuitBreaker {
  * Error deduplicator to prevent logging same error repeatedly
  */
 export class ErrorDeduplicator {
-  private errorCache: Map<string, { count: number; firstSeen: number; lastSeen: number }> = new Map();
+  private errorCache: Map<string, { count: number; firstSeen: number; lastSeen: number }> =
+    new Map();
   private readonly cacheTimeout: number;
 
   constructor(cacheTimeout: number = 60000) {
@@ -185,7 +188,9 @@ export class ErrorDeduplicator {
       const shouldLog = cached.count === 1 || cached.count % 10 === 0;
 
       if (shouldLog) {
-        console.log(`[ErrorDedup] Error occurred ${cached.count} times in ${(now - cached.firstSeen) / 1000}s`);
+        console.log(
+          `[ErrorDedup] Error occurred ${cached.count} times in ${(now - cached.firstSeen) / 1000}s`
+        );
       }
 
       return shouldLog;
@@ -246,7 +251,7 @@ export class RateLimiter {
     const windowStart = now - this.config.windowMs;
 
     // Remove old requests outside window
-    this.requests = this.requests.filter(timestamp => timestamp > windowStart);
+    this.requests = this.requests.filter((timestamp) => timestamp > windowStart);
 
     // Check if under limit
     if (this.requests.length < this.config.maxRequests) {
@@ -254,7 +259,9 @@ export class RateLimiter {
       return true;
     }
 
-    console.warn(`[RateLimiter] Rate limit exceeded: ${this.requests.length}/${this.config.maxRequests} requests in ${this.config.windowMs}ms`);
+    console.warn(
+      `[RateLimiter] Rate limit exceeded: ${this.requests.length}/${this.config.maxRequests} requests in ${this.config.windowMs}ms`
+    );
     return false;
   }
 
@@ -299,7 +306,7 @@ export function withTimeout<T>(
  * Sleep utility
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

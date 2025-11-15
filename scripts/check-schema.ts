@@ -16,7 +16,7 @@ async function checkSchema() {
 
     console.log(`Found ${collections.length} collection(s):\n`);
 
-    collections.forEach(col => {
+    collections.forEach((col) => {
       console.log(`📁 ${col.name} (${col.type})`);
       console.log(`   ID: ${col.id}`);
 
@@ -30,7 +30,7 @@ async function checkSchema() {
     });
 
     // Find users collection
-    const usersCol = collections.find(c => c.name === 'users');
+    const usersCol = collections.find((c) => c.name === 'users');
     if (usersCol) {
       console.log('✅ Users collection found!');
       const hasRole = usersCol.schema?.some((f: any) => f.name === 'role');
@@ -38,7 +38,6 @@ async function checkSchema() {
     } else {
       console.log('❌ Users collection not found!');
     }
-
   } catch (error: any) {
     console.error('❌ Failed:', error.message);
     process.exit(1);

@@ -17,7 +17,7 @@ async function updateToAdmin() {
     console.log(`📋 Searching for user: ${adminEmail}`);
 
     const records = await pb.collection('users').getFullList({
-      filter: `email = "${adminEmail}"`
+      filter: `email = "${adminEmail}"`,
     });
 
     if (records.length === 0) {
@@ -34,14 +34,13 @@ async function updateToAdmin() {
     // Update to admin role
     console.log('🔄 Updating role to admin...');
     const updated = await pb.collection('users').update(user.id, {
-      role: 'admin'
+      role: 'admin',
     });
 
     console.log('✅ Successfully updated to admin!');
     console.log(`   Email: ${updated.email}`);
     console.log(`   Role: ${updated.role}`);
     console.log(`\n🎉 You can now access: http://localhost:3000/admin`);
-
   } catch (error: any) {
     console.error('❌ Update failed:', error.message);
 

@@ -1,10 +1,10 @@
 // scripts/test-conversation-memory.ts
 
 import {
-  conversationMemoryStore,
-  addUserMessage,
   addAssistantMessage,
-  getConversationContext
+  addUserMessage,
+  conversationMemoryStore,
+  getConversationContext,
 } from '../lib/memory/conversation-memory';
 
 async function testMemory() {
@@ -21,7 +21,11 @@ async function testMemory() {
   addAssistantMessage(projectId, 'Added contact form with dark mode styling', 'frontend');
 
   addUserMessage(projectId, 'Make the hero section more modern');
-  addAssistantMessage(projectId, 'Updated hero section with modern gradient background', 'frontend');
+  addAssistantMessage(
+    projectId,
+    'Updated hero section with modern gradient background',
+    'frontend'
+  );
 
   console.log('✅ Added 6 messages (3 user, 3 assistant)\n');
 
@@ -65,8 +69,11 @@ async function testMemory() {
   console.log('\n✅ Memory test complete!');
   console.log('\nMemory structure:');
   console.log('- Total messages:', memory.messages.length);
-  console.log('- User messages:', memory.messages.filter(m => m.role === 'user').length);
-  console.log('- Assistant messages:', memory.messages.filter(m => m.role === 'assistant').length);
+  console.log('- User messages:', memory.messages.filter((m) => m.role === 'user').length);
+  console.log(
+    '- Assistant messages:',
+    memory.messages.filter((m) => m.role === 'assistant').length
+  );
   console.log('- Components tracked:', memory.entities.components.length);
   console.log('- Features tracked:', memory.entities.features.length);
   console.log('- Design decisions tracked:', memory.entities.designDecisions.length);

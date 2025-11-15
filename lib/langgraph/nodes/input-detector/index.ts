@@ -1,348 +1,341 @@
 // @ts-nocheck
-import { generateWithLogging } from '../../utils/logging/ai-with-logging';
-import type { AppGenState } from '../../types';
-import { emitChatMessage, emitNodeStart, emitNodeComplete, emitNodeError } from '../../utils/logging/events';
-import { getConversationContext, addAssistantMessage } from '@/lib/memory/conversation-memory';
-import { withLangSmithTracing, traceAICall } from '@/lib/langsmith/tracing';
-
-/**
- * Fast search intent detection using keyword heuristics (NO AI call)
- * Returns search intent if external search is needed
- */
-function detectSearchIntent(request: string): {
-  category: 'design-inspiration' | 'code-search' | 'brand-clone' | 'api-documentation' | 'general';
-  searchSources: string[];
-  brandName?: string;
-  techStack?: string[];
-  features?: string[];
-} | null {
-  const lowerRequest = request.toLowerCase();
-
-  // Brand clone detection (high priority)
-  const brandMatch = lowerRequest.match(/(?:like|similar to|copy|clone|replicate)\s+(\w+)/i);
-  const knownBrands = ['stripe', 'linear', 'notion', 'vercel', 'airbnb', 'spotify', 'netflix'];
-  const detectedBrand = brandMatch?.[1];
-
-  if (detectedBrand && knownBrands.includes(detectedBrand)) {
-    return {
-      category: 'brand-clone',
-      searchSources: ['brand', 'exa'],
-      brandName: detectedBrand,
-    };
-  }
-
-  // Design inspiration detection
-  if (
-    (lowerRequest.includes('design') || lowerRequest.includes('inspiration') || lowerRequest.includes('modern')) &&
-    (lowerRequest.includes('saas') || lowerRequest.includes('dashboard') || lowerRequest.includes('landing'))
-  ) {
-    return {
-      category: 'design-inspiration',
-      searchSources: ['exa', 'duckduckgo'],
-    };
-  }
-
-  // Code search detection
-  if (
-    lowerRequest.includes('code') ||
-    lowerRequest.includes('component') ||
-    lowerRequest.includes('example') ||
-    lowerRequest.includes('implementation')
-  ) {
-    // Detect tech stack
-    const techStack: string[] = [];
-    if (lowerRequest.includes('next') || lowerRequest.includes('nextjs')) techStack.push('nextjs');
-    if (lowerRequest.includes('react')) techStack.push('react');
-    if (lowerRequest.includes('typescript')) techStack.push('typescript');
-    if (lowerRequest.includes('tailwind')) techStack.push('tailwind');
-
-    return {
-      category: 'code-search',
-      searchSources: ['github', 'exa'],
-      techStack: techStack.length > 0 ? techStack : undefined,
-    };
-  }
-
-  // API documentation detection
-  if (
-    (lowerRequest.includes('api') || lowerRequest.includes('documentation') || lowerRequest.includes('docs')) &&
-    (lowerRequest.includes('how to') || lowerRequest.includes('integrate'))
-  ) {
-    return {
-      category: 'api-documentation',
-      searchSources: ['exa', 'duckduckgo'],
-    };
-  }
-
-  // General search (if user explicitly asks for information)
-  if (
-    lowerRequest.includes('find') ||
-    lowerRequest.includes('search') ||
-    lowerRequest.includes('look up') ||
-    lowerRequest.includes('what is')
-  ) {
-    return {
-      category: 'general',
-      searchSources: ['exa', 'duckduckgo', 'brave'],
-    };
-  }
-
-  // No search needed
-  return null;
-}
-
 /**
  * INPUT DETECTOR NODE
  *
- * Analyzes user requests to detect if external input is needed:
- * - API keys (Stripe, OpenAI, etc.)
- * - Code snippets (existing components to integrate)
- * - Environment variables
- * - Clarifications (ambiguous requirements)
+ * Role: Universal input analyzer that understands user intent with AI reasoning
  *
- * CONCISE, USER-FRIENDLY PROMPTS - Minimal constraints, enable AI.
+ * Responsibilities:
+ * - Understand user intent through AI reasoning (not keyword matching)
+ * - Detect missing requirements (API keys, files, clarifications)
+ * - Converse with user if needed
+ * - Classify intent type (question/task/search/clarification)
+ * - Pass enriched reasoning context to Tech Lead node
+ * - Domain-agnostic (works for code and future non-code workflows)
+ */
+
+import { traceAICall, withLangSmithTracing } from '@/lib/langsmith/tracing';
+import { getConversationContext } from '@/lib/memory/conversation-memory';
+import { messageManager } from '@/lib/messaging/message-manager';
+import type { AppGenState } from '../../types';
+import { estimateTokens, generateWithLogging } from '../../utils/logging/ai-with-logging';
+import { extractAndParseJson } from '../../utils/json-parser';
+
+/**
+ * Analyze user intent with AI reasoning
+ * Returns structured reasoning context for downstream nodes
+ */
+async function analyzeIntentWithReasoning(
+  userInput: string,
+  conversationHistory: string | null,
+  uploadedFiles: AppGenState['uploadedFiles'],
+  projectId: string
+): Promise<{
+  intent: string;
+  intentType: 'question' | 'task' | 'search' | 'clarification';
+  confidence: number;
+  entities: string[];
+  detectedRequirements?: string[];
+  missingInfo: string[];
+  canProceed: boolean;
+  suggestedAction: 'answer_question' | 'route_to_tech_lead' | 'ask_for_input' | 'search';
+  reasoning: string;
+  chainOfThought: string[];
+  alternatives?: Array<{
+    action: string;
+    confidence: number;
+    reason: string;
+  }>;
+  questionToAsk?: string;
+}> {
+  const prompt = buildReasoningPrompt(userInput, conversationHistory, uploadedFiles);
+
+  const estimatedTokensAnalysis = estimateTokens(prompt);
+  console.log(
+    `[Input Detector] 🤖 AI Call: Intent Analysis (~${estimatedTokensAnalysis} tokens)`
+  );
+
+  const response = await generateWithLogging({
+    prompt,
+    projectId,
+    nodeName: 'input-detector',
+    callType: 'reasoning',
+    estimatedTokens: estimatedTokensAnalysis,
+  });
+
+  console.log('[Input Detector] 📝 RAW AI RESPONSE (first 500 chars):');
+  console.log(response.substring(0, 500));
+
+  try {
+    const analysisData = extractAndParseJson(response);
+
+    if (!analysisData || Object.keys(analysisData).length === 0) {
+      throw new Error('No valid JSON found in response');
+    }
+
+    console.log('[Input Detector] ✅ Successfully parsed reasoning response');
+    console.log(`[Input Detector] 🎯 Intent: ${analysisData.intent}`);
+    console.log(`[Input Detector] 📊 Confidence: ${analysisData.confidence}`);
+    console.log(`[Input Detector] 🔀 Suggested Action: ${analysisData.suggestedAction}`);
+
+    return analysisData;
+  } catch (parseError) {
+    console.error('[Input Detector] ❌ Failed to parse reasoning, using intelligent fallback');
+    console.error('[Input Detector] Parse error:', parseError);
+
+    // Intelligent fallback based on simple heuristics
+    return intelligentFallbackReasoning(userInput, uploadedFiles);
+  }
+}
+
+/**
+ * Fallback reasoning when AI parsing fails
+ * Uses simple heuristics to make a safe decision
+ */
+function intelligentFallbackReasoning(
+  userInput: string,
+  uploadedFiles: AppGenState['uploadedFiles']
+): any {
+  const lower = userInput.toLowerCase();
+
+  // Question detection
+  const isQuestion =
+    lower.startsWith('how') ||
+    lower.startsWith('why') ||
+    lower.startsWith('what') ||
+    lower.startsWith('where') ||
+    lower.includes('?');
+
+  if (isQuestion) {
+    return {
+      intent: 'User is asking a question',
+      intentType: 'question',
+      confidence: 0.7,
+      entities: [],
+      missingInfo: [],
+      canProceed: true,
+      suggestedAction: 'answer_question',
+      reasoning: 'Detected question pattern in user input',
+      chainOfThought: ['Input contains question keywords or question mark', 'Likely a question'],
+    };
+  }
+
+  // Search detection
+  const isSearch =
+    lower.includes('search') ||
+    lower.includes('find') ||
+    lower.includes('look up') ||
+    lower.includes('clone') ||
+    lower.includes('like');
+
+  if (isSearch) {
+    return {
+      intent: 'User wants to search for something',
+      intentType: 'search',
+      confidence: 0.7,
+      entities: [],
+      missingInfo: [],
+      canProceed: true,
+      suggestedAction: 'search',
+      reasoning: 'Detected search keywords in user input',
+      chainOfThought: ['Input contains search-related keywords', 'Likely a search request'],
+    };
+  }
+
+  // Default: assume it's a task
+  return {
+    intent: 'User wants to accomplish a task',
+    intentType: 'task',
+    confidence: 0.6,
+    entities: [],
+    missingInfo: [],
+    canProceed: true,
+    suggestedAction: 'route_to_tech_lead',
+    reasoning: 'No specific pattern detected, assuming task',
+    chainOfThought: ['No question or search keywords', 'Assuming task-based request'],
+  };
+}
+
+/**
+ * Build optimized reasoning prompt (~40 lines)
+ */
+function buildReasoningPrompt(
+  userInput: string,
+  conversationHistory: string | null,
+  uploadedFiles: AppGenState['uploadedFiles']
+): string {
+  return `You are an intelligent input analyzer. Understand the user's intent and determine if you can proceed.
+
+REASONING PROCESS:
+1. What is the user trying to accomplish?
+2. What type of request is this? (question/task/search/clarification)
+3. What information is already available?
+4. What information is missing?
+5. What's the best next action?
+
+CONVERSATION HISTORY:
+${conversationHistory || 'No previous conversation'}
+
+UPLOADED FILES:
+${uploadedFiles && uploadedFiles.length > 0 ? uploadedFiles.map((f) => `• ${f.fileName} (${f.purpose})`).join('\n') : 'None'}
+
+USER INPUT:
+"${userInput}"
+
+ANALYZE AND RETURN JSON:
+{
+  "intent": "Brief description of what user wants (1 sentence)",
+  "intentType": "question" | "task" | "search" | "clarification",
+  "confidence": 0.0-1.0,
+  "entities": ["keyword1", "keyword2"],
+  "detectedRequirements": ["database", "authentication", "api"],
+  "missingInfo": ["api_key", "url", "clarification"] or [],
+  "canProceed": true/false,
+  "suggestedAction": "answer_question" | "route_to_tech_lead" | "ask_for_input" | "search",
+  "reasoning": "I believe this is a... because...",
+  "chainOfThought": ["step 1", "step 2", "step 3"],
+  "alternatives": [
+    { "action": "alternative approach", "confidence": 0.0-1.0, "reason": "why" }
+  ],
+  "questionToAsk": "If missingInfo is not empty, what question to ask user?"
+}
+
+IMPORTANT:
+- If user uploaded files and refers to them, DON'T ask for them again
+- If conversation history shows user already provided info, DON'T ask again
+- Questions (starts with how/why/what, contains ?) → suggestedAction: "answer_question"
+- Tasks (add feature, fix bug, change design) → suggestedAction: "route_to_tech_lead"
+- Search (find, clone, like X) → suggestedAction: "search"
+- Missing critical info → suggestedAction: "ask_for_input", canProceed: false
+
+Return ONLY valid JSON.`;
+}
+
+/**
+ * INPUT DETECTOR NODE - REASONING-BASED
+ *
+ * Analyzes user requests using AI reasoning to detect:
+ * - User intent and goal
+ * - Whether external input is needed
+ * - What type of request it is (question/task/search)
+ * - Pass reasoning context to Tech Lead for intelligent routing
  */
 async function inputDetectorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>> {
   const startTime = Date.now();
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🔍 INPUT DETECTOR - Analyzing user request');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
-  const userRequest = state.editingSession?.userRequest || state.userDescription;
-
-  console.log(`[Input Detector] 📝 User Request: "${userRequest}"`);
-
-  // ✅ EMIT NODE START
-  emitNodeStart('input-detector', state, {
-    userInput: userRequest,
-    interpretation: 'Analyzing user request to detect if external input is needed',
-    plan: 'Check for API keys, code snippets, URLs, or clarifications needed'
-  });
-
   try {
-    // ✅ PHASE 3: Get conversation context from memory (async)
+    const userRequest = state.editingSession?.userRequest || state.userDescription || '';
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[Input Detector] 🚀 Starting input detector node (REASONING-BASED)');
+    console.log(
+      `[Input Detector] 📝 User Request: "${userRequest.substring(0, 100)}${userRequest.length > 100 ? '...' : ''}"`
+    );
+    console.log(`[Input Detector] 📎 Uploaded Files: ${state.uploadedFiles?.length || 0}`);
+
+    // Load conversation context
     console.log('[Input Detector] 💬 Loading conversation memory...');
     const conversationContext = await getConversationContext(state.projectId);
     if (conversationContext) {
-      console.log('[Input Detector] ✅ Loaded conversation context - will check if user already answered');
+      console.log('[Input Detector] ✅ Loaded conversation context');
       console.log('[Input Detector] 📝 Context length:', conversationContext.length, 'characters');
-      console.log('[Input Detector] 📝 Context preview:', conversationContext.substring(0, 200) + '...');
-    } else {
-      console.log('[Input Detector] ⚠️ No conversation context found - this might cause repeated questions');
     }
 
-  // SHORT, CONCISE PROMPT - Enable AI with minimal constraints
-  const prompt = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 CONVERSATION HISTORY (CHECK THIS FIRST!)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${conversationContext || 'No previous conversation history'}
+    // Send status message to user
+    await messageManager.sendInfo(
+      state.projectId,
+      'Understanding your request...',
+      'input-detector'
+    );
 
-⚠️ CRITICAL: If the user already provided information in the conversation above, DO NOT ask for it again!
+    // Analyze intent with AI reasoning
+    const reasoning = await analyzeIntentWithReasoning(
+      userRequest,
+      conversationContext,
+      state.uploadedFiles,
+      state.projectId
+    );
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 CURRENT REQUEST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[Input Detector] 🎯 REASONING ANALYSIS:');
+    console.log(`[Input Detector] Intent: ${reasoning.intent}`);
+    console.log(`[Input Detector] Type: ${reasoning.intentType}`);
+    console.log(`[Input Detector] Confidence: ${reasoning.confidence}`);
+    console.log(`[Input Detector] Entities: ${reasoning.entities.join(', ')}`);
+    console.log(`[Input Detector] Can Proceed: ${reasoning.canProceed}`);
+    console.log(`[Input Detector] Suggested Action: ${reasoning.suggestedAction}`);
+    console.log(`[Input Detector] Reasoning: ${reasoning.reasoning}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-Analyze this user request and check if external input is needed.
+    // Check if we need user input
+    if (!reasoning.canProceed && reasoning.missingInfo.length > 0) {
+      console.log('[Input Detector] ⏸️ Missing information - pausing workflow');
+      console.log(`[Input Detector] 📋 Missing: ${reasoning.missingInfo.join(', ')}`);
 
-USER REQUEST: "${userRequest}"
-
-EXISTING FILES: ${state.files?.map((f: any) => f.path).join(', ') || 'None'}
-
-📎 UPLOADED FILES: ${state.uploadedFiles?.length || 0} file(s)
-${state.uploadedFiles && state.uploadedFiles.length > 0
-  ? state.uploadedFiles.map(f => `  • ${f.fileName} (${f.purpose || 'general'}): ${f.fileUrl}`).join('\n')
-  : '  • None'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⚠️ **CRITICAL - CHECK THESE FIRST (IN ORDER)**:
-1. **UPLOADED FILES** - If user uploaded file(s) and request references them, DON'T ask for URL/file again!
-2. **CONVERSATION HISTORY** - If user already provided information in a previous message, DON'T ask again!
-
-⚠️ **IMPORTANT: STYLING/LAYOUT REQUESTS NEVER NEED INPUT!**
-If the request is about:
-- Alignment, spacing, padding, margins
-- Colors, fonts, sizes, styles
-- Layout, positioning, responsive design
-- Fixing visual bugs or UI inconsistencies
-→ ALWAYS return {"needsInput": false, "canProceed": true}
-→ These requests work with EXISTING files and DON'T need external resources!
-
-Check if you need:
-- **API keys** (Stripe, OpenAI, Google Maps, etc.)
-- **Code snippets** (existing component to integrate)
-- **Env variables** (database URL, app name)
-- **Embed/iframe content** (YouTube videos, maps, external widgets)
-  - "embed youtube video" → MUST ask for specific URL (unless already provided in conversation)
-  - "add google map" → MUST ask for location/API key (unless already provided)
-  - "embed spotify playlist" → MUST ask for embed URL (unless already provided)
-- **Links, URLs, Images** (static resources)
-  - "add NEW logo image" → Ask for image URL/file (unless already provided)
-  - "link to documentation" → Ask for URL (unless already provided)
-- **Clarifications** (ambiguous/vague requests ABOUT NEW FEATURES ONLY)
-
-Return JSON:
-{
-  "needsInput": true/false,
-  "inputType": "api_key" | "code_snippet" | "env_var" | "url" | "file" | "clarification" | null,
-  "question": "User-friendly question",
-  "canProceed": true/false
-}
-
-🚨 MANDATORY RULES (FOLLOW IN ORDER):
-
-1. **CHECK CONVERSATION HISTORY FIRST** ⚠️ MOST IMPORTANT!
-   - If user already provided information in previous messages, set canProceed=true and needsInput=false
-   - Look for API keys, URLs, design preferences, brand colors, etc. in conversation history
-   - DO NOT ask for information that's already in the conversation history above
-
-2. **CHECK UPLOADED FILES SECOND**
-   - If files uploaded and request references them (e.g., "this image", "this screenshot", "use this"), set canProceed=true and needsInput=false
-
-3. **Only ask if ESSENTIAL** (cannot proceed without it)
-4. Prefer reasonable defaults when possible
-5. Questions must be specific & actionable
-6. Keep questions friendly & conversational
-7. For embeds (YouTube, maps, etc.), ONLY ask for URL if NOT provided in conversation OR uploaded files
-
-**EXAMPLES:**
-
-1. Uploaded file → no input needed
-REQUEST: "Based on this screenshot"
-UPLOADED: screenshot.png
-→ {"needsInput": false, "canProceed": true}
-
-2. API key needed
-REQUEST: "Integrate Stripe"
-→ {"needsInput": true, "inputType": "api_key", "question": "Please share your Stripe API key", "canProceed": false}
-
-3. URL needed
-REQUEST: "Embed YouTube video"
-→ {"needsInput": true, "inputType": "url", "question": "Which video URL?", "canProceed": false}
-
-4. Already in conversation
-REQUEST: "Use that video"
-CONVERSATION: user provided URL before
-→ {"needsInput": false, "canProceed": true}
-
-5. Simple edits → no input needed
-REQUEST: "Change button color" or "Fix spacing"
-→ {"needsInput": false, "canProceed": true}
-
-Return ONLY JSON.`;
-
-  const response = await traceAICall('input-detector-analysis', async () => {
-    return await generateWithLogging({
-      prompt,
-      projectId: state.projectId,
-      nodeName: 'input-detector',
-      callType: 'detection',
-      estimatedTokens: Math.ceil(prompt.length / 4)
-    });
-  }, {
-    userRequest,
-    uploadedFilesCount: state.uploadedFiles?.length || 0,
-    hasConversationContext: !!conversationContext
-  });
-
-  console.log('[Input Detector] 📝 AI RESPONSE:', response.substring(0, 200));
-
-  // Parse response
-  const jsonMatch = response.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.log('[Input Detector] ⚠️ Parse failed - proceeding');
-    return { needsUserInput: false };
-  }
-
-  const analysis = JSON.parse(jsonMatch[0]);
-
-    if (analysis.needsInput && !analysis.canProceed) {
-      console.log('[Input Detector] ⚠️ User input required');
-      console.log(`[Input Detector]   Type: ${analysis.inputType}`);
-      console.log(`[Input Detector]   Question: "${analysis.question}"`);
-
-      // CONVERSATION MEMORY: Track input detector's question
-      await addAssistantMessage(state.projectId, analysis.question, 'input-detector');
-      console.log('[Input Detector] 💬 Tracked question in conversation memory');
-
-      // Send the question to chat as a conversational message
-      emitChatMessage(
+      await messageManager.sendInfo(
         state.projectId,
-        analysis.question,
-        {
-          type: 'question',
-          requiresResponse: true,
-          inputType: analysis.inputType
-        }
+        reasoning.questionToAsk || 'I need some additional information to proceed.',
+        'input-detector'
       );
 
-      // ✅ EMIT NODE COMPLETE (input required)
       const duration = Date.now() - startTime;
-      emitNodeComplete('input-detector', state, duration, {
-        taskDescription: 'Analyzed user request for input requirements',
-        success: true,
-        output: { needsInput: true, inputType: analysis.inputType },
-        summary: `Input required: ${analysis.question}`
-      });
+      console.log(`[Input Detector] ⏸️ Paused for user input in ${duration}ms`);
 
       return {
         needsUserInput: true,
         userInputRequest: {
-          type: analysis.inputType,
-          question: analysis.question
-        }
+          type: (reasoning.missingInfo[0] as any) || 'clarification',
+          question: reasoning.questionToAsk || 'Please provide additional information',
+        },
+        reasoningContext: {
+          intent: reasoning.intent,
+          intentType: reasoning.intentType,
+          confidence: reasoning.confidence,
+          entities: reasoning.entities,
+          detectedRequirements: reasoning.detectedRequirements,
+          suggestedAction: reasoning.suggestedAction,
+          chainOfThought: reasoning.chainOfThought,
+          alternatives: reasoning.alternatives,
+        },
       };
     }
 
-    console.log('[Input Detector] ✅ No input needed - proceeding');
-
-    // CONVERSATION MEMORY: Track successful detection (no input needed)
-    await addAssistantMessage(state.projectId, 'Analyzed request - no additional input needed', 'input-detector');
-    console.log('[Input Detector] 💬 Tracked assistant response in conversation memory');
-
-    // ========== NEW: DETECT SEARCH INTENT USING FAST HEURISTICS ==========
-    console.log('[Input Detector] 🔍 Detecting search intent...');
-    const searchIntent = detectSearchIntent(userRequest);
-
-    if (searchIntent) {
-      console.log(`[Input Detector] ✅ Search intent detected: ${searchIntent.category}`);
-      console.log(`[Input Detector]   Sources: ${searchIntent.searchSources.join(', ')}`);
-      if (searchIntent.brandName) {
-        console.log(`[Input Detector]   Brand: ${searchIntent.brandName}`);
-      }
-    } else {
-      console.log('[Input Detector] ℹ️  No search intent detected');
-    }
-
-    // ✅ EMIT NODE COMPLETE (no input needed)
+    // Store reasoning context for Tech Lead
     const duration = Date.now() - startTime;
-    emitNodeComplete('input-detector', state, duration, {
-      taskDescription: 'Analyzed user request for input requirements',
-      success: true,
-      output: { needsInput: false, searchIntent },
-      summary: 'No input needed - proceeding with generation'
-    });
+    console.log(`[Input Detector] ✅ Analysis complete in ${duration}ms`);
+    console.log(
+      `[Input Detector] 🔀 Routing to: ${reasoning.suggestedAction === 'route_to_tech_lead' ? 'Tech Lead' : reasoning.suggestedAction}`
+    );
 
     return {
       needsUserInput: false,
-      searchIntent  // NEW: Pass search intent to next nodes
+      reasoningContext: {
+        intent: reasoning.intent,
+        intentType: reasoning.intentType,
+        confidence: reasoning.confidence,
+        entities: reasoning.entities,
+        detectedRequirements: reasoning.detectedRequirements,
+        suggestedAction: reasoning.suggestedAction,
+        chainOfThought: reasoning.chainOfThought,
+        alternatives: reasoning.alternatives,
+      },
     };
-  } catch (error: any) {
-    console.error('[Input Detector] ❌ Error:', error);
+  } catch (error) {
+    console.error('[Input Detector] Error:', error);
 
-    // ✅ EMIT NODE ERROR
-    emitNodeError('input-detector', state, error, {
-      taskDescription: 'Analyzing user request for input requirements',
-      output: { error: error.message }
-    });
-
-    // Fail safe - proceed without input detection
-    return { needsUserInput: false };
+    // Safe fallback: continue to Tech Lead
+    return {
+      needsUserInput: false,
+      reasoningContext: {
+        intent: 'Unable to analyze intent, proceeding with caution',
+        intentType: 'task',
+        confidence: 0.3,
+        entities: [],
+        suggestedAction: 'route_to_tech_lead',
+        chainOfThought: ['Error occurred during analysis', 'Falling back to Tech Lead'],
+      },
+    };
   }
 }
-
 
 // Export traced version of input detector node
 export const inputDetectorNode = withLangSmithTracing('input-detector', inputDetectorNodeImpl);

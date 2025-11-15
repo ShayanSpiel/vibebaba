@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { PocketBaseAuthProvider } from "@/components/auth/PocketBaseAuthProvider";
-import { LanguageProvider } from "@/lib/language-context";
-import { ThemeProvider } from "@/lib/theme/ThemeProvider";
-import { useEffect } from "react";
+import { useEffect } from 'react';
+import { PocketBaseAuthProvider } from '@/components/auth/PocketBaseAuthProvider';
+import { LanguageProvider } from '@/lib/language-context';
+import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 
 // Extend Window interface for our custom properties
 declare global {
@@ -25,9 +25,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         // Keep deployment errors, workflow errors, and other app errors
         if (
           (message.includes('chromewebdata') ||
-          message.includes('chrome-web-data') ||
-          message.includes('chrome://') ||
-          message.includes('chrome-extension://')) &&
+            message.includes('chrome-web-data') ||
+            message.includes('chrome://') ||
+            message.includes('chrome-extension://')) &&
           !message.includes('Deployment') && // Don't filter deployment errors
           !message.includes('Workflow') // Don't filter workflow errors
         ) {
@@ -52,9 +52,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         // Filter out ONLY chromewebdata and browser extension warnings
         if (
           (message.includes('chromewebdata') ||
-          message.includes('chrome-web-data') ||
-          message.includes('chrome://') ||
-          message.includes('chrome-extension://')) &&
+            message.includes('chrome-web-data') ||
+            message.includes('chrome://') ||
+            message.includes('chrome-extension://')) &&
           !message.includes('Deployment') // Don't filter deployment warnings
         ) {
           return; // Suppress these warnings

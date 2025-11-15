@@ -5,7 +5,7 @@
  * Prevents "Cannot GET /apps/project-X/route" errors at runtime
  */
 
-import type { ValidationError, FileToValidate } from './types';
+import type { FileToValidate, ValidationError } from './types';
 
 /**
  * Extract all route references from code
@@ -25,7 +25,9 @@ function extractRouteReferences(content: string, filePath: string): string[] {
   }
 
   // Pattern 2: router.push('/path') or router.push("/path")
-  const routerPushMatches = content.matchAll(/router\.(push|replace)\s*\(\s*['"`](\/[^'"`]+)['"`]/gi);
+  const routerPushMatches = content.matchAll(
+    /router\.(push|replace)\s*\(\s*['"`](\/[^'"`]+)['"`]/gi
+  );
   for (const match of routerPushMatches) {
     routes.push(match[2]);
   }
@@ -69,13 +71,15 @@ function routeToFilePath(route: string): string {
  * Check if a route file exists in the file list
  */
 function routeFileExists(files: FileToValidate[], expectedPath: string): boolean {
-  return files.some(file => {
+  return files.some((file) => {
     // Normalize paths for comparison
     const normalizedFilePath = file.path.replace(/\\/g, '/');
     const normalizedExpectedPath = expectedPath.replace(/\\/g, '/');
 
-    return normalizedFilePath === normalizedExpectedPath ||
-           normalizedFilePath.endsWith('/' + normalizedExpectedPath);
+    return (
+      normalizedFilePath === normalizedExpectedPath ||
+      normalizedFilePath.endsWith('/' + normalizedExpectedPath)
+    );
   });
 }
 
@@ -128,7 +132,9 @@ export function validateRoutes(files: FileToValidate[]): ValidationError[] {
     // Examples: /blog/[id], /posts/[param], /products/[slug]
     // These are typically template literals or dynamic segments that will be populated at runtime
     if (route.includes('[param]') || route.includes('[id]') || route.includes('[slug]')) {
-      console.log(`[RouteValidator] ℹ️  Skipping dynamic route: ${route} (intentional dynamic segment)`);
+      console.log(
+        `[RouteValidator] ℹ️  Skipping dynamic route: ${route} (intentional dynamic segment)`
+      );
       continue;
     }
 
@@ -147,10 +153,12 @@ export function validateRoutes(files: FileToValidate[]): ValidationError[] {
         rule: 'route-completeness',
         severity: 'warning', // Changed to warning - might be intentional
         autoFixable: false,
-        suggestion: `Create ${expectedFilePath} if this route should exist, or this might be an external/future route`
+        suggestion: `Create ${expectedFilePath} if this route should exist, or this might be an external/future route`,
       });
 
-      console.log(`[RouteValidator] ⚠️  Missing page for route: ${route} (expected ${expectedFilePath})`);
+      console.log(
+        `[RouteValidator] ⚠️  Missing page for route: ${route} (expected ${expectedFilePath})`
+      );
     } else {
       console.log(`[RouteValidator] ✓ Route ${route} has page file`);
     }
@@ -170,10 +178,7 @@ export function validateRoutes(files: FileToValidate[]): ValidationError[] {
  * - All API endpoints in backendConfig have corresponding route files
  * - All API client functions in src/lib/api.ts match endpoint signatures
  */
-export function validateApiRoutes(
-  files: FileToValidate[],
-  backendConfig?: any
-): ValidationError[] {
+export function validateApiRoutes(files: FileToValidate[], backendConfig?: any): ValidationError[] {
   console.log('[RouteValidator] Validating API routes completeness...');
 
   const errors: ValidationError[] = [];
@@ -187,19 +192,19 @@ export function validateApiRoutes(
   console.log(`[RouteValidator] Checking ${apiEndpoints.length} API endpoints...`);
 
   // Find api.ts file to check function signatures
-  const apiClientFile = files.find(f => f.path.endsWith('src/lib/api.ts') || f.path.endsWith('/lib/api.ts'));
+  const apiClientFile = files.find(
+    (f) => f.path.endsWith('src/lib/api.ts') || f.path.endsWith('/lib/api.ts')
+  );
 
   for (const endpoint of apiEndpoints) {
     const { method, path, handler } = endpoint;
 
     // Convert /api/products/:id → src/app/api/products/[id]/route.ts
-    const routePath = path
-      .replace(/^\/api\//, '')
-      .replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, '[$1]');
+    const routePath = path.replace(/^\/api\//, '').replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, '[$1]');
     const expectedFilePath = `src/app/api/${routePath}/route.ts`;
 
     // Check if route file exists
-    const routeExists = files.some(f => {
+    const routeExists = files.some((f) => {
       const normalized = f.path.replace(/\\/g, '/');
       return normalized === expectedFilePath || normalized.endsWith('/' + expectedFilePath);
     });
@@ -212,7 +217,7 @@ export function validateApiRoutes(
         rule: 'missing-api-route',
         severity: 'error',
         autoFixable: false,
-        suggestion: `Create ${expectedFilePath} to handle ${method} ${path}`
+        suggestion: `Create ${expectedFilePath} to handle ${method} ${path}`,
       });
       console.log(`[RouteValidator] ❌ Missing route: ${expectedFilePath} for ${method} ${path}`);
     } else {
@@ -230,7 +235,7 @@ export function validateApiRoutes(
           rule: 'missing-api-client-function',
           severity: 'error',
           autoFixable: false,
-          suggestion: `Add ${handler}() function to src/lib/api.ts`
+          suggestion: `Add ${handler}() function to src/lib/api.ts`,
         });
         console.log(`[RouteValidator] ❌ Missing function: ${handler}()`);
       }
@@ -278,11 +283,16 @@ export function validateStaticExportCompatibility(files: FileToValidate[]): Vali
         rule: 'static-export-conflict',
         severity: 'error',
         autoFixable: false,
-        suggestion: "Remove 'use client' directive - generateStaticParams() must be in a Server Component"
+        suggestion:
+          "Remove 'use client' directive - generateStaticParams() must be in a Server Component",
       });
-      console.log(`[RouteValidator] ❌ ${file.path}: 'use client' + generateStaticParams() conflict`);
+      console.log(
+        `[RouteValidator] ❌ ${file.path}: 'use client' + generateStaticParams() conflict`
+      );
     } else if (hasUseClient && hasGenerateStaticParams && isAutoGenerated) {
-      console.log(`[RouteValidator] ℹ️  ${file.path}: Auto-generated generateStaticParams() detected, skipping conflict check (frontend node already handled this)`);
+      console.log(
+        `[RouteValidator] ℹ️  ${file.path}: Auto-generated generateStaticParams() detected, skipping conflict check (frontend node already handled this)`
+      );
     }
     // WARNING: Dynamic route without generateStaticParams() (might be okay if using getStaticPaths)
     else if (!hasGenerateStaticParams && !hasUseClient) {
@@ -293,13 +303,14 @@ export function validateStaticExportCompatibility(files: FileToValidate[]): Vali
         rule: 'missing-static-params',
         severity: 'warning',
         autoFixable: false,
-        suggestion: 'Add generateStaticParams() function to pre-render dynamic routes, or return empty array if routes are unknown at build time'
+        suggestion:
+          'Add generateStaticParams() function to pre-render dynamic routes, or return empty array if routes are unknown at build time',
       });
       console.log(`[RouteValidator] ⚠️  ${file.path}: Missing generateStaticParams()`);
     }
   }
 
-  if (errors.filter(e => e.severity === 'error').length === 0) {
+  if (errors.filter((e) => e.severity === 'error').length === 0) {
     console.log('[RouteValidator] ✅ Static export compatibility checks passed');
   }
 

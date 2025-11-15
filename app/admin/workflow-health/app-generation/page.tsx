@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Code2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { CategoryFilter } from '../components/CategoryFilter';
 import { ErrorSummaryCard } from '../components/ErrorSummaryCard';
 import { NodeErrorsTable } from '../components/NodeErrorsTable';
-import { CategoryFilter } from '../components/CategoryFilter';
-import { Code2 } from 'lucide-react';
 
 export default function AppGenerationHealthPage() {
   const [timeframe, setTimeframe] = useState('24h');
@@ -101,9 +101,16 @@ export default function AppGenerationHealthPage() {
         <div className="grid grid-cols-4 gap-4">
           {data.node_breakdown
             .filter((node: any) =>
-              ['founder', 'pm', 'ux', 'frontend', 'backend', 'qa', 'devops', 'frontend_router'].includes(
-                node.node_name
-              )
+              [
+                'founder',
+                'pm',
+                'ux',
+                'frontend',
+                'backend',
+                'qa',
+                'devops',
+                'frontend_router',
+              ].includes(node.node_name)
             )
             .map((node: any) => (
               <Card key={node.node_name} className="p-4 bg-background-sunken">
@@ -112,13 +119,15 @@ export default function AppGenerationHealthPage() {
                 </h3>
                 <div className="space-y-1">
                   <p className="text-xs text-text-tertiary">
-                    Executions: <span className="text-text-primary font-bold">{node.executions}</span>
+                    Executions:{' '}
+                    <span className="text-text-primary font-bold">{node.executions}</span>
                   </p>
                   <p className="text-xs text-text-tertiary">
                     Errors: <span className="text-error font-bold">{node.errors}</span>
                   </p>
                   <p className="text-xs text-text-tertiary">
-                    Success: <span className="text-success font-bold">{node.success_rate.toFixed(1)}%</span>
+                    Success:{' '}
+                    <span className="text-success font-bold">{node.success_rate.toFixed(1)}%</span>
                   </p>
                 </div>
               </Card>

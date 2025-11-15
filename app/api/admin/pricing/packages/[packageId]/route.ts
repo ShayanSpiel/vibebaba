@@ -1,6 +1,6 @@
 // app/api/admin/pricing/packages/[packageId]/route.ts
 // Admin API for updating individual package pricing
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getPricingConfig, reloadPricingConfig } from '@/lib/config/pricing-config';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';
@@ -26,10 +26,7 @@ export async function PATCH(
     // Validate packageId
     const currentConfig = getPricingConfig();
     if (!currentConfig.packages[packageId]) {
-      return NextResponse.json(
-        { error: `Package ${packageId} not found` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Package ${packageId} not found` }, { status: 404 });
     }
 
     // Build updated config
@@ -56,7 +53,8 @@ export async function PATCH(
       return NextResponse.json(
         {
           error: 'Settings collection does not exist in PocketBase',
-          details: 'Please create the "settings" collection first. See ADMIN_SETUP_GUIDE.md for instructions.',
+          details:
+            'Please create the "settings" collection first. See ADMIN_SETUP_GUIDE.md for instructions.',
         },
         { status: 500 }
       );

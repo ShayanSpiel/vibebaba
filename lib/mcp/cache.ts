@@ -58,7 +58,7 @@ export class MCPCache<T> {
       let oldestScore = Infinity;
 
       for (const [key, entry] of this.cache.entries()) {
-        const score = entry.timestamp + (entry.hits * 1000); // Favor frequently accessed items
+        const score = entry.timestamp + entry.hits * 1000; // Favor frequently accessed items
         if (score < oldestScore) {
           oldestScore = score;
           oldestKey = key;
@@ -110,7 +110,7 @@ export class MCPCache<T> {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      hits: 0
+      hits: 0,
     });
   }
 
@@ -137,7 +137,7 @@ export class MCPCache<T> {
       hits: this.hits,
       misses: this.misses,
       hitRate: hitRate.toFixed(2) + '%',
-      ttl: this.ttl
+      ttl: this.ttl,
     };
   }
 
@@ -186,17 +186,17 @@ export class MCPCache<T> {
 // Global cache instances with different TTLs
 export const searchCache = new MCPCache({
   ttl: 24 * 60 * 60 * 1000, // 24 hours for search results
-  maxSize: 100
+  maxSize: 100,
 });
 
 export const memoryCache = new MCPCache({
   ttl: 60 * 60 * 1000, // 1 hour for memory context (changes more frequently)
-  maxSize: 50
+  maxSize: 50,
 });
 
 export const queryOptimizerCache = new MCPCache({
   ttl: 7 * 24 * 60 * 60 * 1000, // 7 days for optimized queries (rarely changes)
-  maxSize: 200
+  maxSize: 200,
 });
 
 /**
@@ -207,14 +207,19 @@ let cleanupInterval: NodeJS.Timeout | null = null;
 export function startCleanupJob() {
   if (cleanupInterval) return;
 
-  cleanupInterval = setInterval(() => {
-    console.log('[MCP Cache] Running periodic cleanup...');
-    const searchCleaned = searchCache.cleanup();
-    const memoryCleaned = memoryCache.cleanup();
-    const queryCleaned = queryOptimizerCache.cleanup();
+  cleanupInterval = setInterval(
+    () => {
+      console.log('[MCP Cache] Running periodic cleanup...');
+      const searchCleaned = searchCache.cleanup();
+      const memoryCleaned = memoryCache.cleanup();
+      const queryCleaned = queryOptimizerCache.cleanup();
 
-    console.log(`[MCP Cache] Cleaned: ${searchCleaned + memoryCleaned + queryCleaned} total entries`);
-  }, 60 * 60 * 1000); // Every hour
+      console.log(
+        `[MCP Cache] Cleaned: ${searchCleaned + memoryCleaned + queryCleaned} total entries`
+      );
+    },
+    60 * 60 * 1000
+  ); // Every hour
 
   console.log('[MCP Cache] Started cleanup job');
 }
@@ -234,6 +239,6 @@ export function getAllCacheStats() {
   return {
     search: searchCache.getStats(),
     memory: memoryCache.getStats(),
-    queryOptimizer: queryOptimizerCache.getStats()
+    queryOptimizer: queryOptimizerCache.getStats(),
   };
 }

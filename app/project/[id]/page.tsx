@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useParams } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
-import ChatPanelClaude from "@/components/project/ChatPanelClaude";
-import PreviewTabs from "@/components/project/PreviewTabs";
-import ProjectHeader from "@/components/project/ProjectHeader";
-import { useTranslations } from "next-intl";
-import { useLanguage } from "@/lib/language-context";
-import { getProject, updateProject as updateProjectHelper } from "@/lib/project-helpers";
-import { AIStatusIndicator } from "@/components/AIStatusIndicator";
-import { useWorkflowLogs } from "@/lib/hooks/useWorkflowLogs";
-import CreditPurchaseModal from "@/components/payment/CreditPurchaseModal";
-import GenerationErrorModal from "@/components/project/GenerationErrorModal";
-import { pb, ensureAuth } from "@/lib/database/pocketbase";
-import { ProjectSettingsProvider } from "@/lib/contexts/ProjectSettingsContext";
-import { UploadedFilesProvider } from "@/lib/contexts/UploadedFilesContext";
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState } from 'react';
+import { AIStatusIndicator } from '@/components/AIStatusIndicator';
+import CreditPurchaseModal from '@/components/payment/CreditPurchaseModal';
+import ChatPanelClaude from '@/components/project/ChatPanelClaude';
+import GenerationErrorModal from '@/components/project/GenerationErrorModal';
+import PreviewTabs from '@/components/project/PreviewTabs';
+import ProjectHeader from '@/components/project/ProjectHeader';
+import { ProjectSettingsProvider } from '@/lib/contexts/ProjectSettingsContext';
+import { UploadedFilesProvider } from '@/lib/contexts/UploadedFilesContext';
+import { ensureAuth, pb } from '@/lib/database/pocketbase';
+import { useWorkflowLogs } from '@/lib/hooks/useWorkflowLogs';
+import { useLanguage } from '@/lib/language-context';
+import { getProject, updateProject as updateProjectHelper } from '@/lib/project-helpers';
 
 interface ProjectFile {
   path: string; // e.g., "index.html", "about.html", "css/style.css"
@@ -30,7 +30,7 @@ interface ProjectData {
   prototypeCode?: string; // Deprecated: kept for backward compatibility
   files?: ProjectFile[]; // New: support multiple files
   backendConfig?: any;
-  messages?: Array<{role: string; content: string}>;
+  messages?: Array<{ role: string; content: string }>;
   loadingMessage?: string;
   context?: any;
   deployUrl?: string; // LangGraph workflow deploy URL
@@ -48,15 +48,17 @@ export default function ProjectPage() {
   const [activeView, setActiveView] = useState<'preview' | 'code' | 'database'>('preview');
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'deploying' | 'deployed' | 'failed'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [deploymentStatus, setDeploymentStatus] = useState<
+    'idle' | 'deploying' | 'deployed' | 'failed'
+  >('idle');
   const [deploymentError, setDeploymentError] = useState<string | undefined>();
   const [lastShownError, setLastShownError] = useState<string | undefined>();
 
-  const t = useTranslations("project");
-  const tCommon = useTranslations("common");
+  const t = useTranslations('project');
+  const tCommon = useTranslations('common');
   const { dir } = useLanguage();
-  const isRTL = dir === "rtl";
+  const isRTL = dir === 'rtl';
 
   // 🎯 REMOVED: lastMemoryCheckRef - no longer needed since ProjectSettingsProvider handles all fetching
 
@@ -79,15 +81,15 @@ export default function ProjectPage() {
 
           const followUpMessage = {
             role: 'assistant' as const,
-            content: `✨ Your app is ready! I've built the core features. ${queuedFeatures.length > 1 ? 'Here are additional features you can add:' : 'Here\'s an additional feature you can add:'}`,
+            content: `✨ Your app is ready! I've built the core features. ${queuedFeatures.length > 1 ? 'Here are additional features you can add:' : "Here's an additional feature you can add:"}`,
             actions: queuedFeatures.map((f: any) => ({
               type: 'feature-add' as const,
               featureId: f.id,
               label: f.name,
               description: f.description || '',
               priority: f.priority || 'medium',
-              disabled: false
-            }))
+              disabled: false,
+            })),
           };
 
           // Add message to project
@@ -105,7 +107,7 @@ export default function ProjectPage() {
     },
     onError: (error) => {
       console.error('❌ Workflow error:', error);
-    }
+    },
   });
 
   // Persist workflow logs to project whenever they change
@@ -118,7 +120,10 @@ export default function ProjectPage() {
   }, [logs, projectId]);
 
   // Handle deployment status changes from PreviewTabs
-  const handleDeploymentStatusChange = (status: 'idle' | 'deploying' | 'deployed' | 'failed', error?: string) => {
+  const handleDeploymentStatusChange = (
+    status: 'idle' | 'deploying' | 'deployed' | 'failed',
+    error?: string
+  ) => {
     setDeploymentStatus(status);
     setDeploymentError(error);
 
@@ -140,7 +145,9 @@ export default function ProjectPage() {
     if (!files || files.length === 0) return null;
 
     // Check Next.js layout file for metadata
-    const layoutFile = files.find(f => f.path === 'src/app/layout.tsx' || f.path === 'app/layout.tsx');
+    const layoutFile = files.find(
+      (f) => f.path === 'src/app/layout.tsx' || f.path === 'app/layout.tsx'
+    );
     if (layoutFile) {
       // Look for metadata export with title
       const metadataTitleMatch = layoutFile.content.match(/title:\s*['"]([^'"]+)['"]/);
@@ -150,7 +157,7 @@ export default function ProjectPage() {
     }
 
     // Check page.tsx for title in metadata
-    const pageFile = files.find(f => f.path === 'src/app/page.tsx' || f.path === 'app/page.tsx');
+    const pageFile = files.find((f) => f.path === 'src/app/page.tsx' || f.path === 'app/page.tsx');
     if (pageFile) {
       const metadataTitleMatch = pageFile.content.match(/title:\s*['"]([^'"]+)['"]/);
       if (metadataTitleMatch) {
@@ -203,7 +210,7 @@ export default function ProjectPage() {
 
   useEffect(() => {
     // Generate plan if in planning stage and no plan exists
-    if (project && project.stage === "planning" && !project.plan) {
+    if (project && project.stage === 'planning' && !project.plan) {
       generatePlan();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -216,14 +223,21 @@ export default function ProjectPage() {
       if (!project || featureMessageAddedRef.current) return;
 
       // Only for projects that are completed (have files) and have queued features
-      if (project.files && project.files.length > 0 && project.allRequestedFeatures && project.allRequestedFeatures.length > 0) {
+      if (
+        project.files &&
+        project.files.length > 0 &&
+        project.allRequestedFeatures &&
+        project.allRequestedFeatures.length > 0
+      ) {
         const messages = project.messages || [];
 
         // Check if we already have a message with actions
         const hasActionMessage = messages.some((m: any) => m.actions && m.actions.length > 0);
 
         if (!hasActionMessage) {
-          const queuedFeatures = project.allRequestedFeatures.filter((f: any) => !f.included_in_mvp);
+          const queuedFeatures = project.allRequestedFeatures.filter(
+            (f: any) => !f.included_in_mvp
+          );
 
           if (queuedFeatures.length > 0) {
             featureMessageAddedRef.current = true;
@@ -231,15 +245,15 @@ export default function ProjectPage() {
 
             const followUpMessage = {
               role: 'assistant' as const,
-              content: `✨ Your app is ready! I've built the core features. ${queuedFeatures.length > 1 ? 'Here are additional features you can add:' : 'Here\'s an additional feature you can add:'}`,
+              content: `✨ Your app is ready! I've built the core features. ${queuedFeatures.length > 1 ? 'Here are additional features you can add:' : "Here's an additional feature you can add:"}`,
               actions: queuedFeatures.map((f: any) => ({
                 type: 'feature-add' as const,
                 featureId: f.id,
                 label: f.name,
                 description: f.description || '',
                 priority: f.priority || 'medium',
-                disabled: false
-              }))
+                disabled: false,
+              })),
             };
 
             const updatedMessages = [...messages, followUpMessage];
@@ -266,7 +280,7 @@ export default function ProjectPage() {
     // Only trigger if we have neither prototypeCode nor backendConfig AND not currently generating
     if (
       project &&
-      project.stage === "building" &&
+      project.stage === 'building' &&
       !project.prototypeCode &&
       !project.backendConfig &&
       !isGenerating &&
@@ -288,10 +302,10 @@ export default function ProjectPage() {
       hasFiles: !!updates.files,
       filesCount: updates.files?.length || 0,
       filePaths: updates.files?.map((f: any) => f.path).slice(0, 5),
-      hasRefreshKey: !!updates._refreshKey
+      hasRefreshKey: !!updates._refreshKey,
     });
 
-    setProject(prev => {
+    setProject((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...updates };
 
@@ -299,15 +313,17 @@ export default function ProjectPage() {
         projectId,
         hasFiles: !!updated.files,
         filesCount: updated.files?.length || 0,
-        stage: updated.stage
+        stage: updated.stage,
       });
 
       // Use the project-helpers updateProject function for consistent saving
-      updateProjectHelper(projectId, updates as any).then(() => {
-        console.log('✅ updateProjectHelper completed successfully');
-      }).catch(err => {
-        console.error('❌ Failed to update project:', err);
-      });
+      updateProjectHelper(projectId, updates as any)
+        .then(() => {
+          console.log('✅ updateProjectHelper completed successfully');
+        })
+        .catch((err) => {
+          console.error('❌ Failed to update project:', err);
+        });
 
       return updated;
     });
@@ -316,9 +332,9 @@ export default function ProjectPage() {
   const generatePlan = async () => {
     if (!project) return;
     try {
-      const response = await fetch("/api/ai/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/ai/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: project.description }),
       });
 
@@ -334,16 +350,16 @@ export default function ProjectPage() {
       if (response.ok) {
         updateProject({
           plan: data.plan,
-          context: data.context // Store context for prototype generation
+          context: data.context, // Store context for prototype generation
         });
       } else {
         // Plan generation failed - show error modal
-        const errorMsg = data.error || "Failed to generate plan";
+        const errorMsg = data.error || 'Failed to generate plan';
         setErrorMessage(errorMsg);
         setShowErrorModal(true);
       }
     } catch (error) {
-      console.error("Error generating plan:", error);
+      console.error('Error generating plan:', error);
       setErrorMessage(String(error));
       setShowErrorModal(true);
     }
@@ -361,45 +377,66 @@ export default function ProjectPage() {
     console.log('🐛 [constructCompletionMessages] workflowData:', {
       hasAllRequestedFeatures: !!workflowData.allRequestedFeatures,
       featuresCount: workflowData.allRequestedFeatures?.length,
-      features: workflowData.allRequestedFeatures
+      features: workflowData.allRequestedFeatures,
     });
 
     // 1. Success message (normal assistant bubble, left-aligned)
     messages.push({
-      role: "assistant",
-      content: "**Your app is ready!**\n\nTest it in the preview, explore the code, and check out your database."
+      role: 'assistant',
+      content:
+        '**Your app is ready!**\n\nTest it in the preview, explore the code, and check out your database.',
     });
 
     // 2. Features built message (INFORMATIONAL bubble with actual feature list)
-    const mvpFeatures = workflowData.allRequestedFeatures?.filter((f: any) => f.included_in_mvp) || [];
+    const mvpFeatures =
+      workflowData.allRequestedFeatures?.filter((f: any) => f.included_in_mvp) || [];
     console.log('🐛 [constructCompletionMessages] mvpFeatures:', mvpFeatures);
 
     if (mvpFeatures.length > 0) {
+      // Sort features by priority and user-requested first
+      // Priority order: user-requested regular features > user-requested infrastructure > suggested features
+      const sortedFeatures = [...mvpFeatures].sort((a: any, b: any) => {
+        // User-requested features come first
+        if (a.userRequested && !b.userRequested) return -1;
+        if (!a.userRequested && b.userRequested) return 1;
+
+        // Within user-requested: regular features before infrastructure
+        if (a.userRequested && b.userRequested) {
+          const aIsRegular = a.classification !== 'infrastructure';
+          const bIsRegular = b.classification !== 'infrastructure';
+          if (aIsRegular && !bIsRegular) return -1;
+          if (!aIsRegular && bIsRegular) return 1;
+        }
+
+        // Keep original order for same category
+        return 0;
+      });
+
       // Show feature names only (descriptions can hallucinate features not built)
-      const featureList = mvpFeatures.map((f: any, i: number) =>
-        `${i + 1}. ${f.name}`
-      ).join('\n');
+      const featureList = sortedFeatures.map((f: any, i: number) => `${i + 1}. ${f.name}`).join('\n');
 
       messages.push({
-        role: "assistant",
-        content: `I built your app with these features:\n\n${featureList}`
+        role: 'assistant',
+        content: `I built your app with these features:\n\n${featureList}`,
       });
     } else {
       // Fallback to workflow summary if no features extracted
       messages.push({
-        role: "assistant",
-        content: `${workflowSummary}`
+        role: 'assistant',
+        content: `${workflowSummary}`,
       });
     }
 
     // 3. Remaining features - Each as a SEPARATE message with its own +Add button
-    const remainingFeatures = workflowData.allRequestedFeatures?.filter((f: any) => !f.included_in_mvp && !f.completed) || [];
+    const remainingFeatures =
+      workflowData.allRequestedFeatures?.filter((f: any) => !f.included_in_mvp && !f.completed) ||
+      [];
 
     if (remainingFeatures.length > 0) {
       // Intro message
       messages.push({
-        role: "assistant",
-        content: `You also requested **${remainingFeatures.length} more feature${remainingFeatures.length > 1 ? 's' : ''}**. Click +Add below to implement them:`
+        role: 'assistant',
+        content: `You also requested **${remainingFeatures.length} more feature${remainingFeatures.length > 1 ? 's' : ''}**. Click +Add below to implement them:`,
       });
 
       // Each feature as a separate message with its own action button
@@ -410,46 +447,53 @@ export default function ProjectPage() {
         });
 
         messages.push({
-          role: "assistant",
+          role: 'assistant',
           content: `**${f.name}**\n${f.description}`,
-          actions: [{
-            type: "feature-add",
-            featureId: f.id,
-            label: `Add ${f.name}`,
-            description: f.description,
-            priority: f.priority,
-            disabled: unmetDeps.length > 0,
-            disabledReason: unmetDeps.length > 0
-              ? `Requires: ${unmetDeps.map((id: string) => workflowData.allRequestedFeatures?.find((af: any) => af.id === id)?.name).join(', ')}`
-              : undefined
-          }]
+          actions: [
+            {
+              type: 'feature-add',
+              featureId: f.id,
+              label: `Add ${f.name}`,
+              description: f.description,
+              priority: f.priority,
+              disabled: unmetDeps.length > 0,
+              disabledReason:
+                unmetDeps.length > 0
+                  ? `Requires: ${unmetDeps.map((id: string) => workflowData.allRequestedFeatures?.find((af: any) => af.id === id)?.name).join(', ')}`
+                  : undefined,
+            },
+          ],
         });
       });
     }
 
     // 4. Infrastructure feature suggestions (Auth, Payments, Admin, etc.)
-    const infrastructureFeatures = workflowData.infrastructureFeatures?.filter((f: any) => f.suggested && !f.userRequested) || [];
+    const infrastructureFeatures =
+      workflowData.infrastructureFeatures?.filter((f: any) => f.suggested && !f.userRequested) ||
+      [];
 
     if (infrastructureFeatures.length > 0) {
       // Intro message for infrastructure suggestions
       messages.push({
-        role: "assistant",
-        content: `💡 **Suggested enhancements** to make your app production-ready:`
+        role: 'assistant',
+        content: `💡 **Suggested enhancements** to make your app production-ready:`,
       });
 
       // Each infrastructure feature as a separate message with its own action button
       infrastructureFeatures.forEach((f: any) => {
         messages.push({
-          role: "assistant",
+          role: 'assistant',
           content: `**${f.name}**\n${f.description}`,
-          actions: [{
-            type: "feature-add",
-            featureId: f.id,
-            label: `Add ${f.name}`,
-            description: f.description,
-            priority: f.priority || 'medium',
-            disabled: false
-          }]
+          actions: [
+            {
+              type: 'feature-add',
+              featureId: f.id,
+              label: `Add ${f.name}`,
+              description: f.description,
+              priority: f.priority || 'medium',
+              disabled: false,
+            },
+          ],
         });
       });
     }
@@ -464,9 +508,9 @@ export default function ProjectPage() {
   const generatePrototype = async () => {
     if (!project) return;
     try {
-      const response = await fetch("/api/ai/prototype", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/ai/prototype', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan: project.plan,
           description: project.description,
@@ -480,20 +524,20 @@ export default function ProjectPage() {
       if (response.ok) {
         updateProject({
           prototypeCode: data.code, // Backward compatibility
-          files: data.files // New multi-file support
+          files: data.files, // New multi-file support
         });
       }
     } catch (error) {
-      console.error("Error generating prototype:", error);
+      console.error('Error generating prototype:', error);
     }
   };
 
   const generateBackend = async () => {
     if (!project) return;
     try {
-      const response = await fetch("/api/ai/backend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/ai/backend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan: project.plan,
           description: project.description,
@@ -506,7 +550,7 @@ export default function ProjectPage() {
         updateProject({ backendConfig: data.backendConfig });
       }
     } catch (error) {
-      console.error("Error generating backend:", error);
+      console.error('Error generating backend:', error);
     }
   };
 
@@ -516,20 +560,20 @@ export default function ProjectPage() {
     setIsGenerating(true);
 
     // STEP 1: Initial acknowledgment (remove any old "app is ready" messages)
-    const cleanMessages = (project.messages || []).filter(m =>
-      !m.content.includes("app is ready") && !m.content.includes("Your app is ready")
+    const cleanMessages = (project.messages || []).filter(
+      (m) => !m.content.includes('app is ready') && !m.content.includes('Your app is ready')
     );
 
     updateProject({
-      loadingMessage: "🚀 Starting the LangGraph workflow...",
-      messages: cleanMessages  // Don't add the "initiating" message - WorkflowProgress shows this
+      loadingMessage: '🚀 Starting the LangGraph workflow...',
+      messages: cleanMessages, // Don't add the "initiating" message - WorkflowProgress shows this
     });
 
     try {
       // Use NEW LangGraph workflow endpoint (executes all 7 nodes with thinking processes)
-      const workflowResponse = await fetch("/api/langgraph/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const workflowResponse = await fetch('/api/langgraph/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           description: project.description,
           projectId: projectId, // Pass existing projectId so SSE stream can match
@@ -540,14 +584,19 @@ export default function ProjectPage() {
       const contentType = workflowResponse.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await workflowResponse.text();
-        console.error("Error: API returned non-JSON response:", text.substring(0, 200));
-        throw new Error(`API returned ${contentType || 'unknown content type'} instead of JSON. This might be a server error.`);
+        console.error('Error: API returned non-JSON response:', text.substring(0, 200));
+        throw new Error(
+          `API returned ${contentType || 'unknown content type'} instead of JSON. This might be a server error.`
+        );
       }
 
       const workflowData = await workflowResponse.json();
 
       // 🐛 DEBUG: Check what API returned
-      console.log('🐛 [API Response] workflowData.allRequestedFeatures:', workflowData.allRequestedFeatures);
+      console.log(
+        '🐛 [API Response] workflowData.allRequestedFeatures:',
+        workflowData.allRequestedFeatures
+      );
 
       // Check for insufficient credits
       if (workflowResponse.status === 402 || workflowData.insufficientTokens) {
@@ -556,7 +605,7 @@ export default function ProjectPage() {
         setIsGenerating(false);
         updateProject({
           loadingMessage: undefined,
-          prototypeCode: "<!-- Waiting for credits -->"
+          prototypeCode: '<!-- Waiting for credits -->',
         });
         return;
       }
@@ -565,27 +614,34 @@ export default function ProjectPage() {
         console.log('📦 Workflow completed successfully:', {
           filesCount: workflowData.files?.length || 0,
           hasBackend: !!workflowData.backendConfig,
-          completedNodes: workflowData.completedNodes
+          completedNodes: workflowData.completedNodes,
         });
 
         // Create workflow summary message from logs
         const roleNames: Record<string, string> = {
-          founder: "Managing Director",
-          pm: "Product Manager",
-          ux: "UX Designer",
-          frontend: "Frontend Engineer",
-          backend: "Backend Engineer",
-          qa: "QA Manager",
-          devops: "DevOps Engineer"
+          founder: 'Managing Director',
+          pm: 'Product Manager',
+          ux: 'UX Designer',
+          frontend: 'Frontend Engineer',
+          backend: 'Backend Engineer',
+          qa: 'QA Manager',
+          devops: 'DevOps Engineer',
         };
 
         const completedNodes = logs
-          .filter(log => log.type === 'node:complete' && log.nodeName && !log.nodeName.includes('autogen'))
-          .map(log => `✅ **${roleNames[log.nodeName!] || log.nodeName}** - ${log.taskDetails?.summary || 'Completed'}`);
+          .filter(
+            (log) =>
+              log.type === 'node:complete' && log.nodeName && !log.nodeName.includes('autogen')
+          )
+          .map(
+            (log) =>
+              `✅ **${roleNames[log.nodeName!] || log.nodeName}** - ${log.taskDetails?.summary || 'Completed'}`
+          );
 
-        const workflowSummary = completedNodes.length > 0
-          ? `**Team Workflow Summary:**\n\n${completedNodes.join('\n\n')}\n\n---\n\n`
-          : '';
+        const workflowSummary =
+          completedNodes.length > 0
+            ? `**Team Workflow Summary:**\n\n${completedNodes.join('\n\n')}\n\n---\n\n`
+            : '';
 
         // Extract project name from generated files
         const extractedName = extractProjectName(workflowData.files || []);
@@ -598,16 +654,19 @@ export default function ProjectPage() {
           plan: workflowData.plan || project.plan,
           workflowLogs: logs, // ✅ Preserve workflow logs with role messages
           loadingMessage: undefined,
-          stage: "completed",
+          stage: 'completed',
           messages: [
             ...(project.messages || []),
-            ...constructCompletionMessages(workflowData, workflowSummary)
-          ]
+            ...constructCompletionMessages(workflowData, workflowSummary),
+          ],
         };
 
         // Update project title if AI generated a better name
         if (extractedName && extractedName !== project.description) {
-          console.log('[Project] Updating title from description to AI-generated name:', extractedName);
+          console.log(
+            '[Project] Updating title from description to AI-generated name:',
+            extractedName
+          );
           updates.description = extractedName;
         }
 
@@ -626,30 +685,33 @@ export default function ProjectPage() {
           ? errorDetails.map((e: any) => `${e.node}: ${e.message}`).join(', ')
           : String(errorDetails);
 
-        console.error("Workflow execution failed:", {
+        console.error('Workflow execution failed:', {
           error: workflowData.error,
           errorDetails,
-          metadata: workflowData.metadata
+          metadata: workflowData.metadata,
         });
 
         // CRITICAL FIX: Stop isGenerating BEFORE updating project to prevent loop
         setIsGenerating(false);
 
         // Show error modal
-        setErrorMessage(errorMsg || "Workflow execution failed");
+        setErrorMessage(errorMsg || 'Workflow execution failed');
         setShowErrorModal(true);
 
         updateProject({
           loadingMessage: undefined,
-          prototypeCode: "<!-- Error: " + (errorMsg || "Workflow execution failed") + " -->",
+          prototypeCode: '<!-- Error: ' + (errorMsg || 'Workflow execution failed') + ' -->',
           messages: [
             ...(project.messages || []),
-            { role: "assistant", content: `❌ Sorry, something went wrong during the workflow execution: ${errorMsg || 'Unknown error'}. Please try again.` }
-          ]
+            {
+              role: 'assistant',
+              content: `❌ Sorry, something went wrong during the workflow execution: ${errorMsg || 'Unknown error'}. Please try again.`,
+            },
+          ],
         });
       }
     } catch (error) {
-      console.error("Error generating app:", error);
+      console.error('Error generating app:', error);
 
       // Show error modal
       setErrorMessage(String(error));
@@ -657,7 +719,7 @@ export default function ProjectPage() {
 
       updateProject({
         loadingMessage: undefined,
-        prototypeCode: "<!-- Error: " + String(error) + " -->" // Set dummy code to prevent retry
+        prototypeCode: '<!-- Error: ' + String(error) + ' -->', // Set dummy code to prevent retry
       });
     } finally {
       setIsGenerating(false);
@@ -669,15 +731,16 @@ export default function ProjectPage() {
 
     // Close the error modal
     setShowErrorModal(false);
-    setErrorMessage("");
+    setErrorMessage('');
 
     // Reset the generation trigger ref
     generationTriggeredRef.current = false;
 
     // Add consistent messaging like the initial generation flow
     const restartMessage = {
-      role: "assistant" as const,
-      content: "🔄 Restarting the app generation process from the beginning...\n\nI'll re-analyze your idea and create a fresh plan."
+      role: 'assistant' as const,
+      content:
+        "🔄 Restarting the app generation process from the beginning...\n\nI'll re-analyze your idea and create a fresh plan.",
     };
 
     // Reset the project to initial state and set stage to planning
@@ -688,12 +751,9 @@ export default function ProjectPage() {
       backendConfig: undefined,
       context: undefined,
       workflowLogs: [], // ✅ Clear workflow logs for fresh start
-      loadingMessage: "🔄 Resetting workflow and preparing for fresh generation...",
-      stage: "planning",
-      messages: [
-        ...(project.messages || []),
-        restartMessage
-      ]
+      loadingMessage: '🔄 Resetting workflow and preparing for fresh generation...',
+      stage: 'planning',
+      messages: [...(project.messages || []), restartMessage],
     });
 
     // Wait a bit for the state to update, then trigger planning
@@ -703,7 +763,7 @@ export default function ProjectPage() {
 
       // Update loading message to match planning phase
       updateProject({
-        loadingMessage: "🤔 Analyzing your idea and creating a comprehensive plan..."
+        loadingMessage: '🤔 Analyzing your idea and creating a comprehensive plan...',
       });
     }, 100);
   };
@@ -732,9 +792,9 @@ export default function ProjectPage() {
       try {
         const allProjectFiles = await pb.collection('project_files').getFullList({
           filter: `projectId = "${pbProjectId}"`,
-          fields: 'id,path,content'
+          fields: 'id,path,content',
         });
-        existingFilesMap = new Map(allProjectFiles.map(file => [file.path, file]));
+        existingFilesMap = new Map(allProjectFiles.map((file) => [file.path, file]));
         console.log(`📦 Fetched ${allProjectFiles.length} existing files from PocketBase`);
       } catch (error) {
         console.warn('⚠️  Could not fetch existing files, will create new ones');
@@ -746,7 +806,7 @@ export default function ProjectPage() {
 
       // Only initialize if empty
       const existing = localStorage.getItem(key);
-      if (!existing || existing === "[]") {
+      if (!existing || existing === '[]') {
         console.log(`  📊 Creating sample data for collection: ${collection.name}`);
 
         // Generate sample data based on fields
@@ -765,7 +825,9 @@ export default function ProjectPage() {
             record['status'] = i % 2 === 0 ? 'Active' : 'Inactive';
             record['created'] = new Date().toISOString().split('T')[0];
           } else {
-            console.log(`  📝 Processing ${collection.fields.length} fields for ${collection.name}`);
+            console.log(
+              `  📝 Processing ${collection.fields.length} fields for ${collection.name}`
+            );
             collection.fields.forEach((field: any) => {
               if (field.name === 'id') return;
 
@@ -794,11 +856,12 @@ export default function ProjectPage() {
                   record[field.name] = i % 2 === 0;
                   break;
                 case 'date':
-                case 'datetime':
+                case 'datetime': {
                   const date = new Date();
                   date.setDate(date.getDate() - i);
                   record[field.name] = date.toISOString().split('T')[0];
                   break;
+                }
                 default:
                   record[field.name] = `Value ${i}`;
               }
@@ -825,7 +888,7 @@ export default function ProjectPage() {
               // Update existing file
               await pb.collection('project_files').update(existingFile.id, {
                 content: fileContent,
-                size: fileContent.length
+                size: fileContent.length,
               });
               console.log(`  ☁️  Updated ${collection.name} in PocketBase`);
             } else {
@@ -835,7 +898,7 @@ export default function ProjectPage() {
                 path: filePath,
                 content: fileContent,
                 encoding: 'utf-8',
-                size: fileContent.length
+                size: fileContent.length,
               });
               console.log(`  ☁️  Saved ${collection.name} to PocketBase`);
             }
@@ -846,7 +909,7 @@ export default function ProjectPage() {
               console.error('Error details:', {
                 status: pbError.status,
                 message: pbError.message,
-                data: pbError.data
+                data: pbError.data,
               });
             }
           }
@@ -873,13 +936,23 @@ export default function ProjectPage() {
             {/* Icon in center */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center shadow-lg">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
             </div>
           </div>
-          <p className="text-lg text-text-primary font-bold">{tCommon("loading")}</p>
+          <p className="text-lg text-text-primary font-bold">{tCommon('loading')}</p>
         </div>
       </div>
     );
@@ -889,8 +962,10 @@ export default function ProjectPage() {
     return (
       <div className="min-h-screen bg-background-base flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-4 text-text-primary">{t("projectNotFound")}</h1>
-          <a href="/" className="underline text-brand-primary hover:text-brand-primary-hover">{t("goBackHome")}</a>
+          <h1 className="text-2xl font-semibold mb-4 text-text-primary">{t('projectNotFound')}</h1>
+          <a href="/" className="underline text-brand-primary hover:text-brand-primary-hover">
+            {t('goBackHome')}
+          </a>
         </div>
       </div>
     );
@@ -902,66 +977,66 @@ export default function ProjectPage() {
         <div className="h-screen flex flex-col bg-background-base">
           {/* Top Header */}
           <ProjectHeader
-          projectTitle={project.description || t("untitledProject")}
-          activeView={activeView}
-          onViewChange={setActiveView}
-          projectId={projectId}
-          deployUrl={project.deployUrl}
-          onUpdateDeployUrl={(url) => updateProject({ deployUrl: url })}
-          onUpdateTitle={(title) => updateProject({ description: title })}
-          deploymentStatus={deploymentStatus}
-        />
-
-        {/* Main Content Area - Three Column Layout */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left: Chat Panel */}
-          <div className="w-96 border-r border-light bg-background-raised flex flex-col">
-            <ChatPanelClaude
-              projectId={projectId}
-              project={project}
-              onUpdateProject={updateProject}
-              workflowLogs={logs}
-              isGenerating={isGenerating}
-              deploymentStatus={deploymentStatus}
-              deploymentError={deploymentError}
-              onGeneratingChange={setIsGenerating}
-            />
-          </div>
-
-          {/* Right: Main Content Area */}
-          <div className="flex-1 flex flex-col bg-background-base overflow-hidden">
-            <PreviewTabs
-              project={project}
-              onUpdateProject={updateProject}
-              activeView={activeView}
-              onDeploymentStatusChange={handleDeploymentStatusChange}
-            />
-          </div>
-        </div>
-
-        {/* AI Status Indicator */}
-        <AIStatusIndicator />
-
-        {/* Generation Error Modal - Shows above chatbox */}
-        {showErrorModal && (
-          <GenerationErrorModal
-            errorMessage={errorMessage}
-            onRegenerate={handleRegenerate}
-            onClose={() => setShowErrorModal(false)}
+            projectTitle={project.description || t('untitledProject')}
+            activeView={activeView}
+            onViewChange={setActiveView}
+            projectId={projectId}
+            deployUrl={project.deployUrl}
+            onUpdateDeployUrl={(url) => updateProject({ deployUrl: url })}
+            onUpdateTitle={(title) => updateProject({ description: title })}
+            deploymentStatus={deploymentStatus}
           />
-        )}
 
-        {/* Credit Purchase Modal - Fixed overlay over entire page */}
-        {showCreditModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="max-w-2xl w-full mx-4">
-              <CreditPurchaseModal
-                isOpen={showCreditModal}
-                onClose={() => setShowCreditModal(false)}
+          {/* Main Content Area - Three Column Layout */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left: Chat Panel */}
+            <div className="w-96 border-r border-light bg-background-raised flex flex-col">
+              <ChatPanelClaude
+                projectId={projectId}
+                project={project}
+                onUpdateProject={updateProject}
+                workflowLogs={logs}
+                isGenerating={isGenerating}
+                deploymentStatus={deploymentStatus}
+                deploymentError={deploymentError}
+                onGeneratingChange={setIsGenerating}
+              />
+            </div>
+
+            {/* Right: Main Content Area */}
+            <div className="flex-1 flex flex-col bg-background-base overflow-hidden">
+              <PreviewTabs
+                project={project}
+                onUpdateProject={updateProject}
+                activeView={activeView}
+                onDeploymentStatusChange={handleDeploymentStatusChange}
               />
             </div>
           </div>
-        )}
+
+          {/* AI Status Indicator */}
+          <AIStatusIndicator />
+
+          {/* Generation Error Modal - Shows above chatbox */}
+          {showErrorModal && (
+            <GenerationErrorModal
+              errorMessage={errorMessage}
+              onRegenerate={handleRegenerate}
+              onClose={() => setShowErrorModal(false)}
+            />
+          )}
+
+          {/* Credit Purchase Modal - Fixed overlay over entire page */}
+          {showCreditModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+              <div className="max-w-2xl w-full mx-4">
+                <CreditPurchaseModal
+                  isOpen={showCreditModal}
+                  onClose={() => setShowCreditModal(false)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </UploadedFilesProvider>
     </ProjectSettingsProvider>

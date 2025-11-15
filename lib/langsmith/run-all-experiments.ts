@@ -11,21 +11,26 @@
 // Load environment variables
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
-import { runAutomatedExperiment, builtInEvaluators, type ExperimentConfig } from './auto-experiment';
-import { promoteWinner, type PromotionConfig } from './auto-promotion';
+import {
+  builtInEvaluators,
+  type ExperimentConfig,
+  runAutomatedExperiment,
+} from './auto-experiment';
+import { type PromotionConfig, promoteWinner } from './auto-promotion';
 import { enableContinuousOptimization } from './auto-scheduler';
 import {
-  FOUNDER_AB_TEST,
-  PM_AB_TEST,
-  UX_AB_TEST,
+  AUTOGEN_AB_TEST,
   BACKEND_AB_TEST,
-  FRONTEND_AB_TEST,
-  QA_AB_TEST,
   DEVOPS_AB_TEST,
   EDITOR_AB_TEST,
-  AUTOGEN_AB_TEST,
+  FOUNDER_AB_TEST,
+  FRONTEND_AB_TEST,
+  PM_AB_TEST,
+  QA_AB_TEST,
+  UX_AB_TEST,
 } from './configs/all-nodes-config';
 
 /**
@@ -308,7 +313,9 @@ async function runNodeExperiment(nodeName: string) {
     }
 
     if (result.winner) {
-      console.log(`\n  🏆 Winner: ${result.winner.name} (${(result.winner.confidence * 100).toFixed(1)}%)`);
+      console.log(
+        `\n  🏆 Winner: ${result.winner.name} (${(result.winner.confidence * 100).toFixed(1)}%)`
+      );
 
       // Try to promote
       const promotion = await promoteWinner(result, PROMOTION_CONFIG, CONFIG_PATHS[nodeName]);

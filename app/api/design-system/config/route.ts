@@ -5,15 +5,15 @@
  * POST /api/design-system/config - Update configuration
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import {
+  applyPreset,
   COMPONENT_LIBRARIES,
   getActiveLibraries,
   getConfigSummary,
+  PRESETS,
   toggleLibrary,
   toggleLibraryCategory,
-  applyPreset,
-  PRESETS,
 } from '@/lib/components/component-library-config';
 
 // GET - Get current configuration
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       libraries: COMPONENT_LIBRARIES,
-      activeLibraries: activeLibraries.map(lib => ({
+      activeLibraries: activeLibraries.map((lib) => ({
         id: lib.id,
         name: lib.name,
         priority: lib.priority,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Action '${action}' completed successfully`,
       libraries: COMPONENT_LIBRARIES,
-      activeLibraries: activeLibraries.map(lib => ({
+      activeLibraries: activeLibraries.map((lib) => ({
         id: lib.id,
         name: lib.name,
         priority: lib.priority,

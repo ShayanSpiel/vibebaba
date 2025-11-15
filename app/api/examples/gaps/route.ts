@@ -3,12 +3,12 @@
  * Admin endpoint for detecting example coverage gaps
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import {
-  detectAllGaps,
   createGenerationTasksFromGaps,
-  getCoverageMatrix,
+  detectAllGaps,
   formatGapReport,
+  getCoverageMatrix,
 } from '@/lib/gap-detector';
 
 export async function GET(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         report,
         tasksCreated: tasks.length,
-        tasks: tasks.map(t => ({
+        tasks: tasks.map((t) => ({
           id: t.id,
           categoryId: t.categoryId,
           priority: t.priority,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         message: `Created ${tasks.length} generation tasks`,
         tasksCreated: tasks.length,
-        tasks: tasks.map(t => ({
+        tasks: tasks.map((t) => ({
           id: t.id,
           categoryId: t.categoryId,
           priority: t.priority,
@@ -95,10 +95,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(
-      { error: 'Invalid action' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Gap detection error:', error);
     return NextResponse.json(

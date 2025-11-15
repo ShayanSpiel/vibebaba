@@ -1,6 +1,7 @@
 // lib/repositories/memory.repository.ts
-import { BaseRepository } from './base.repository';
+
 import { Collections, config } from '@/lib/config';
+import { BaseRepository } from './base.repository';
 
 export interface ConversationMemory {
   id: string;

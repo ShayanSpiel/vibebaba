@@ -47,7 +47,9 @@ export function parseAPIDefinitions(apiFileContent: string): APIEndpoint[] {
     const line = lines[i].trim();
 
     // Match function definition: export async function functionName(params): Promise<Type>
-    const functionMatch = line.match(/export\s+(?:async\s+)?function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)(?:\s*:\s*Promise<([^>]+)>)?/);
+    const functionMatch = line.match(
+      /export\s+(?:async\s+)?function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)(?:\s*:\s*Promise<([^>]+)>)?/
+    );
 
     if (functionMatch) {
       const functionName = functionMatch[1];
@@ -57,7 +59,7 @@ export function parseAPIDefinitions(apiFileContent: string): APIEndpoint[] {
       // Parse parameters
       const parameters: APIParameter[] = [];
       if (paramsStr.trim()) {
-        const paramParts = paramsStr.split(',').map(p => p.trim());
+        const paramParts = paramsStr.split(',').map((p) => p.trim());
 
         for (const paramPart of paramParts) {
           // Format: paramName: ParamType or paramName?: ParamType
@@ -71,7 +73,7 @@ export function parseAPIDefinitions(apiFileContent: string): APIEndpoint[] {
             parameters.push({
               name: paramName,
               type: paramType,
-              required: !optional
+              required: !optional,
             });
           }
         }
@@ -81,7 +83,11 @@ export function parseAPIDefinitions(apiFileContent: string): APIEndpoint[] {
       let method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET';
       const lowerName = functionName.toLowerCase();
 
-      if (lowerName.startsWith('create') || lowerName.startsWith('add') || lowerName.startsWith('post')) {
+      if (
+        lowerName.startsWith('create') ||
+        lowerName.startsWith('add') ||
+        lowerName.startsWith('post')
+      ) {
         method = 'POST';
       } else if (lowerName.startsWith('update') || lowerName.startsWith('edit')) {
         method = 'PUT';
@@ -113,7 +119,7 @@ export function parseAPIDefinitions(apiFileContent: string): APIEndpoint[] {
         path,
         parameters,
         returnType,
-        description
+        description,
       });
     }
   }
@@ -129,8 +135,10 @@ export function parseAPIDefinitions(apiFileContent: string): APIEndpoint[] {
  */
 function inferAPIPath(functionName: string): string {
   // Remove common prefixes
-  let resourceName = functionName
-    .replace(/^(get|create|update|delete|fetch|post|put|patch|remove|add|save|load)/, '');
+  let resourceName = functionName.replace(
+    /^(get|create|update|delete|fetch|post|put|patch|remove|add|save|load)/,
+    ''
+  );
 
   // Handle "ById" suffix
   if (resourceName.endsWith('ById')) {
@@ -160,7 +168,7 @@ function pluralize(word: string): string {
     tooth: 'teeth',
     foot: 'feet',
     man: 'men',
-    woman: 'women'
+    woman: 'women',
   };
 
   if (irregulars[lower]) {
@@ -177,8 +185,13 @@ function pluralize(word: string): string {
     return word.slice(0, -1) + 'ies';
   }
 
-  if (lower.endsWith('s') || lower.endsWith('x') || lower.endsWith('z') ||
-      lower.endsWith('ch') || lower.endsWith('sh')) {
+  if (
+    lower.endsWith('s') ||
+    lower.endsWith('x') ||
+    lower.endsWith('z') ||
+    lower.endsWith('ch') ||
+    lower.endsWith('sh')
+  ) {
     return word + 'es';
   }
 
@@ -352,25 +365,28 @@ export default api;
  * Generate method definitions for each endpoint
  */
 function generateEndpointMethods(endpoints: APIEndpoint[]): string {
-  return endpoints.map(endpoint => {
-    const paramsList = endpoint.parameters.map(p =>
-      `${p.name}${p.required ? '' : '?'}: ${p.type}`
-    ).join(', ');
+  return endpoints
+    .map((endpoint) => {
+      const paramsList = endpoint.parameters
+        .map((p) => `${p.name}${p.required ? '' : '?'}: ${p.type}`)
+        .join(', ');
 
-    const description = endpoint.description
-      ? `  /**\n   * ${endpoint.description}\n   */\n`
-      : '';
+      const description = endpoint.description
+        ? `  /**\n   * ${endpoint.description}\n   */\n`
+        : '';
 
-    // Build request data object from parameters
-    const dataObject = endpoint.parameters.length > 0
-      ? `{ ${endpoint.parameters.map(p => p.name).join(', ')} }`
-      : 'undefined';
+      // Build request data object from parameters
+      const dataObject =
+        endpoint.parameters.length > 0
+          ? `{ ${endpoint.parameters.map((p) => p.name).join(', ')} }`
+          : 'undefined';
 
-    // Determine if endpoint requires auth (assume most do except login/register)
-    const requiresAuth = !endpoint.name.toLowerCase().includes('login') &&
-                        !endpoint.name.toLowerCase().includes('register');
+      // Determine if endpoint requires auth (assume most do except login/register)
+      const requiresAuth =
+        !endpoint.name.toLowerCase().includes('login') &&
+        !endpoint.name.toLowerCase().includes('register');
 
-    return `${description}  async ${endpoint.name}(${paramsList}): Promise<${endpoint.returnType}> {
+      return `${description}  async ${endpoint.name}(${paramsList}): Promise<${endpoint.returnType}> {
     return this.request<${endpoint.returnType}>(
       '${endpoint.method}',
       '${endpoint.path}',
@@ -378,7 +394,8 @@ function generateEndpointMethods(endpoints: APIEndpoint[]): string {
       ${requiresAuth}
     );
   }`;
-  }).join('\n\n');
+    })
+    .join('\n\n');
 }
 
 /**
@@ -387,9 +404,9 @@ function generateEndpointMethods(endpoints: APIEndpoint[]): string {
 export function generateTypeDefinitions(endpoints: APIEndpoint[]): string {
   const types = new Set<string>();
 
-  endpoints.forEach(endpoint => {
+  endpoints.forEach((endpoint) => {
     // Extract custom types from parameters
-    endpoint.parameters.forEach(param => {
+    endpoint.parameters.forEach((param) => {
       if (!isPrimitiveType(param.type)) {
         types.add(param.type);
       }
@@ -411,10 +428,14 @@ export function generateTypeDefinitions(endpoints: APIEndpoint[]): string {
  * Define these types based on your backend models
  */
 
-${Array.from(types).map(type => `export interface ${type} {
+${Array.from(types)
+  .map(
+    (type) => `export interface ${type} {
   // TODO: Define properties for ${type}
   [key: string]: any;
-}`).join('\n\n')}
+}`
+  )
+  .join('\n\n')}
 `;
 }
 
@@ -430,8 +451,11 @@ function isPrimitiveType(type: string): boolean {
 /**
  * Main function: Generate complete SDK from API file
  */
-export function generateSDKFromFiles(files: FileToValidate[], projectName: string = 'API'): FileToValidate[] {
-  const apiFile = files.find(f => f.path.includes('lib/api.ts') || f.path.endsWith('/api.ts'));
+export function generateSDKFromFiles(
+  files: FileToValidate[],
+  projectName: string = 'API'
+): FileToValidate[] {
+  const apiFile = files.find((f) => f.path.includes('lib/api.ts') || f.path.endsWith('/api.ts'));
 
   if (!apiFile) {
     console.log('[SDKGenerator] No lib/api.ts found - skipping SDK generation');
@@ -456,14 +480,14 @@ export function generateSDKFromFiles(files: FileToValidate[], projectName: strin
   const generatedFiles: FileToValidate[] = [
     {
       path: 'src/lib/api-client.ts',
-      content: sdkCode
-    }
+      content: sdkCode,
+    },
   ];
 
   if (typeDefinitions) {
     generatedFiles.push({
       path: 'src/types/api.ts',
-      content: typeDefinitions
+      content: typeDefinitions,
     });
   }
 
@@ -486,5 +510,5 @@ export default {
   parseAPIDefinitions,
   generateSDK,
   generateTypeDefinitions,
-  generateSDKFromFiles
+  generateSDKFromFiles,
 };

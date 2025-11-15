@@ -15,33 +15,34 @@ import { adjustColorBrightness } from '@/lib/utils/colors';
 
 // Alias for backward compatibility in this file
 const adjustColor = adjustColorBrightness;
+
 import type {
-  StylingConfig,
-  BrandConfig,
-  SemanticColors,
-  DarkModeOverrides,
-  ShadowSystem,
-  FontSizes,
-  LineHeights,
-  FontWeights,
-  EnhancedTypographyConfig,
-  SpacingScale,
-  LayoutSpacing,
-  SpacingConfig,
+  AlertConfig,
+  BorderingConfig,
   BorderRadiusScale,
   BorderWidths,
-  BorderingConfig,
-  TransitionDurations,
-  EasingFunctions,
-  ZIndices,
-  TransitionConfig,
-  ButtonVariants,
-  ButtonSizes,
+  BrandConfig,
   ButtonConfig,
-  InputConfig,
+  ButtonSizes,
+  ButtonVariants,
   CardConfig,
-  AlertConfig,
   ComponentStyleConfig,
+  DarkModeOverrides,
+  EasingFunctions,
+  EnhancedTypographyConfig,
+  FontSizes,
+  FontWeights,
+  InputConfig,
+  LayoutSpacing,
+  LineHeights,
+  SemanticColors,
+  ShadowSystem,
+  SpacingConfig,
+  SpacingScale,
+  StylingConfig,
+  TransitionConfig,
+  TransitionDurations,
+  ZIndices,
 } from '@/lib/types/styling-config';
 
 // Re-export for backward compatibility
@@ -101,12 +102,15 @@ export function generateEnrichedTokens(
   };
 
   // ========== DARK MODE OVERRIDES ==========
-  const darkModeOverrides: DarkModeOverrides | undefined = colors.mode === 'dark' ? {
-    bgDefault: 'hsl(222.2 84% 4.9%)',
-    bgSurface: 'hsl(217.2 32.6% 17.5%)',
-    textDefault: 'hsl(210 40% 98%)',
-    borderDefault: 'hsl(217.2 32.6% 17.5%)',
-  } : undefined;
+  const darkModeOverrides: DarkModeOverrides | undefined =
+    colors.mode === 'dark'
+      ? {
+          bgDefault: 'hsl(222.2 84% 4.9%)',
+          bgSurface: 'hsl(217.2 32.6% 17.5%)',
+          textDefault: 'hsl(210 40% 98%)',
+          borderDefault: 'hsl(217.2 32.6% 17.5%)',
+        }
+      : undefined;
 
   // ========== SHADOW SYSTEM ==========
   const shadows: ShadowSystem = {
@@ -122,7 +126,12 @@ export function generateEnrichedTokens(
   const fontSizes: FontSizes = {
     xs: '0.75rem',
     sm: '0.875rem',
-    base: typography.scale === 'small' ? '0.875rem' : typography.scale === 'large' ? '1.125rem' : '1rem',
+    base:
+      typography.scale === 'small'
+        ? '0.875rem'
+        : typography.scale === 'large'
+          ? '1.125rem'
+          : '1rem',
     lg: '1.125rem',
     xl: '1.25rem',
     '2xl': '1.5rem',
@@ -163,9 +172,10 @@ export function generateEnrichedTokens(
     fontSizes,
     lineHeights,
     fontWeights,
-    fontFamilyPrimary: typography.fontFamily === 'custom' && typography.customFont
-      ? `'${typography.customFont}', sans-serif`
-      : `'${typography.fontFamily}', sans-serif`,
+    fontFamilyPrimary:
+      typography.fontFamily === 'custom' && typography.customFont
+        ? `'${typography.customFont}', sans-serif`
+        : `'${typography.fontFamily}', sans-serif`,
     fontFamilyHeading: `'${typography.fontFamily}', sans-serif`,
   };
 
@@ -189,9 +199,12 @@ export function generateEnrichedTokens(
 
   const layoutSpacing: LayoutSpacing = {
     containerMax: layout.maxWidth === 'full' ? '100%' : layout.maxWidth,
-    sectionPadding: layout.spacing === 'compact' ? '2rem' : layout.spacing === 'spacious' ? '6rem' : '4rem',
-    componentGap: layout.spacing === 'compact' ? '0.5rem' : layout.spacing === 'spacious' ? '1.5rem' : '1rem',
-    gridGutter: layout.spacing === 'compact' ? '1rem' : layout.spacing === 'spacious' ? '2rem' : '1.5rem',
+    sectionPadding:
+      layout.spacing === 'compact' ? '2rem' : layout.spacing === 'spacious' ? '6rem' : '4rem',
+    componentGap:
+      layout.spacing === 'compact' ? '0.5rem' : layout.spacing === 'spacious' ? '1.5rem' : '1rem',
+    gridGutter:
+      layout.spacing === 'compact' ? '1rem' : layout.spacing === 'spacious' ? '2rem' : '1.5rem',
   };
 
   const spacingConfig: SpacingConfig = {
@@ -202,19 +215,54 @@ export function generateEnrichedTokens(
   // ========== BORDERING CONFIG ==========
   const borderRadiusMap: Record<string, BorderRadiusScale> = {
     none: {
-      none: '0', sm: '0', md: '0', lg: '0', xl: '0', '2xl': '0', '3xl': '0', full: '0',
+      none: '0',
+      sm: '0',
+      md: '0',
+      lg: '0',
+      xl: '0',
+      '2xl': '0',
+      '3xl': '0',
+      full: '0',
     },
     small: {
-      none: '0', sm: '0.125rem', md: '0.25rem', lg: '0.375rem', xl: '0.5rem', '2xl': '0.75rem', '3xl': '1rem', full: '9999px',
+      none: '0',
+      sm: '0.125rem',
+      md: '0.25rem',
+      lg: '0.375rem',
+      xl: '0.5rem',
+      '2xl': '0.75rem',
+      '3xl': '1rem',
+      full: '9999px',
     },
     medium: {
-      none: '0', sm: '0.125rem', md: '0.375rem', lg: '0.5rem', xl: '0.75rem', '2xl': '1rem', '3xl': '1.5rem', full: '9999px',
+      none: '0',
+      sm: '0.125rem',
+      md: '0.375rem',
+      lg: '0.5rem',
+      xl: '0.75rem',
+      '2xl': '1rem',
+      '3xl': '1.5rem',
+      full: '9999px',
     },
     large: {
-      none: '0', sm: '0.25rem', md: '0.5rem', lg: '0.75rem', xl: '1rem', '2xl': '1.5rem', '3xl': '2rem', full: '9999px',
+      none: '0',
+      sm: '0.25rem',
+      md: '0.5rem',
+      lg: '0.75rem',
+      xl: '1rem',
+      '2xl': '1.5rem',
+      '3xl': '2rem',
+      full: '9999px',
     },
     full: {
-      none: '0', sm: '0.5rem', md: '1rem', lg: '1.5rem', xl: '2rem', '2xl': '3rem', '3xl': '4rem', full: '9999px',
+      none: '0',
+      sm: '0.5rem',
+      md: '1rem',
+      lg: '1.5rem',
+      xl: '2rem',
+      '2xl': '3rem',
+      '3xl': '4rem',
+      full: '9999px',
     },
   };
 
@@ -349,7 +397,8 @@ export function generateEnrichedTokens(
     defaultBorder: colors.border || '#e5e7eb',
     hoverBg: colors.backgroundTertiary || '#f3f4f6',
     hoverBorder: adjustColor(colors.border || '#e5e7eb', -0.2),
-    padding: layout.spacing === 'compact' ? '1rem' : layout.spacing === 'spacious' ? '2rem' : '1.5rem',
+    padding:
+      layout.spacing === 'compact' ? '1rem' : layout.spacing === 'spacious' ? '2rem' : '1.5rem',
     borderRadius: borderRadiusMap[layout.borderRadius || 'medium'].lg,
     shadow: shadows.md,
     hoverShadow: shadows.lg,

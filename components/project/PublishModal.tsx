@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { X, Globe, Check, AlertCircle, Loader2, Info, Lock } from "lucide-react";
-import { toast } from "sonner";
-import { formatSubdomainDisplay, getConfig } from "@/lib/domain-config";
-import { useAuth } from "@/components/auth/PocketBaseAuthProvider";
-import { useProjectSettings } from "@/lib/contexts/ProjectSettingsContext";
+import { AlertCircle, Check, Globe, Info, Loader2, Lock, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/components/auth/PocketBaseAuthProvider';
+import { useProjectSettings } from '@/lib/contexts/ProjectSettingsContext';
+import { formatSubdomainDisplay, getConfig } from '@/lib/domain-config';
 
 interface PublishModalProps {
   projectId: string;
@@ -35,7 +35,7 @@ export default function PublishModal({
   const [isPublishing, setIsPublishing] = useState(false);
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const config = getConfig();
   const { user } = useAuth();
 
@@ -59,9 +59,8 @@ export default function PublishModal({
   }, [projectSettings]); // Depend on projectSettings from context
 
   // Check if user has active subscription
-  const hasActiveSubscription = user?.packageId && user?.packageExpiry
-    ? new Date(user.packageExpiry) > new Date()
-    : false;
+  const hasActiveSubscription =
+    user?.packageId && user?.packageExpiry ? new Date(user.packageExpiry) > new Date() : false;
 
   // Real-time subdomain availability check
   useEffect(() => {
@@ -80,14 +79,14 @@ export default function PublishModal({
 
         if (data.available) {
           setAvailable(true);
-          setError("");
+          setError('');
         } else {
           setAvailable(false);
-          setError(data.error || "Subdomain is not available");
+          setError(data.error || 'Subdomain is not available');
         }
       } catch (err) {
         console.error('Error checking subdomain:', err);
-        setError("Failed to check subdomain availability");
+        setError('Failed to check subdomain availability');
       } finally {
         setChecking(false);
       }
@@ -99,20 +98,20 @@ export default function PublishModal({
 
   const handlePublish = async () => {
     if (!subdomain.trim()) {
-      setError("Please enter a subdomain");
+      setError('Please enter a subdomain');
       return;
     }
 
     // Don't allow publishing if subdomain is taken (unless it's the current subdomain)
     if (available === false && subdomain !== initialSubdomain) {
-      setError("This subdomain is not available");
+      setError('This subdomain is not available');
       return;
     }
 
-    setError("");
+    setError('');
     setIsPublishing(true);
 
-    const toastId = toast.loading("Publishing your app...");
+    const toastId = toast.loading('Publishing your app...');
 
     try {
       const res = await fetch('/api/subdomains/publish', {
@@ -135,13 +134,13 @@ export default function PublishModal({
         onPublish?.();
         onClose();
       } else {
-        toast.error(data.error || "Failed to publish", { id: toastId });
-        setError(data.error || "Failed to publish. Please try again.");
+        toast.error(data.error || 'Failed to publish', { id: toastId });
+        setError(data.error || 'Failed to publish. Please try again.');
       }
     } catch (err: any) {
       console.error('Error publishing:', err);
-      toast.error("Failed to publish. Please try again.", { id: toastId });
-      setError(err.message || "Failed to publish. Please try again.");
+      toast.error('Failed to publish. Please try again.', { id: toastId });
+      setError(err.message || 'Failed to publish. Please try again.');
     } finally {
       setIsPublishing(false);
     }
@@ -151,7 +150,7 @@ export default function PublishModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div
         className="relative w-full max-w-lg mx-4 animate-slideUp"
-        style={{ animationDuration: "300ms" }}
+        style={{ animationDuration: '300ms' }}
       >
         {/* Modal body */}
         <div className="bg-background-raised rounded-3xl shadow-2xl border border-light p-8 relative">
@@ -175,12 +174,12 @@ export default function PublishModal({
           {/* Title & Subtitle */}
           <div className="text-center space-y-2 mb-8">
             <h2 className="text-2xl font-bold text-text-primary">
-              {isPublished ? "Update Published App" : "Publish Your App"}
+              {isPublished ? 'Update Published App' : 'Publish Your App'}
             </h2>
             <p className="text-sm text-text-secondary">
               {isPublished
                 ? "Update your app's URL or republish with the same settings"
-                : "Make your app live and share it with the world"}
+                : 'Make your app live and share it with the world'}
             </p>
             {!config.useSubdomains && (
               <div className="flex items-center gap-2 justify-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg mt-2">
@@ -193,7 +192,7 @@ export default function PublishModal({
           {/* Subdomain Section */}
           <div className="space-y-3 mb-6">
             <label className="block text-sm font-semibold text-text-primary">
-              {config.useSubdomains ? "Subdomain *" : "Project Identifier *"}
+              {config.useSubdomains ? 'Subdomain *' : 'Project Identifier *'}
             </label>
             <div className="relative">
               <div className="flex items-center gap-2">
@@ -202,7 +201,7 @@ export default function PublishModal({
                   value={subdomain}
                   onChange={(e) => {
                     setSubdomain(e.target.value);
-                    setError("");
+                    setError('');
                   }}
                   placeholder="my-app"
                   className="flex-1 px-4 py-3 bg-background-base border border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-success/50 focus:border-success/50 transition-all"
@@ -216,7 +215,9 @@ export default function PublishModal({
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 {checking && <Loader2 className="w-5 h-5 text-text-tertiary animate-spin" />}
                 {!checking && available === true && <Check className="w-5 h-5 text-green-500" />}
-                {!checking && available === false && <AlertCircle className="w-5 h-5 text-red-500" />}
+                {!checking && available === false && (
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                )}
               </div>
             </div>
 
@@ -231,7 +232,7 @@ export default function PublishModal({
             {!checking && available === false && (
               <p className="text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
-                {error || "Already taken"}
+                {error || 'Already taken'}
               </p>
             )}
             {error && !checking && available !== false && (
@@ -263,7 +264,9 @@ export default function PublishModal({
                   value={customDomain}
                   onChange={(e) => {
                     if (!hasActiveSubscription) {
-                      toast.error('Custom domains require an active subscription. Please upgrade to use this feature.');
+                      toast.error(
+                        'Custom domains require an active subscription. Please upgrade to use this feature.'
+                      );
                       return;
                     }
                     setCustomDomain(e.target.value);
@@ -277,7 +280,9 @@ export default function PublishModal({
                 {!hasActiveSubscription && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background-base/80 rounded-lg backdrop-blur-sm">
                     <button
-                      onClick={() => toast.info('Please upgrade your subscription to use custom domains')}
+                      onClick={() =>
+                        toast.info('Please upgrade your subscription to use custom domains')
+                      }
                       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-white rounded-lg hover:opacity-90 transition-all text-sm font-semibold shadow-md"
                     >
                       <Lock className="w-4 h-4" />
@@ -291,8 +296,9 @@ export default function PublishModal({
                 <div className="text-xs text-text-secondary bg-background-subtle p-3 rounded-lg space-y-1">
                   <p className="font-semibold mb-2">Add these DNS records:</p>
                   <code className="block bg-background-base p-2 rounded font-mono">
-                    A     @     [YOUR_SERVER_IP]<br/>
-                    CNAME www   {config.baseDomain}
+                    A @ [YOUR_SERVER_IP]
+                    <br />
+                    CNAME www {config.baseDomain}
                   </code>
                 </div>
               )}
@@ -302,7 +308,8 @@ export default function PublishModal({
                   <p className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span className="text-amber-800 dark:text-amber-200">
-                      Custom domains and DNS settings are available with Pro, Business, or Enterprise subscriptions.
+                      Custom domains and DNS settings are available with Pro, Business, or
+                      Enterprise subscriptions.
                     </span>
                   </p>
                 </div>
@@ -314,7 +321,8 @@ export default function PublishModal({
           {!config.useSubdomains && (
             <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-xs text-blue-800 dark:text-blue-200">
-                <strong>Development Mode:</strong> Your app will be accessible at:<br/>
+                <strong>Development Mode:</strong> Your app will be accessible at:
+                <br />
                 <code className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded mt-1 inline-block">
                   http://localhost:4000/apps/project-{projectId}
                 </code>
@@ -338,7 +346,7 @@ export default function PublishModal({
               ) : (
                 <>
                   <Globe className="w-5 h-5 text-white" />
-                  {isPublished ? "Update" : "Publish Now"}
+                  {isPublished ? 'Update' : 'Publish Now'}
                 </>
               )}
             </button>

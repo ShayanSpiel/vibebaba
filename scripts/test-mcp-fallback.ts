@@ -18,7 +18,7 @@ async function testDuckDuckGoSearch() {
 
   try {
     const results = await searchDuckDuckGo('modern web design patterns 2025', {
-      maxResults: 3
+      maxResults: 3,
     });
 
     console.log(`\n✓ Found ${results.length} results:\n`);
@@ -43,7 +43,7 @@ async function testBrandSearch() {
 
   try {
     const results = await searchDuckDuckGo('Stripe brand design guidelines', {
-      maxResults: 3
+      maxResults: 3,
     });
 
     console.log(`\n✓ Found ${results.length} results:\n`);
@@ -69,7 +69,7 @@ async function testRegionalSearch() {
   try {
     const results = await searchDuckDuckGo('UI component libraries', {
       maxResults: 3,
-      region: 'us-en'
+      region: 'us-en',
     });
 
     console.log(`\n✓ Found ${results.length} results:\n`);
@@ -94,7 +94,7 @@ async function testTimeRangeSearch() {
   try {
     const results = await searchDuckDuckGo('Next.js 15 features', {
       maxResults: 3,
-      timeRange: 'm' // last month
+      timeRange: 'm', // last month
     });
 
     console.log(`\n✓ Found ${results.length} results:\n`);
@@ -136,7 +136,7 @@ async function runAllTests() {
     console.log(`${emoji} ${test}: ${status}`);
   });
 
-  const allPassed = Object.values(results).every(r => r);
+  const allPassed = Object.values(results).every((r) => r);
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   if (allPassed) {

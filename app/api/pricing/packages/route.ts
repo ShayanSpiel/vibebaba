@@ -1,10 +1,7 @@
 // app/api/pricing/packages/route.ts
 // PHASE 2: API endpoint for fetching pricing configuration
 import { NextResponse } from 'next/server';
-import {
-  getAllPackages,
-  getPricingConfig,
-} from '@/lib/config/pricing-config';
+import { getAllPackages, getPricingConfig } from '@/lib/config/pricing-config';
 
 export async function GET() {
   try {
@@ -20,9 +17,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching pricing packages:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch pricing packages' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch pricing packages' }, { status: 500 });
   }
 }

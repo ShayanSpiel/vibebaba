@@ -1,27 +1,27 @@
-import { pb } from "./database/pocketbase";
-import { creditsCache } from "./credits-cache";
+import { creditsCache } from './credits-cache';
+import { pb } from './database/pocketbase';
 
 // Pricing packages
 export const PRICING_PACKAGES = {
   starter: {
-    id: "starter",
-    name: "Starter",
+    id: 'starter',
+    name: 'Starter',
     monthlyTokens: 500000, // 500K tokens
     dailyTokens: 5000, // 5K daily bonus
     price: 5, // $5/month
     priceToman: 350000, // ~350K Toman
   },
   pro: {
-    id: "pro",
-    name: "Pro",
+    id: 'pro',
+    name: 'Pro',
     monthlyTokens: 2000000, // 2M tokens
     dailyTokens: 20000, // 20K daily bonus
     price: 15, // $15/month
     priceToman: 1050000, // ~1M Toman
   },
   unlimited: {
-    id: "unlimited",
-    name: "Unlimited",
+    id: 'unlimited',
+    name: 'Unlimited',
     monthlyTokens: 10000000, // 10M tokens
     dailyTokens: 50000, // 50K daily bonus
     price: 40, // $40/month
@@ -165,7 +165,11 @@ export async function getAvailableTokens(userId: string): Promise<number> {
 /**
  * Consume tokens (invalidates cache for instant UI updates)
  */
-export async function consumeTokens(userId: string, tokens: number, endpoint?: string): Promise<boolean> {
+export async function consumeTokens(
+  userId: string,
+  tokens: number,
+  endpoint?: string
+): Promise<boolean> {
   const available = await getAvailableTokens(userId);
 
   if (available < tokens) {
@@ -234,7 +238,7 @@ export async function addTokens(
  */
 export async function activatePackage(userId: string, packageId: string): Promise<void> {
   const pkg = PRICING_PACKAGES[packageId as keyof typeof PRICING_PACKAGES];
-  if (!pkg) throw new Error("Invalid package");
+  if (!pkg) throw new Error('Invalid package');
 
   const now = new Date();
   const expiry = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
@@ -267,7 +271,7 @@ export async function createTransaction(
   type: string,
   amount: number,
   tokens: number,
-  currency: string = "USD",
+  currency: string = 'USD',
   packageId?: string,
   paymentProvider?: string,
   paymentId?: string
@@ -295,7 +299,10 @@ export async function createTransaction(
 /**
  * Update transaction status
  */
-export async function updateTransactionStatus(transactionId: string, status: string): Promise<void> {
+export async function updateTransactionStatus(
+  transactionId: string,
+  status: string
+): Promise<void> {
   try {
     await pb.collection('transactions').update(transactionId, { status });
   } catch (error) {

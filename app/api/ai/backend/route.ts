@@ -1,14 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { generateWithFallback } from "@/lib/ai/ai";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
+import { type NextRequest, NextResponse } from 'next/server';
+import { generateWithFallback } from '@/lib/ai/ai';
+import {
+  checkAndResetDailyTokens,
+  consumeTokens,
+  getAvailableTokens,
+} from '@/lib/database/pocketbase-credits';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 
 export async function POST(req: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { plan, description, prototypeCode } = await req.json();
@@ -21,7 +25,7 @@ export async function POST(req: NextRequest) {
     const availableTokens = getAvailableTokens(updatedUser);
     if (availableTokens < estimatedTokens) {
       return NextResponse.json(
-        { error: "Insufficient tokens. Please purchase more credits.", insufficientTokens: true },
+        { error: 'Insufficient tokens. Please purchase more credits.', insufficientTokens: true },
         { status: 402 }
       );
     }
@@ -109,7 +113,10 @@ Generate the JSON now:`;
     let text = await generateWithFallback(prompt);
 
     // Clean up markdown code blocks if present
-    text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    text = text
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
 
     // Parse JSON
     let backendConfig;
@@ -118,7 +125,9 @@ Generate the JSON now:`;
 
       // Validate: limit collections to max 3 (reasonable limit for generated apps)
       if (backendConfig.collections && backendConfig.collections.length > 3) {
-        console.warn(`AI generated ${backendConfig.collections.length} collections, limiting to first 3`);
+        console.warn(
+          `AI generated ${backendConfig.collections.length} collections, limiting to first 3`
+        );
         backendConfig.collections = backendConfig.collections.slice(0, 3);
       }
 
@@ -128,32 +137,28 @@ Generate the JSON now:`;
       delete backendConfig.storage;
       delete backendConfig.realtime;
       delete backendConfig.setupInstructions;
-
     } catch (parseError) {
-      console.error("JSON parse error:", parseError);
+      console.error('JSON parse error:', parseError);
       // Fallback: Create a simple "items" collection
       backendConfig = {
         collections: [
           {
-            name: "items",
+            name: 'items',
             fields: [
-              { name: "title", type: "string" },
-              { name: "description", type: "text" }
-            ]
-          }
-        ]
+              { name: 'title', type: 'string' },
+              { name: 'description', type: 'text' },
+            ],
+          },
+        ],
       };
     }
 
     // Consume tokens after successful generation
-    await consumeTokens(user.id, estimatedTokens, "/api/ai/backend");
+    await consumeTokens(user.id, estimatedTokens, '/api/ai/backend');
 
     return NextResponse.json({ backendConfig });
   } catch (error: any) {
-    console.error("Error generating backend:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('Error generating backend:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

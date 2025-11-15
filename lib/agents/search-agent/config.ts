@@ -22,11 +22,11 @@ export const DEFAULT_CONFIG: Omit<SearchAgentConfig, 'orgId'> = {
 
   // RAG settings
   enableVectorStore: true,
-  vectorStoreProvider: 'memory',  // Upgrade to Pinecone/Supabase for production
+  vectorStoreProvider: 'memory', // Upgrade to Pinecone/Supabase for production
 
   // Cache settings
   cacheEnabled: true,
-  cacheTTL: 3600,                 // 1 hour
+  cacheTTL: 3600, // 1 hour
 
   // Quotas (generous for free tier)
   maxSearchesPerDay: 100,
@@ -34,8 +34,8 @@ export const DEFAULT_CONFIG: Omit<SearchAgentConfig, 'orgId'> = {
   maxScreenshotsPerSearch: 5,
 
   // Timeouts
-  searchTimeout: 30000,           // 30 seconds
-  scrapeTimeout: 15000,           // 15 seconds
+  searchTimeout: 30000, // 30 seconds
+  scrapeTimeout: 15000, // 15 seconds
 
   // LLM settings
   llmModel: 'claude-3-5-sonnet-20241022',
@@ -83,27 +83,27 @@ export const QUOTA_LIMITS = {
  * Cache TTL by result type
  */
 export const CACHE_TTL = {
-  codeSearch: 3600,              // 1 hour
-  brandGuidelines: 86400,        // 24 hours (brands don't change often)
-  webSearch: 1800,               // 30 minutes
-  cloneAnalysis: 43200,          // 12 hours
-  apiDocs: 7200,                 // 2 hours
+  codeSearch: 3600, // 1 hour
+  brandGuidelines: 86400, // 24 hours (brands don't change often)
+  webSearch: 1800, // 30 minutes
+  cloneAnalysis: 43200, // 12 hours
+  apiDocs: 7200, // 2 hours
 };
 
 /**
  * Tool costs (for analytics - all $0 for free tier)
  */
 export const TOOL_COSTS = {
-  exaSearch: 0,                  // FREE tier: 1000/month
-  githubSearch: 0,               // FREE unlimited
-  duckduckgoSearch: 0,           // FREE unlimited
-  braveSearch: 0,                // FREE unlimited
-  codeExtraction: 0,             // FREE (uses GitHub API)
-  brandScraping: 0,              // FREE (Puppeteer + Gemini Vision free tier)
-  cloneAnalysis: 0,              // FREE
-  contentScraping: 0,            // FREE
-  embedding: 0,                  // FREE tier: 2M tokens/day
-  llm: 0,                        // FREE tier: 100k tokens/day
+  exaSearch: 0, // FREE tier: 1000/month
+  githubSearch: 0, // FREE unlimited
+  duckduckgoSearch: 0, // FREE unlimited
+  braveSearch: 0, // FREE unlimited
+  codeExtraction: 0, // FREE (uses GitHub API)
+  brandScraping: 0, // FREE (Puppeteer + Gemini Vision free tier)
+  cloneAnalysis: 0, // FREE
+  contentScraping: 0, // FREE
+  embedding: 0, // FREE tier: 2M tokens/day
+  llm: 0, // FREE tier: 100k tokens/day
 };
 
 /**
@@ -140,11 +140,16 @@ export function validateEnv(): { valid: boolean; missing: string[] } {
   if (!process.env.ANTHROPIC_API_KEY) missing.push('ANTHROPIC_API_KEY');
 
   // Optional but recommended
-  if (!process.env.EXA_API_KEY) console.warn('[SearchAgent] EXA_API_KEY not set - Exa search disabled');
-  if (!process.env.GITHUB_TOKEN) console.warn('[SearchAgent] GITHUB_TOKEN not set - GitHub rate limits apply');
-  if (!process.env.OPENAI_API_KEY) console.warn('[SearchAgent] OPENAI_API_KEY not set - Embeddings disabled');
-  if (!process.env.GEMINI_API_KEY) console.warn('[SearchAgent] GEMINI_API_KEY not set - Vision analysis disabled');
-  if (!process.env.MISTRAL_API_KEY) console.warn('[SearchAgent] MISTRAL_API_KEY not set - Mistral LLM disabled');
+  if (!process.env.EXA_API_KEY)
+    console.warn('[SearchAgent] EXA_API_KEY not set - Exa search disabled');
+  if (!process.env.GITHUB_TOKEN)
+    console.warn('[SearchAgent] GITHUB_TOKEN not set - GitHub rate limits apply');
+  if (!process.env.OPENAI_API_KEY)
+    console.warn('[SearchAgent] OPENAI_API_KEY not set - Embeddings disabled');
+  if (!process.env.GEMINI_API_KEY)
+    console.warn('[SearchAgent] GEMINI_API_KEY not set - Vision analysis disabled');
+  if (!process.env.MISTRAL_API_KEY)
+    console.warn('[SearchAgent] MISTRAL_API_KEY not set - Mistral LLM disabled');
 
   return {
     valid: missing.length === 0,

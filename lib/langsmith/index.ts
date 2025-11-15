@@ -11,68 +11,62 @@
  * - Auto-promotion
  */
 
-// Client utilities
-export {
-  getLangSmithClient,
-  createDataset,
-  addDatasetExample,
-  listDatasets,
-  getDataset,
-  listDatasetExamples,
-  deleteDataset,
-} from './client';
-
-// Prompt management & A/B testing
-export {
-  fetchPrompt,
-  selectVariant,
-  fetchPromptWithABTest,
-  formatPrompt,
-  trackPromptMetrics,
-  clearPromptCache,
-  type ABTestConfig,
-  type PromptMetrics,
-} from './prompt-manager';
-
-// Dataset setup helpers
-export {
-  setupAppGenDataset,
-  setupPMNodeDataset,
-  listExistingDatasets,
-} from './dataset-setup';
-
 // A/B test configuration
 export {
   PM_PLANNING_AB_TEST,
   PM_PLANNING_FALLBACK_PROMPT,
   validateLangSmithSetup,
 } from './ab-test-config';
-
 // Automated experiments (NEW)
 export {
-  runAutomatedExperiment,
   builtInEvaluators,
+  type EvaluationResult,
+  type EvaluatorConfig,
   type ExperimentConfig,
   type ExperimentResult,
-  type EvaluatorConfig,
-  type EvaluationResult,
+  runAutomatedExperiment,
 } from './auto-experiment';
-
 // Auto-promotion (NEW)
 export {
-  promoteWinner,
-  rollbackPromotion,
   backupConfig,
   type PromotionConfig,
   type PromotionResult,
   type PromotionStrategy,
+  promoteWinner,
+  rollbackPromotion,
 } from './auto-promotion';
-
 // Scheduler (NEW)
 export {
+  enableContinuousOptimization,
+  getSchedulerStatus,
+  type SchedulerConfig,
   startScheduler,
   stopScheduler,
-  getSchedulerStatus,
-  enableContinuousOptimization,
-  type SchedulerConfig,
 } from './auto-scheduler';
+// Client utilities
+export {
+  addDatasetExample,
+  createDataset,
+  deleteDataset,
+  getDataset,
+  getLangSmithClient,
+  listDatasetExamples,
+  listDatasets,
+} from './client';
+// Dataset setup helpers
+export {
+  listExistingDatasets,
+  setupAppGenDataset,
+  setupPMNodeDataset,
+} from './dataset-setup';
+// Prompt management & A/B testing
+export {
+  type ABTestConfig,
+  clearPromptCache,
+  fetchPrompt,
+  fetchPromptWithABTest,
+  formatPrompt,
+  type PromptMetrics,
+  selectVariant,
+  trackPromptMetrics,
+} from './prompt-manager';

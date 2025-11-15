@@ -3,6 +3,7 @@
 
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
 interface TestResult {
@@ -20,7 +21,7 @@ async function testGeminiAuth() {
     results.push({
       provider: 'Gemini',
       status: 'skipped',
-      message: 'API key not configured'
+      message: 'API key not configured',
     });
     return;
   }
@@ -35,27 +36,27 @@ async function testGeminiAuth() {
       results.push({
         provider: 'Gemini',
         status: 'success',
-        message: '✅ Authentication successful'
+        message: '✅ Authentication successful',
       });
     } else if (response.status === 403) {
       results.push({
         provider: 'Gemini',
         status: 'failed',
-        message: `❌ API key invalid or API not enabled. Visit https://aistudio.google.com/apikey`
+        message: `❌ API key invalid or API not enabled. Visit https://aistudio.google.com/apikey`,
       });
     } else {
       const errorText = await response.text();
       results.push({
         provider: 'Gemini',
         status: 'failed',
-        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`
+        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`,
       });
     }
   } catch (error: any) {
     results.push({
       provider: 'Gemini',
       status: 'failed',
-      message: `❌ Error: ${error.message}`
+      message: `❌ Error: ${error.message}`,
     });
   }
 }
@@ -67,7 +68,7 @@ async function testMistralAuth() {
     results.push({
       provider: 'Mistral',
       status: 'skipped',
-      message: 'API key not configured'
+      message: 'API key not configured',
     });
     return;
   }
@@ -76,7 +77,7 @@ async function testMistralAuth() {
     const response = await fetch('https://api.mistral.ai/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     });
@@ -85,21 +86,21 @@ async function testMistralAuth() {
       results.push({
         provider: 'Mistral',
         status: 'success',
-        message: '✅ Authentication successful'
+        message: '✅ Authentication successful',
       });
     } else {
       const errorText = await response.text();
       results.push({
         provider: 'Mistral',
         status: 'failed',
-        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`
+        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`,
       });
     }
   } catch (error: any) {
     results.push({
       provider: 'Mistral',
       status: 'failed',
-      message: `❌ Error: ${error.message}`
+      message: `❌ Error: ${error.message}`,
     });
   }
 }
@@ -111,7 +112,7 @@ async function testCodestralAuth() {
     results.push({
       provider: 'Codestral',
       status: 'skipped',
-      message: 'API key not configured'
+      message: 'API key not configured',
     });
     return;
   }
@@ -121,7 +122,7 @@ async function testCodestralAuth() {
     const response = await fetch('https://api.mistral.ai/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     });
@@ -130,21 +131,21 @@ async function testCodestralAuth() {
       results.push({
         provider: 'Codestral',
         status: 'success',
-        message: '✅ Authentication successful'
+        message: '✅ Authentication successful',
       });
     } else {
       const errorText = await response.text();
       results.push({
         provider: 'Codestral',
         status: 'failed',
-        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`
+        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`,
       });
     }
   } catch (error: any) {
     results.push({
       provider: 'Codestral',
       status: 'failed',
-      message: `❌ Error: ${error.message}`
+      message: `❌ Error: ${error.message}`,
     });
   }
 }
@@ -156,7 +157,7 @@ async function testOpenRouterAuth() {
     results.push({
       provider: 'OpenRouter',
       status: 'skipped',
-      message: 'API key not configured'
+      message: 'API key not configured',
     });
     return;
   }
@@ -165,7 +166,7 @@ async function testOpenRouterAuth() {
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'HTTP-Referer': 'https://vibebaba.app',
         'X-Title': 'Vibebaba',
       },
@@ -175,21 +176,21 @@ async function testOpenRouterAuth() {
       results.push({
         provider: 'OpenRouter',
         status: 'success',
-        message: '✅ Authentication successful'
+        message: '✅ Authentication successful',
       });
     } else {
       const errorText = await response.text();
       results.push({
         provider: 'OpenRouter',
         status: 'failed',
-        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`
+        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`,
       });
     }
   } catch (error: any) {
     results.push({
       provider: 'OpenRouter',
       status: 'failed',
-      message: `❌ Error: ${error.message}`
+      message: `❌ Error: ${error.message}`,
     });
   }
 }
@@ -201,7 +202,7 @@ async function testGroqAuth() {
     results.push({
       provider: 'Groq',
       status: 'skipped',
-      message: 'API key not configured'
+      message: 'API key not configured',
     });
     return;
   }
@@ -210,7 +211,7 @@ async function testGroqAuth() {
     const response = await fetch('https://api.groq.com/openai/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     });
@@ -219,27 +220,27 @@ async function testGroqAuth() {
       results.push({
         provider: 'Groq',
         status: 'success',
-        message: '✅ Authentication successful'
+        message: '✅ Authentication successful',
       });
     } else if (response.status === 403) {
       results.push({
         provider: 'Groq',
         status: 'failed',
-        message: `❌ API key invalid or expired. Get new key from https://console.groq.com/keys`
+        message: `❌ API key invalid or expired. Get new key from https://console.groq.com/keys`,
       });
     } else {
       const errorText = await response.text();
       results.push({
         provider: 'Groq',
         status: 'failed',
-        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`
+        message: `❌ HTTP ${response.status}: ${errorText.substring(0, 100)}`,
       });
     }
   } catch (error: any) {
     results.push({
       provider: 'Groq',
       status: 'failed',
-      message: `❌ Error: ${error.message}`
+      message: `❌ Error: ${error.message}`,
     });
   }
 }
@@ -263,7 +264,9 @@ async function checkAPIKeyFormat() {
     } else {
       const hasWhitespace = key.value.trim() !== key.value;
       const length = key.value.length;
-      console.log(`✅ ${key.name}: Set (${length} chars)${hasWhitespace ? ' ⚠️ HAS WHITESPACE!' : ''}`);
+      console.log(
+        `✅ ${key.name}: Set (${length} chars)${hasWhitespace ? ' ⚠️ HAS WHITESPACE!' : ''}`
+      );
     }
   }
 }
@@ -298,7 +301,9 @@ async function main() {
   }
 
   console.log('\n' + '='.repeat(60));
-  console.log(`\n✅ Success: ${successCount}  ❌ Failed: ${failedCount}  ⏭️  Skipped: ${skippedCount}\n`);
+  console.log(
+    `\n✅ Success: ${successCount}  ❌ Failed: ${failedCount}  ⏭️  Skipped: ${skippedCount}\n`
+  );
 
   if (failedCount > 0) {
     console.log('💡 How to Fix Failed Providers:\n');

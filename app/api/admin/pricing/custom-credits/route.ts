@@ -1,6 +1,6 @@
 // app/api/admin/pricing/custom-credits/route.ts
 // Admin API for managing custom credit pricing
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getPricingConfig } from '@/lib/config/pricing-config';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';

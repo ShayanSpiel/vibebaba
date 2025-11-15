@@ -5,7 +5,7 @@
  * Checks Next.js configuration, image optimization, API route conflicts, etc.
  */
 
-import type { ValidationError, FileToValidate } from './types';
+import type { FileToValidate, ValidationError } from './types';
 
 /**
  * Validate Next.js configuration for static export
@@ -16,10 +16,11 @@ export function validateNextConfig(files: FileToValidate[]): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Find next.config.js
-  const configFile = files.find(f =>
-    f.path.endsWith('next.config.js') ||
-    f.path.endsWith('next.config.ts') ||
-    f.path.endsWith('next.config.mjs')
+  const configFile = files.find(
+    (f) =>
+      f.path.endsWith('next.config.js') ||
+      f.path.endsWith('next.config.ts') ||
+      f.path.endsWith('next.config.mjs')
   );
 
   if (!configFile) {
@@ -40,7 +41,7 @@ export function validateNextConfig(files: FileToValidate[]): ValidationError[] {
       rule: 'missing-static-export-config',
       severity: 'error',
       autoFixable: true,
-      suggestion: "Add output: 'export' to next.config.js module.exports"
+      suggestion: "Add output: 'export' to next.config.js module.exports",
     });
   }
 
@@ -53,7 +54,7 @@ export function validateNextConfig(files: FileToValidate[]): ValidationError[] {
       rule: 'missing-image-optimization-config',
       severity: 'warning',
       autoFixable: true,
-      suggestion: 'Add images: { unoptimized: true } to next.config.js'
+      suggestion: 'Add images: { unoptimized: true } to next.config.js',
     });
   }
 
@@ -65,7 +66,7 @@ export function validateNextConfig(files: FileToValidate[]): ValidationError[] {
   // REMOVED: This is optional and causes false positives
   // Only needed in specific deployment scenarios
 
-  if (errors.filter(e => e.severity === 'error').length === 0) {
+  if (errors.filter((e) => e.severity === 'error').length === 0) {
     console.log('[DeploymentReadiness] ✅ Next.js configuration is valid');
   }
 
@@ -74,6 +75,7 @@ export function validateNextConfig(files: FileToValidate[]): ValidationError[] {
 
 /**
  * Validate that no API routes exist (not supported in static export)
+ * Exception: NextAuth routes are allowed as they're part of authentication infrastructure
  */
 export function validateNoAPIRoutes(files: FileToValidate[]): ValidationError[] {
   console.log('[DeploymentReadiness] Checking for API routes...');
@@ -82,7 +84,20 @@ export function validateNoAPIRoutes(files: FileToValidate[]): ValidationError[] 
 
   for (const file of files) {
     // Check for app/api/ directory structure
-    if (file.path.includes('/api/') && file.path.includes('src/app/api/') && file.path.endsWith('/route.ts')) {
+    if (
+      file.path.includes('/api/') &&
+      file.path.includes('src/app/api/') &&
+      file.path.endsWith('/route.ts')
+    ) {
+      // EXCEPTION: Auth routes are allowed (part of authentication infrastructure)
+      if (
+        file.path.includes('/api/auth/[...nextauth]/route.ts') ||
+        file.path.includes('/api/auth/signup/route.ts')
+      ) {
+        console.log(`[DeploymentReadiness] ✅ Auth route allowed: ${file.path}`);
+        continue;
+      }
+
       errors.push({
         file: file.path,
         line: 0,
@@ -90,7 +105,8 @@ export function validateNoAPIRoutes(files: FileToValidate[]): ValidationError[] 
         rule: 'api-routes-not-supported',
         severity: 'error',
         autoFixable: false,
-        suggestion: 'Move API logic to separate Express server or remove static export mode. API routes should be handled by the Express backend, not Next.js API routes.'
+        suggestion:
+          'Move API logic to separate Express server or remove static export mode. API routes should be handled by the Express backend, not Next.js API routes.',
       });
       console.log(`[DeploymentReadiness] ❌ Found API route: ${file.path}`);
     }
@@ -120,7 +136,8 @@ export function validateImageUsage(files: FileToValidate[]): ValidationError[] {
     const lines = content.split('\n');
 
     // Check for next/image import
-    const hasNextImageImport = content.includes("from 'next/image'") || content.includes('from "next/image"');
+    const hasNextImageImport =
+      content.includes("from 'next/image'") || content.includes('from "next/image"');
 
     // Check for Image component usage
     const imageComponentPattern = /<Image\s+/g;
@@ -134,7 +151,7 @@ export function validateImageUsage(files: FileToValidate[]): ValidationError[] {
         rule: 'missing-image-import',
         severity: 'error',
         autoFixable: true,
-        suggestion: "Add: import Image from 'next/image'"
+        suggestion: "Add: import Image from 'next/image'",
       });
     }
 
@@ -155,7 +172,7 @@ export function validateEnvironmentVariables(files: FileToValidate[]): Validatio
   const errors: ValidationError[] = [];
 
   // Find .env.local file
-  const envFile = files.find(f => f.path.endsWith('.env.local') || f.path.endsWith('.env'));
+  const envFile = files.find((f) => f.path.endsWith('.env.local') || f.path.endsWith('.env'));
 
   if (!envFile) {
     // SKIP: .env.local is optional and may be added by scaffold or not needed
@@ -186,11 +203,17 @@ export function validateEnvironmentVariables(files: FileToValidate[]): Validatio
 
       // If used in frontend code, must start with NEXT_PUBLIC_
       // (This is a simplified check - in reality would need to grep frontend files)
-      if (!varName.startsWith('NEXT_PUBLIC_') && !varName.startsWith('NODE_') && varName !== 'JWT_SECRET' && varName !== 'PORT') {
+      if (
+        !varName.startsWith('NEXT_PUBLIC_') &&
+        !varName.startsWith('NODE_') &&
+        varName !== 'JWT_SECRET' &&
+        varName !== 'PORT'
+      ) {
         // Check if this var is used in any .tsx files
-        const usedInFrontend = files.some(f =>
-          (f.path.endsWith('.tsx') || f.path.endsWith('.jsx')) &&
-          f.content.includes(`process.env.${varName}`)
+        const usedInFrontend = files.some(
+          (f) =>
+            (f.path.endsWith('.tsx') || f.path.endsWith('.jsx')) &&
+            f.content.includes(`process.env.${varName}`)
         );
 
         if (usedInFrontend) {
@@ -201,7 +224,7 @@ export function validateEnvironmentVariables(files: FileToValidate[]): Validatio
             rule: 'frontend-env-var-prefix',
             severity: 'error',
             autoFixable: false,
-            suggestion: `Rename to NEXT_PUBLIC_${varName} for frontend access, or move to backend-only code`
+            suggestion: `Rename to NEXT_PUBLIC_${varName} for frontend access, or move to backend-only code`,
           });
         }
       }
@@ -219,7 +242,7 @@ export function validatePackageJson(files: FileToValidate[]): ValidationError[] 
 
   const errors: ValidationError[] = [];
 
-  const packageFile = files.find(f => f.path.endsWith('package.json'));
+  const packageFile = files.find((f) => f.path.endsWith('package.json'));
 
   if (!packageFile) {
     // SKIP: package.json is a scaffold file added by DevOps node
@@ -242,7 +265,7 @@ export function validatePackageJson(files: FileToValidate[]): ValidationError[] 
           rule: 'missing-npm-script',
           severity: 'warning',
           autoFixable: false,
-          suggestion: `Add "${script}" script to package.json`
+          suggestion: `Add "${script}" script to package.json`,
         });
       }
     }
@@ -258,11 +281,10 @@ export function validatePackageJson(files: FileToValidate[]): ValidationError[] 
           rule: 'missing-dependency',
           severity: 'error',
           autoFixable: false,
-          suggestion: `Add ${dep} to dependencies in package.json`
+          suggestion: `Add ${dep} to dependencies in package.json`,
         });
       }
     }
-
   } catch (err) {
     errors.push({
       file: packageFile.path,
@@ -271,7 +293,7 @@ export function validatePackageJson(files: FileToValidate[]): ValidationError[] 
       rule: 'invalid-package-json',
       severity: 'error',
       autoFixable: false,
-      suggestion: 'Fix JSON syntax errors in package.json'
+      suggestion: 'Fix JSON syntax errors in package.json',
     });
   }
 
@@ -294,8 +316,8 @@ export function validateDeploymentReadiness(files: FileToValidate[]): Validation
   allErrors.push(...validateEnvironmentVariables(files));
   allErrors.push(...validatePackageJson(files));
 
-  const errorCount = allErrors.filter(e => e.severity === 'error').length;
-  const warningCount = allErrors.filter(e => e.severity === 'warning').length;
+  const errorCount = allErrors.filter((e) => e.severity === 'error').length;
+  const warningCount = allErrors.filter((e) => e.severity === 'warning').length;
 
   if (errorCount === 0) {
     console.log('[DeploymentReadiness] ✅ Deployment readiness checks passed');

@@ -184,7 +184,18 @@ async function setupCollections() {
             required: false,
             options: {
               maxSelect: 10,
-              values: ['saas', 'ecommerce', 'blog', 'portfolio', 'agency', 'fintech', 'healthcare', 'education', 'media', 'nonprofit'],
+              values: [
+                'saas',
+                'ecommerce',
+                'blog',
+                'portfolio',
+                'agency',
+                'fintech',
+                'healthcare',
+                'education',
+                'media',
+                'nonprofit',
+              ],
             },
           },
           {

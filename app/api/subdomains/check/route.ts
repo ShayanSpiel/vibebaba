@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { pb } from '@/lib/database/pocketbase';
-import { isValidSubdomain, isReservedSubdomain } from '@/lib/generate-project-name';
+import { isReservedSubdomain, isValidSubdomain } from '@/lib/generate-project-name';
 
 /**
  * Check if a subdomain is available
@@ -11,10 +11,7 @@ export async function GET(req: NextRequest) {
     const subdomain = req.nextUrl.searchParams.get('subdomain');
 
     if (!subdomain) {
-      return NextResponse.json(
-        { error: 'Subdomain parameter is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Subdomain parameter is required' }, { status: 400 });
     }
 
     // Validate subdomain format
@@ -22,7 +19,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           available: false,
-          error: 'Invalid subdomain format. Must be 3-63 characters, lowercase letters, numbers, and hyphens only.'
+          error:
+            'Invalid subdomain format. Must be 3-63 characters, lowercase letters, numbers, and hyphens only.',
         },
         { status: 200 }
       );
@@ -33,7 +31,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           available: false,
-          error: 'This subdomain is reserved and cannot be used.'
+          error: 'This subdomain is reserved and cannot be used.',
         },
         { status: 200 }
       );
@@ -41,20 +39,21 @@ export async function GET(req: NextRequest) {
 
     // Check if already taken by another project
     try {
-      const existingProject = await pb.collection('projects')
+      const existingProject = await pb
+        .collection('projects')
         .getFirstListItem(`subdomain="${subdomain}"`);
 
       // Subdomain is taken
       return NextResponse.json({
         available: false,
-        error: 'This subdomain is already taken.'
+        error: 'This subdomain is already taken.',
       });
     } catch (error: any) {
       // 404 means subdomain is available
       if (error?.status === 404) {
         return NextResponse.json({
           available: true,
-          subdomain
+          subdomain,
         });
       }
 

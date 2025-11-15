@@ -4,18 +4,22 @@
  * Analyze a website for cloning - detect framework, components, layout
  */
 
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { z } from "zod";
-import { getMCPManager } from "@/lib/mcp/client";
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { getMCPManager } from '@/lib/mcp/client';
 
 export function createCloneAnalyzerTool() {
   return new DynamicStructuredTool({
-    name: "clone_analyzer",
-    description: "Analyze a website for cloning - detect framework, component library, layout structure. Best for: 'make it like X' requests, understanding website architecture.",
+    name: 'clone_analyzer',
+    description:
+      "Analyze a website for cloning - detect framework, component library, layout structure. Best for: 'make it like X' requests, understanding website architecture.",
     schema: z.object({
-      url: z.string().describe("Target URL to analyze"),
-      analyzePages: z.array(z.string()).default(['/']).describe("Pages to analyze (default: ['/'])"),
-      extractCode: z.boolean().default(false).describe("Whether to attempt code extraction"),
+      url: z.string().describe('Target URL to analyze'),
+      analyzePages: z
+        .array(z.string())
+        .default(['/'])
+        .describe("Pages to analyze (default: ['/'])"),
+      extractCode: z.boolean().default(false).describe('Whether to attempt code extraction'),
     }),
     func: async ({ url, analyzePages, extractCode }) => {
       try {
@@ -26,7 +30,7 @@ export function createCloneAnalyzerTool() {
         if (!fetchClient) {
           return JSON.stringify({
             success: false,
-            error: "Fetch MCP not available",
+            error: 'Fetch MCP not available',
           });
         }
 
@@ -44,7 +48,9 @@ export function createCloneAnalyzerTool() {
 
             if (!result || !result.content) continue;
 
-            const content = Array.isArray(result.content) ? result.content[0]?.text : result.content;
+            const content = Array.isArray(result.content)
+              ? result.content[0]?.text
+              : result.content;
             const html = typeof content === 'string' ? content : JSON.stringify(content);
 
             // Analyze the page
@@ -58,7 +64,7 @@ export function createCloneAnalyzerTool() {
         if (analyses.length === 0) {
           return JSON.stringify({
             success: false,
-            error: "Could not analyze any pages",
+            error: 'Could not analyze any pages',
           });
         }
 
@@ -71,7 +77,7 @@ export function createCloneAnalyzerTool() {
           url,
           framework,
           componentLibrary,
-          layouts: analyses.map(a => ({
+          layouts: analyses.map((a) => ({
             page: a.page,
             sections: a.sections,
             components: a.components,

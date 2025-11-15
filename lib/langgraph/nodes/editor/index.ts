@@ -15,24 +15,36 @@
  */
 
 import { generateWithFallback } from '@/lib/ai/ai';
+import {
+  createDatabaseInjectionScript,
+  injectDatabaseScript,
+} from '@/lib/database/database-injection';
+import { pb } from '@/lib/database/pocketbase'; // PHASE 3: For checkpoint system
+import { validateFileOperation } from '@/lib/files/file-operation-guards';
 import { ROUTING_INSTRUCTIONS } from '@/lib/langgraph/prompts/routing-instructions';
 import { DATABASE_PRESERVATION_RULES } from '@/lib/langgraph/prompts/shared-constraints';
-import { injectDatabaseScript, createDatabaseInjectionScript } from '@/lib/database/database-injection';
-import type { AppGenState } from '../../types';
-import { emitNodeStart, emitNodeComplete, emitNodeError, emitProgress, emitChatMessage } from '../../utils/logging/events';
-import { generateWithLogging, estimateTokens } from '../../utils/logging/ai-with-logging';
-import { validateFileOperation } from '@/lib/files/file-operation-guards';
-import { pb } from '@/lib/database/pocketbase'; // PHASE 3: For checkpoint system
+import { traceAICall, withLangSmithTracing } from '@/lib/langsmith/tracing';
+import { getConversationContext } from '@/lib/memory/conversation-memory';
+import { messageManager } from '@/lib/messaging/message-manager';
 import { logEditorOperation } from '@/lib/services/workflow-logger';
-import { getConversationContext, addAssistantMessage } from '@/lib/memory/conversation-memory';
-import { cleanGeneratedCode, validateGeneratedCode } from '../../utils/code-cleaner';
 import { getTypeScriptConstraints } from '../../prompts/constraints';
-import { withLangSmithTracing, traceAICall } from '@/lib/langsmith/tracing';
+import type { AppGenState } from '../../types';
+import { cleanGeneratedCode, validateGeneratedCode } from '../../utils/code-cleaner';
+import { estimateTokens, generateWithLogging } from '../../utils/logging/ai-with-logging';
+import {
+  emitNodeComplete,
+  emitNodeError,
+  emitNodeStart,
+  emitProgress,
+} from '../../utils/logging/events';
 
 /**
  * Detects and validates file creation intent from user request
  */
-function detectFileCreation(userRequest: string, existingFiles: Array<{path: string; content: string}>): {
+function detectFileCreation(
+  userRequest: string,
+  existingFiles: Array<{ path: string; content: string }>
+): {
   isCreation: boolean;
   expectedFiles: string[];
   warnings: string[];
@@ -50,10 +62,10 @@ function detectFileCreation(userRequest: string, existingFiles: Array<{path: str
     /add\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?(?:called\s+)?([a-z0-9-_.]+)/gi,
     /make\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?(?:called\s+)?([a-z0-9-_.]+)/gi,
     /new\s+page\s+(?:called\s+)?([a-z0-9-_.]+)/gi,
-    /build\s+(?:a\s+)?([a-z0-9-_.]+)\s+page/gi
+    /build\s+(?:a\s+)?([a-z0-9-_.]+)\s+page/gi,
   ];
 
-  const isCreation = creationPatterns.some(pattern => pattern.test(userRequest));
+  const isCreation = creationPatterns.some((pattern) => pattern.test(userRequest));
 
   if (isCreation) {
     // Extract filenames
@@ -68,7 +80,11 @@ function detectFileCreation(userRequest: string, existingFiles: Array<{path: str
           // Infer extension from context
           if (request.includes('style') || request.includes('css')) {
             filename += '.css';
-          } else if (request.includes('script') || request.includes('js') || request.includes('ts')) {
+          } else if (
+            request.includes('script') ||
+            request.includes('js') ||
+            request.includes('ts')
+          ) {
             filename += '.tsx';
           } else if (request.includes('component')) {
             filename += '.tsx';
@@ -80,7 +96,7 @@ function detectFileCreation(userRequest: string, existingFiles: Array<{path: str
         expectedFiles.push(filename);
 
         // Check if file already exists
-        if (existingFiles.find(f => f.path === filename)) {
+        if (existingFiles.find((f) => f.path === filename)) {
           warnings.push(`File ${filename} already exists - will be overwritten`);
         }
       }
@@ -106,9 +122,9 @@ function detectFileRename(userRequest: string): {
   if (!userRequest) return { isRename: false, oldPath: null, newPath: null };
 
   const renamePatterns = [
-    /rename\s+([a-z0-9-_.\/]+)\s+to\s+([a-z0-9-_.\/]+)/i,
-    /change\s+([a-z0-9-_.\/]+)\s+(?:name\s+)?to\s+([a-z0-9-_.\/]+)/i,
-    /move\s+([a-z0-9-_.\/]+)\s+to\s+([a-z0-9-_.\/]+)/i,
+    /rename\s+([a-z0-9-_./]+)\s+to\s+([a-z0-9-_./]+)/i,
+    /change\s+([a-z0-9-_./]+)\s+(?:name\s+)?to\s+([a-z0-9-_./]+)/i,
+    /move\s+([a-z0-9-_./]+)\s+to\s+([a-z0-9-_./]+)/i,
   ];
 
   for (const pattern of renamePatterns) {
@@ -117,7 +133,7 @@ function detectFileRename(userRequest: string): {
       return {
         isRename: true,
         oldPath: match[1],
-        newPath: match[2]
+        newPath: match[2],
       };
     }
   }
@@ -133,7 +149,7 @@ function updateFileReferences(
   oldPath: string,
   newPath: string
 ): Array<{ path: string; content: string }> {
-  return files.map(file => {
+  return files.map((file) => {
     let updatedContent = file.content;
 
     // Update HTML href attributes
@@ -188,7 +204,16 @@ function detectFileType(
     const ext = filenameMatch[2].toLowerCase();
     return {
       filename,
-      type: ext === 'tsx' ? 'tsx' : ext === 'ts' ? 'ts' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'unknown'
+      type:
+        ext === 'tsx'
+          ? 'tsx'
+          : ext === 'ts'
+            ? 'ts'
+            : ext === 'css'
+              ? 'css'
+              : ext === 'json'
+                ? 'json'
+                : 'unknown',
     };
   }
 
@@ -198,7 +223,10 @@ function detectFileType(
     trimmed.startsWith('.') ||
     trimmed.startsWith('#') ||
     trimmed.startsWith('@') ||
-    (trimmed.includes('{') && trimmed.includes('}') && trimmed.includes(':') && !trimmed.includes('<'))
+    (trimmed.includes('{') &&
+      trimmed.includes('}') &&
+      trimmed.includes(':') &&
+      !trimmed.includes('<'))
   ) {
     const filename = safeUserRequest.toLowerCase().includes('style')
       ? 'styles.css'
@@ -221,7 +249,8 @@ function detectFileType(
   ) {
     const filename = safeUserRequest.toLowerCase().includes('component')
       ? 'Component.tsx'
-      : safeUserRequest.match(/([a-z0-9-_/]+)\s+(?:tsx?|component)/i)?.[1] + '.tsx' || defaultFilename;
+      : safeUserRequest.match(/([a-z0-9-_/]+)\s+(?:tsx?|component)/i)?.[1] + '.tsx' ||
+        defaultFilename;
     return { filename, type: 'tsx' };
   }
 
@@ -248,14 +277,16 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
   try {
     const userRequest = state.editingSession?.userRequest || '';
     const files = state.files || [];
-    const filesToModify = state.editingSession?.filesToModify || files.map(f => f.path);
+    const filesToModify = state.editingSession?.filesToModify || files.map((f) => f.path);
     const changeScope = state.editingSession?.changeScope || 'moderate';
 
     console.log('[Editor] 🚀 Starting editor node');
     console.log(`[Editor] ✏️ Change Scope: ${changeScope}`);
     // ✅ FIX 36: Safety check for substring and length operations (userRequest already defaults to '')
     const requestPreview = userRequest.substring(0, 100);
-    console.log(`[Editor] 📝 User Request: "${requestPreview}${userRequest.length > 100 ? '...' : ''}"`);
+    console.log(
+      `[Editor] 📝 User Request: "${requestPreview}${userRequest.length > 100 ? '...' : ''}"`
+    );
     console.log(`[Editor] 📊 Files to Modify: ${filesToModify.length} of ${files.length} total`);
 
     // ✅ PHASE 3: Get conversation context from memory (async)
@@ -264,17 +295,22 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
     // Conversation summarization: Keep only last 3 exchanges to reduce token usage
     if (conversationContext) {
-      const exchanges = conversationContext.split('\n\n').filter(e => e.trim());
-      if (exchanges.length > 6) { // 6 = 3 exchanges (user + assistant each)
+      const exchanges = conversationContext.split('\n\n').filter((e) => e.trim());
+      if (exchanges.length > 6) {
+        // 6 = 3 exchanges (user + assistant each)
         const recentExchanges = exchanges.slice(-6);
         conversationContext = recentExchanges.join('\n\n');
-        console.log(`[Editor] 📝 Summarized conversation: ${exchanges.length} → 6 messages (last 3 exchanges)`);
+        console.log(
+          `[Editor] 📝 Summarized conversation: ${exchanges.length} → 6 messages (last 3 exchanges)`
+        );
       }
       console.log('[Editor] ✅ Loaded conversation context - enabling context-aware editing');
       console.log('[Editor] 📝 Context length:', conversationContext.length, 'characters');
       console.log('[Editor] 📝 Context preview:', conversationContext.substring(0, 200) + '...');
     } else {
-      console.log('[Editor] ⚠️ No conversation context found - edits may not preserve previous decisions');
+      console.log(
+        '[Editor] ⚠️ No conversation context found - edits may not preserve previous decisions'
+      );
     }
 
     // ✅ FIX 36: REMOVE role messages entirely - only chatty messages in chat history
@@ -287,21 +323,23 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       console.log(`[Editor] 🆕 File creation detected: ${creationInfo.expectedFiles.join(', ')}`);
       // No emitProgress - keep chat clean
       if (creationInfo.warnings.length > 0) {
-        creationInfo.warnings.forEach(w => console.warn(`[Editor] ⚠️ ${w}`));
+        creationInfo.warnings.forEach((w) => console.warn(`[Editor] ⚠️ ${w}`));
       }
     }
 
     // Detect file rename intent
     const renameInfo = detectFileRename(userRequest);
     if (renameInfo.isRename && renameInfo.oldPath && renameInfo.newPath) {
-      console.log(`[Editor] 🔄 File rename detected: ${renameInfo.oldPath} → ${renameInfo.newPath}`);
+      console.log(
+        `[Editor] 🔄 File rename detected: ${renameInfo.oldPath} → ${renameInfo.newPath}`
+      );
 
       // Validate rename operation
       const validation = validateFileOperation({
         type: 'rename',
         path: renameInfo.oldPath,
         newPath: renameInfo.newPath,
-        reason: userRequest
+        reason: userRequest,
       });
 
       if (!validation.allowed) {
@@ -315,9 +353,13 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
     // ✅ FIX 33 & 37: Special handling for globals.css - use template instead of AI
     // filesToModify is array of string paths, not objects
-    const globalsPath = filesToModify.find(path => path.includes('globals.css'));
+    const globalsPath = filesToModify.find((path) => path.includes('globals.css'));
     const userRequestLower = (userRequest || '').toLowerCase();
-    if (globalsPath && !userRequestLower.includes('add new page') && !userRequestLower.includes('create page')) {
+    if (
+      globalsPath &&
+      !userRequestLower.includes('add new page') &&
+      !userRequestLower.includes('create page')
+    ) {
       console.log('[Editor] 🎯 globals.css detected - using direct template (SKIPPING AI)');
       // No emitProgress - keep chat clean
 
@@ -330,16 +372,24 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
         const max = Math.max(r, g, b);
         const min = Math.min(r, g, b);
-        let h = 0, s = 0, l = (max + min) / 2;
+        let h = 0,
+          s = 0,
+          l = (max + min) / 2;
 
         if (max !== min) {
           const d = max - min;
           s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
           switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
+            case r:
+              h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+              break;
+            case g:
+              h = ((b - r) / d + 2) / 6;
+              break;
+            case b:
+              h = ((r - g) / d + 4) / 6;
+              break;
           }
         }
 
@@ -360,9 +410,19 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       const secondaryHSL = colors?.secondary ? hexToHslString(colors.secondary) : '210 40% 96.1%';
       const accentHSL = colors?.accent ? hexToHslString(colors.accent) : '217.2 91.2% 59.8%';
       const mode = colors?.mode || 'light';
-      const borderHSL = colors?.border ? hexToHslString(colors.border) : (mode === 'dark' ? '240 3.7% 15.9%' : '240 5.9% 90%');
-      const mutedHSL = colors?.muted ? hexToHslString(colors.muted) : (mode === 'dark' ? '240 3.7% 15.9%' : '240 4.8% 95.9%');
-      const destructiveHSL = colors?.destructive ? hexToHslString(colors.destructive) : '0 84.2% 60.2%';
+      const borderHSL = colors?.border
+        ? hexToHslString(colors.border)
+        : mode === 'dark'
+          ? '240 3.7% 15.9%'
+          : '240 5.9% 90%';
+      const mutedHSL = colors?.muted
+        ? hexToHslString(colors.muted)
+        : mode === 'dark'
+          ? '240 3.7% 15.9%'
+          : '240 4.8% 95.9%';
+      const destructiveHSL = colors?.destructive
+        ? hexToHslString(colors.destructive)
+        : '0 84.2% 60.2%';
       const successHSL = colors?.success ? hexToHslString(colors.success) : '142.1 76.2% 36.3%';
       const warningHSL = colors?.warning ? hexToHslString(colors.warning) : '32.1 94.6% 43.7%';
       const infoHSL = colors?.info ? hexToHslString(colors.info) : '221.2 83.2% 53.3%';
@@ -374,7 +434,7 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         small: '0.25rem',
         medium: '0.5rem',
         large: '1rem',
-        full: '9999px'
+        full: '9999px',
       };
       const radiusValue = radiusMap[borderRadius] || '0.5rem';
 
@@ -781,7 +841,9 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
   .pulse-slow {
     animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-}${animations.intensity !== 'none' ? `
+}${
+        animations.intensity !== 'none'
+          ? `
 
 @layer utilities {
   @keyframes fade-in {
@@ -809,7 +871,9 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       transform: scale(1);
       opacity: 1;
     }
-  }${animations.intensity === 'heavy' ? `
+  }${
+    animations.intensity === 'heavy'
+      ? `
 
   @keyframes slide-in-left {
     from {
@@ -831,7 +895,9 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       transform: translateX(0);
       opacity: 1;
     }
-  }` : ''}
+  }`
+      : ''
+  }
 
   .animate-fade-in {
     animation: fade-in 0.5s ease-in;
@@ -843,7 +909,9 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
   .animate-scale-in {
     animation: scale-in 0.2s ease-out;
-  }${animations.intensity === 'heavy' ? `
+  }${
+    animations.intensity === 'heavy'
+      ? `
 
   .animate-slide-in-left {
     animation: slide-in-left 0.4s ease-out;
@@ -885,7 +953,9 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
   .animate-wiggle {
     animation: wiggle 0.5s ease-in-out;
-  }` : ''}
+  }`
+      : ''
+  }
 
   /* Gradient utilities */
   .bg-gradient-primary {
@@ -923,19 +993,23 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
     transition: box-shadow 0.2s;
   }
-}` : ''}
+}`
+          : ''
+      }
 `;
 
       // Return early with template-generated globals.css
       // ✅ FIX 37: Use globalsPath (string) instead of globalsFile.path
-      const editedFiles = [{
-        path: globalsPath,
-        content: globalsCss
-      }];
+      const editedFiles = [
+        {
+          path: globalsPath,
+          content: globalsCss,
+        },
+      ];
 
       // Merge with unmodified files (Fix 20)
       const finalFiles = [];
-      const editedPaths = new Set(editedFiles.map(f => f.path));
+      const editedPaths = new Set(editedFiles.map((f) => f.path));
       finalFiles.push(...editedFiles);
 
       for (const file of files) {
@@ -944,13 +1018,15 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         }
       }
 
-      console.log(`[Editor] ✅ globals.css regenerated with template - ${finalFiles.length} total files`);
+      console.log(
+        `[Editor] ✅ globals.css regenerated with template - ${finalFiles.length} total files`
+      );
       // ✅ FIX 36: Don't emit completion - removes role card
 
       return {
         files: finalFiles,
         stage: 'editing',
-        completedNodes: ['editor'] // Reducer auto-appends
+        completedNodes: ['editor'], // Reducer auto-appends
       };
     }
 
@@ -958,37 +1034,46 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     console.log('[Editor] ✏️ Applying code modifications...');
     // Progress shown by role-based UI (Software Engineer will appear automatically)
 
-    // Send conversational "working on it" message
-    emitChatMessage(
+    // ✅ UNIFIED MESSAGING: Send "working on it" message via messageManager
+    await messageManager.sendInfo(
       state.projectId,
-      "✏️ Making your requested changes now...",
-      { type: 'info' }
+      'Making your requested changes now...',
+      'editor'
     );
 
     const editPrompt = buildEditingPrompt(state, conversationContext);
     const estimatedTokensEdit = estimateTokens(editPrompt);
-    console.log(`[Editor] 🤖 AI Call: Code Generation (~${estimatedTokensEdit} tokens, auto-detect model)`);
+    console.log(
+      `[Editor] 🤖 AI Call: Code Generation (~${estimatedTokensEdit} tokens, auto-detect model)`
+    );
     console.log(`[Editor] 📋 Prompt length: ${editPrompt.length} characters`);
-    console.log(`[Editor] 🎯 Expected to create:`, creationInfo.isCreation ? creationInfo.expectedFiles : 'No new files');
+    console.log(
+      `[Editor] 🎯 Expected to create:`,
+      creationInfo.isCreation ? creationInfo.expectedFiles : 'No new files'
+    );
     console.log(`[Editor] 🎯 Expected to modify:`, filesToModify.length, 'files');
 
     // Generate edited code
-    let codeRaw = await traceAICall('editor-code-generation', async () => {
-      return await generateWithLogging({
-        prompt: editPrompt,
-        projectId: state.projectId,
-        nodeName: 'editor',
-        callType: 'generation',
+    const codeRaw = await traceAICall(
+      'editor-code-generation',
+      async () => {
+        return await generateWithLogging({
+          prompt: editPrompt,
+          projectId: state.projectId,
+          nodeName: 'editor',
+          callType: 'generation',
+          estimatedTokens: estimatedTokensEdit,
+          attempt: 1,
+        });
+      },
+      {
+        userRequest,
+        filesCount: state.files?.length || 0,
+        filesToModifyCount: filesToModify.length,
+        isCreation: creationInfo.isCreation,
         estimatedTokens: estimatedTokensEdit,
-        attempt: 1
-      });
-    }, {
-      userRequest,
-      filesCount: state.files?.length || 0,
-      filesToModifyCount: filesToModify.length,
-      isCreation: creationInfo.isCreation,
-      estimatedTokens: estimatedTokensEdit
-    });
+      }
+    );
 
     // ✅ COMPREHENSIVE LOGGING: Raw AI response
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -999,12 +1084,15 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       hasFileMarkers: codeRaw.includes('---FILE:'),
       hasEndMarkers: codeRaw.includes('---ENDFILE---'),
       fileMarkerCount: (codeRaw.match(/---FILE:/g) || []).length,
-      endMarkerCount: (codeRaw.match(/---ENDFILE---/g) || []).length
+      endMarkerCount: (codeRaw.match(/---ENDFILE---/g) || []).length,
     });
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     // Clean up
-    let code = codeRaw.replace(/^```(?:json|html)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+    let code = codeRaw
+      .replace(/^```(?:json|html)?\s*/gi, '')
+      .replace(/```\s*$/gi, '')
+      .trim();
 
     // Remove AI explanations
     if (code.includes('---FILE:') && code.includes('---ENDFILE---')) {
@@ -1024,18 +1112,18 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     }
 
     // Parse files
-    let editedFiles: Array<{path: string; content: string}> = [];
+    let editedFiles: Array<{ path: string; content: string }> = [];
 
     if (code.includes('---FILE:') && code.includes('---ENDFILE---')) {
       // Multi-file
       // ✅ FIX 49: Allow slashes in file paths (src/app/page.tsx)
       const fileMatches = code.matchAll(/---FILE:([\w\-./]+)---([\s\S]*?)---ENDFILE---/g);
-      editedFiles = Array.from(fileMatches).map(match => ({
+      editedFiles = Array.from(fileMatches).map((match) => ({
         path: match[1].trim(),
-        content: match[2].trim()
+        content: match[2].trim(),
       }));
       console.log(`[Editor] ✅ Multi-file response: ${editedFiles.length} files`);
-      console.log('[Editor] 📁 Parsed files:', editedFiles.map(f => f.path).join(', '));
+      console.log('[Editor] 📁 Parsed files:', editedFiles.map((f) => f.path).join(', '));
     } else {
       // Single file - detect type
       console.log('[Editor] Single file response - detecting type...');
@@ -1072,7 +1160,7 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       console.log(`[Editor]     - Content preview: ${file.content.substring(0, 150)}`);
     });
 
-    editedFiles = editedFiles.map(file => {
+    editedFiles = editedFiles.map((file) => {
       const cleaned = cleanGeneratedCode(file.content, file.path);
       const errors = validateGeneratedCode(cleaned, file.path);
 
@@ -1082,7 +1170,7 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
       return {
         ...file,
-        content: cleaned
+        content: cleaned,
       };
     });
     console.log(`[Editor] ✅ Cleaned ${editedFiles.length} file(s)`);
@@ -1097,36 +1185,44 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
     // Validate file creation
     if (creationInfo.isCreation && creationInfo.expectedFiles.length > 0) {
-      const createdFiles = editedFiles.filter(ef =>
-        creationInfo.expectedFiles.includes(ef.path) &&
-        !files.find(f => f.path === ef.path)
+      const createdFiles = editedFiles.filter(
+        (ef) =>
+          creationInfo.expectedFiles.includes(ef.path) && !files.find((f) => f.path === ef.path)
       );
 
       if (createdFiles.length === 0) {
         console.warn('[Editor] ⚠️ Expected file creation but no new files found');
         console.warn('[Editor] Expected:', creationInfo.expectedFiles);
-        console.warn('[Editor] Generated:', editedFiles.map(f => f.path));
+        console.warn(
+          '[Editor] Generated:',
+          editedFiles.map((f) => f.path)
+        );
       } else {
-        console.log(`[Editor] ✅ Created ${createdFiles.length} new file(s):`, createdFiles.map(f => f.path));
+        console.log(
+          `[Editor] ✅ Created ${createdFiles.length} new file(s):`,
+          createdFiles.map((f) => f.path)
+        );
       }
     }
 
     // Handle file rename operations
     if (renameInfo.isRename && renameInfo.oldPath && renameInfo.newPath) {
       // Find the renamed file
-      const renamedFileIndex = editedFiles.findIndex(f => f.path === renameInfo.oldPath);
+      const renamedFileIndex = editedFiles.findIndex((f) => f.path === renameInfo.oldPath);
 
       if (renamedFileIndex !== -1) {
         // Update the filename
         editedFiles[renamedFileIndex] = {
           ...editedFiles[renamedFileIndex],
-          path: renameInfo.newPath
+          path: renameInfo.newPath,
         };
         console.log(`[Editor] 🔄 Renamed: ${renameInfo.oldPath} → ${renameInfo.newPath}`);
 
         // Update all references in other files
         editedFiles = updateFileReferences(editedFiles, renameInfo.oldPath, renameInfo.newPath);
-        console.log(`[Editor] 🔗 Updated references to renamed file in ${editedFiles.length} file(s)`);
+        console.log(
+          `[Editor] 🔗 Updated references to renamed file in ${editedFiles.length} file(s)`
+        );
       } else {
         console.warn(`[Editor] ⚠️ Could not find file to rename: ${renameInfo.oldPath}`);
       }
@@ -1134,29 +1230,42 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
     // Check user intent regarding database
     // ✅ FIX 36: Safety check for undefined userRequest
-    const removeDBIntent = /remove.*database|delete.*database|no.*database|static.*site|remove.*backend/i.test(userRequest || '');
-    const keepDBIntent = /add.*database|create.*database|use.*database|with.*database/i.test(userRequest || '');
+    const removeDBIntent =
+      /remove.*database|delete.*database|no.*database|static.*site|remove.*backend/i.test(
+        userRequest || ''
+      );
+    const keepDBIntent = /add.*database|create.*database|use.*database|with.*database/i.test(
+      userRequest || ''
+    );
 
     // Inject database script if backend exists AND user doesn't want to remove it
     if (state.backendConfig?.collections && state.backendConfig.collections.length > 0) {
-
       if (removeDBIntent) {
         // User wants to remove database - strip it out
         console.log('[Editor] 🗑️ Removing database code per user request...');
         // ✅ FIX 36: Don't emit progress - keep chat clean
 
-        editedFiles = editedFiles.map(file => {
+        editedFiles = editedFiles.map((file) => {
           if (file.path.endsWith('.html')) {
             let content = file.content;
 
             // Remove database script tag
-            content = content.replace(/<script[^>]*id=["']database-api["'][^>]*>[\s\S]*?<\/script>/g, '');
+            content = content.replace(
+              /<script[^>]*id=["']database-api["'][^>]*>[\s\S]*?<\/script>/g,
+              ''
+            );
 
             // Remove inline database references (optional - may break functionality)
             // Only do this if user explicitly says "remove all database code"
             // ✅ FIX 36: Safety check for undefined userRequest
-            if ((userRequest || '').toLowerCase().includes('all') && (userRequest || '').toLowerCase().includes('database')) {
-              content = content.replace(/window\.db\.[a-z]+\([^)]*\)/g, '/* database call removed */');
+            if (
+              (userRequest || '').toLowerCase().includes('all') &&
+              (userRequest || '').toLowerCase().includes('database')
+            ) {
+              content = content.replace(
+                /window\.db\.[a-z]+\([^)]*\)/g,
+                '/* database call removed */'
+              );
               console.log(`[Editor] 🗑️ Removed database calls from ${file.path}`);
             }
 
@@ -1165,7 +1274,6 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
           }
           return file;
         });
-
       } else {
         // Preserve or inject database
         console.log('[Editor] 🗄️ Checking database injection...');
@@ -1176,7 +1284,7 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
           state.backendConfig.collections
         );
 
-        editedFiles = editedFiles.map(file => {
+        editedFiles = editedFiles.map((file) => {
           if (file.path.endsWith('.html')) {
             // Only inject if not already present
             if (!file.content.includes('window.db =')) {
@@ -1184,7 +1292,9 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
               console.log(`[Editor] 🗄️ Database script injected into ${file.path}`);
               return { ...file, content: updatedContent };
             } else {
-              console.log(`[Editor] ✅ Database script already present in ${file.path} (preserved)`);
+              console.log(
+                `[Editor] ✅ Database script already present in ${file.path} (preserved)`
+              );
             }
           }
           return file;
@@ -1205,31 +1315,35 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
     // Add rename changes first if applicable
     if (renameInfo.isRename && renameInfo.oldPath && renameInfo.newPath) {
-      const renamedFile = editedFiles.find(f => f.path === renameInfo.newPath);
+      const renamedFile = editedFiles.find((f) => f.path === renameInfo.newPath);
       if (renamedFile) {
         fileChanges.push({
           path: renameInfo.oldPath,
           changeType: 'deleted' as const,
-          linesChanged: 0
+          linesChanged: 0,
         });
         fileChanges.push({
           path: renameInfo.newPath,
           changeType: 'added' as const,
-          linesChanged: renamedFile.content.split('\n').length
+          linesChanged: renamedFile.content.split('\n').length,
         });
       }
     }
 
     // Track other changes
-    editedFiles.forEach(editedFile => {
+    editedFiles.forEach((editedFile) => {
       // Skip if already tracked as renamed
       if (renameInfo.isRename && editedFile.path === renameInfo.newPath) {
         return;
       }
 
-      const originalFile = files.find(f => f.path === editedFile.path);
+      const originalFile = files.find((f) => f.path === editedFile.path);
       if (!originalFile) {
-        fileChanges.push({ path: editedFile.path, changeType: 'added' as const, linesChanged: editedFile.content.split('\n').length });
+        fileChanges.push({
+          path: editedFile.path,
+          changeType: 'added' as const,
+          linesChanged: editedFile.content.split('\n').length,
+        });
       } else {
         const originalLines = originalFile.content.split('\n');
         const editedLines = editedFile.content.split('\n');
@@ -1239,8 +1353,8 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     });
 
     // Merge edited files with unmodified files (preserve all files unless explicitly deleted by user)
-    const finalFiles: Array<{path: string; content: string}> = [];
-    const editedPaths = new Set(editedFiles.map(f => f.path));
+    const finalFiles: Array<{ path: string; content: string }> = [];
+    const editedPaths = new Set(editedFiles.map((f) => f.path));
 
     // Add all edited files
     finalFiles.push(...editedFiles);
@@ -1254,14 +1368,22 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     }
 
     // Only mark files as deleted if user explicitly requested deletion
-    const deletedFiles: Array<{path: string; content: string}> = [];
+    const deletedFiles: Array<{ path: string; content: string }> = [];
     // ✅ FIX 36: Safety check for undefined userRequest
     const deleteIntent = /delete|remove.*file|remove.*component/i.test(userRequest || '');
     if (deleteIntent) {
       // Check if specific files mentioned for deletion
-      const deletedByUser = files.filter(f => !editedPaths.has(f.path) && (userRequest || '').toLowerCase().includes(f.path.toLowerCase()));
+      const deletedByUser = files.filter(
+        (f) =>
+          !editedPaths.has(f.path) &&
+          (userRequest || '').toLowerCase().includes(f.path.toLowerCase())
+      );
       for (const deletedFile of deletedByUser) {
-        fileChanges.push({ path: deletedFile.path, changeType: 'deleted' as const, linesChanged: 0 });
+        fileChanges.push({
+          path: deletedFile.path,
+          changeType: 'deleted' as const,
+          linesChanged: 0,
+        });
         console.log(`[Editor] 🗑️ File explicitly deleted by user: ${deletedFile.path}`);
         deletedFiles.push(deletedFile);
       }
@@ -1269,17 +1391,19 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
     // Build changes summary
     const changesSummary = [
-      `Modified ${fileChanges.filter(fc => fc.changeType === 'modified').length} file(s)`,
-      `Added ${fileChanges.filter(fc => fc.changeType === 'added').length} file(s)`,
+      `Modified ${fileChanges.filter((fc) => fc.changeType === 'modified').length} file(s)`,
+      `Added ${fileChanges.filter((fc) => fc.changeType === 'added').length} file(s)`,
       `Deleted ${deletedFiles.length} file(s)`,
-      `Change scope: ${changeScope}`
-    ].filter(s => !s.startsWith('Modified 0') && !s.startsWith('Added 0') && !s.startsWith('Deleted 0'));
+      `Change scope: ${changeScope}`,
+    ].filter(
+      (s) => !s.startsWith('Modified 0') && !s.startsWith('Added 0') && !s.startsWith('Deleted 0')
+    );
 
     // Update editing session
     const updatedEditingSession = {
       ...state.editingSession!,
       fileChanges,
-      changesApplied: changesSummary
+      changesApplied: changesSummary,
     };
 
     // Store metadata
@@ -1287,35 +1411,39 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     newArtifacts.set('editorMetadata', {
       filesGenerated: editedFiles.length,
       changeScope,
-      strategy: state.artifacts?.get('contextAnalysis')?.editingStrategy || 'unknown'
+      strategy: state.artifacts?.get('contextAnalysis')?.editingStrategy || 'unknown',
     });
 
     const duration = Date.now() - startTime;
     console.log(`[Editor] ✅ Completed in ${duration}ms`);
     console.log(`[Editor] 📊 Files Generated: ${editedFiles.length}`);
-    console.log(`[Editor] 📊 Files Modified: ${fileChanges.filter(fc => fc.changeType === 'modified').length}`);
-    console.log(`[Editor] 📊 Files Added: ${fileChanges.filter(fc => fc.changeType === 'added').length}`);
+    console.log(
+      `[Editor] 📊 Files Modified: ${fileChanges.filter((fc) => fc.changeType === 'modified').length}`
+    );
+    console.log(
+      `[Editor] 📊 Files Added: ${fileChanges.filter((fc) => fc.changeType === 'added').length}`
+    );
     if (state.backendConfig?.collections) {
       console.log('[Editor] ✅ Database API preserved');
     }
 
     // Build conversational success summary
-    const modifiedCount = fileChanges.filter(fc => fc.changeType === 'modified').length;
-    const addedCount = fileChanges.filter(fc => fc.changeType === 'added').length;
-    const deletedCount = fileChanges.filter(fc => fc.changeType === 'deleted').length;
+    const modifiedCount = fileChanges.filter((fc) => fc.changeType === 'modified').length;
+    const addedCount = fileChanges.filter((fc) => fc.changeType === 'added').length;
+    const deletedCount = fileChanges.filter((fc) => fc.changeType === 'deleted').length;
     const totalLinesChanged = fileChanges.reduce((sum, fc) => sum + (fc.linesChanged || 0), 0);
 
     // Group file changes by change type
-    const addedFileChanges = fileChanges.filter(fc => fc.changeType === 'added');
-    const modifiedFileChanges = fileChanges.filter(fc => fc.changeType === 'modified');
-    const deletedFileChanges = fileChanges.filter(fc => fc.changeType === 'deleted');
+    const addedFileChanges = fileChanges.filter((fc) => fc.changeType === 'added');
+    const modifiedFileChanges = fileChanges.filter((fc) => fc.changeType === 'modified');
+    const deletedFileChanges = fileChanges.filter((fc) => fc.changeType === 'deleted');
 
     // Build file list with better formatting (line by line)
     const changesList: string[] = [];
 
     if (modifiedFileChanges.length > 0) {
       changesList.push('✏️ **Edited:**');
-      modifiedFileChanges.slice(0, 5).forEach(fc => {
+      modifiedFileChanges.slice(0, 5).forEach((fc) => {
         changesList.push(`   • ${fc.path}${fc.linesChanged ? ` (${fc.linesChanged} lines)` : ''}`);
       });
       if (modifiedFileChanges.length > 5) {
@@ -1326,7 +1454,7 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     if (addedFileChanges.length > 0) {
       if (changesList.length > 0) changesList.push(''); // Add blank line
       changesList.push('➕ **Added:**');
-      addedFileChanges.slice(0, 5).forEach(fc => {
+      addedFileChanges.slice(0, 5).forEach((fc) => {
         changesList.push(`   • ${fc.path}${fc.linesChanged ? ` (${fc.linesChanged} lines)` : ''}`);
       });
       if (addedFileChanges.length > 5) {
@@ -1337,7 +1465,7 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     if (deletedFileChanges.length > 0) {
       if (changesList.length > 0) changesList.push(''); // Add blank line
       changesList.push('🗑️ **Deleted:**');
-      deletedFileChanges.slice(0, 5).forEach(fc => {
+      deletedFileChanges.slice(0, 5).forEach((fc) => {
         changesList.push(`   • ${fc.path}`);
       });
       if (deletedFileChanges.length > 5) {
@@ -1345,15 +1473,19 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       }
     }
 
-    let summaryParts = [];
+    const summaryParts = [];
 
-    if (addedCount > 0) summaryParts.push(`created ${addedCount} new file${addedCount > 1 ? 's' : ''}`);
-    if (modifiedCount > 0) summaryParts.push(`updated ${modifiedCount} file${modifiedCount > 1 ? 's' : ''}`);
-    if (deletedCount > 0) summaryParts.push(`removed ${deletedCount} file${deletedCount > 1 ? 's' : ''}`);
+    if (addedCount > 0)
+      summaryParts.push(`created ${addedCount} new file${addedCount > 1 ? 's' : ''}`);
+    if (modifiedCount > 0)
+      summaryParts.push(`updated ${modifiedCount} file${modifiedCount > 1 ? 's' : ''}`);
+    if (deletedCount > 0)
+      summaryParts.push(`removed ${deletedCount} file${deletedCount > 1 ? 's' : ''}`);
 
-    const changeSummary = summaryParts.length > 0
-      ? `I ${summaryParts.join(', ')}`
-      : `I updated ${editedFiles.length} file${editedFiles.length > 1 ? 's' : ''}`;
+    const changeSummary =
+      summaryParts.length > 0
+        ? `I ${summaryParts.join(', ')}`
+        : `I updated ${editedFiles.length} file${editedFiles.length > 1 ? 's' : ''}`;
 
     const dbNote = state.backendConfig?.collections
       ? ' All your database connections are working perfectly! 🗄️'
@@ -1363,24 +1495,22 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     // Note: userRequest is already defined at the top of the function
     const featureSection = userRequest ? `\n\n📋 **What Changed:**\n   ${userRequest}` : '';
 
-    const conversationalSummary = `✅ **Success!** ${changeSummary} with ${totalLinesChanged} lines of code changes.${dbNote}\n\n${changesList.join('\n')}${featureSection}\n\n🎉 **Your app is ready to preview!**`;
-
-    // ✅ FIX 36: Don't emit completion - removes Software Engineer role card
-    // Chatty messages will be sent through normal chat flow
     console.log('[Editor] ✅ Edits applied successfully');
-    console.log('[Editor] 📝 EDITOR MESSAGE CREATED:');
-    console.log('[Editor]    Message length:', conversationalSummary.length);
-    console.log('[Editor]    Message preview:', conversationalSummary.substring(0, 150) + '...');
-    console.log('[Editor]    Contains "Success!":', conversationalSummary.includes('**Success!**'));
-    console.log('[Editor]    Contains "I updated":', conversationalSummary.includes('I updated'));
-    console.log('[Editor]    Contains "I created":', conversationalSummary.includes('I created'));
 
-    // Send the conversational summary to chat!
-    emitChatMessage(
+    // ✅ UNIFIED MESSAGING: Send editing-complete event via messageManager
+    await messageManager.sendEvent(
       state.projectId,
-      conversationalSummary,
-      { type: 'success' }
+      {
+        type: 'editing-complete',
+        filesModified: filesToModify.length,
+        linesChanged: totalLinesChanged,
+        changeType: creationInfo.isCreation ? 'created' : renameInfo.isRename ? 'renamed' : 'modified',
+        changedFiles: filesToModify.slice(0, 5), // Top 5 files
+        userRequest: userRequest || 'Code modification',
+      },
+      'editor'
     );
+    console.log('[Editor] ✅ Sent editing-complete event via messageManager');
 
     // PHASE 3: Create checkpoint snapshot for rollback
     let checkpointId: string | undefined;
@@ -1392,7 +1522,10 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         filesSnapshot: finalFiles, // Current state after edit
         previousFilesSnapshot: state.editingSession?.originalFiles || state.files || [], // Before edit
         changeScope: state.editingSession?.changeScope || 'moderate',
-        description: `Edit: ${state.editingSession?.userRequest || 'Unknown request'}`.substring(0, 255)
+        description: `Edit: ${state.editingSession?.userRequest || 'Unknown request'}`.substring(
+          0,
+          255
+        ),
         // Note: PocketBase auto-creates 'id', 'created', and 'updated' fields
       };
 
@@ -1405,35 +1538,39 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       console.warn('[Editor] ⚠️ Failed to create checkpoint:', checkpointError);
     }
 
-    // CONVERSATION MEMORY: Track Editor's response
-    const editorResponse = `${creationInfo.isCreation ? 'Created' : 'Modified'} ${filesToModify.length} file(s): ${filesToModify.slice(0, 3).join(', ')}${filesToModify.length > 3 ? '...' : ''}. ${changeScope} changes applied.`;
-    await addAssistantMessage(state.projectId, editorResponse, 'editor');
-    console.log('[Editor] 💬 Tracked assistant response in conversation memory');
+    // Message already sent via messageManager.sendEvent() above - no need for separate tracking
 
     // Log successful editor operation
     if (state.projectId && state.userId) {
       await logEditorOperation({
         projectId: state.projectId,
         userId: state.userId,
-        operationType: creationInfo.isCreation ? 'create' : renameInfo.isRename ? 'rename' : 'modify',
+        operationType: creationInfo.isCreation
+          ? 'create'
+          : renameInfo.isRename
+            ? 'rename'
+            : 'modify',
         filePath: filesToModify[0] || 'multiple files',
         changeScope,
         status: 'success',
         userRequest,
         checkpointId,
-        durationMs: duration
+        durationMs: duration,
       });
     }
 
     // 🔍 DEBUG: Verify we're returning the edited files
     console.log('[Editor] 🔍 RETURNING TO WORKFLOW:');
     console.log('[Editor]   - Total files:', finalFiles.length);
-    console.log('[Editor]   - File paths:', finalFiles.map(f => f.path).join(', '));
+    console.log('[Editor]   - File paths:', finalFiles.map((f) => f.path).join(', '));
     console.log('[Editor]   - First file path:', finalFiles[0]?.path);
     console.log('[Editor]   - First file content length:', finalFiles[0]?.content?.length || 0);
     console.log('[Editor]   - First file preview:', finalFiles[0]?.content?.substring(0, 150));
     console.log('[Editor]   - Checkpoint ID:', checkpointId);
-    console.log('[Editor]   - Editor Message (first 100 chars):', conversationalSummary?.substring(0, 100) + '...');
+    console.log(
+      '[Editor]   - Editor Message (first 100 chars):',
+      conversationalSummary?.substring(0, 100) + '...'
+    );
 
     return {
       files: finalFiles,
@@ -1441,9 +1578,8 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       completedNodes: ['editor'], // Reducer auto-appends
       artifacts: newArtifacts,
       lastCheckpointId: checkpointId, // PHASE 3: For rollback functionality
-      editorMessage: conversationalSummary // NEW: Pass through editor's formatted message
+      editorMessage: conversationalSummary, // NEW: Pass through editor's formatted message
     };
-
   } catch (error) {
     emitNodeError('editor', error as Error, state);
     console.error('[Editor] Error:', error);
@@ -1460,14 +1596,14 @@ async function editorNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         status: 'error',
         errorMessage: (error as Error).message,
         userRequest: state.editingSession?.userRequest || '',
-        durationMs: errorDuration
+        durationMs: errorDuration,
       });
     }
 
     return {
       files: state.files || [],
       completedNodes: ['editor'], // Reducer auto-appends
-      errors: [{ node: 'editor', message: (error as Error).message }] // Reducer auto-appends
+      errors: [{ node: 'editor', message: (error as Error).message }], // Reducer auto-appends
     };
   }
 }
@@ -1480,11 +1616,14 @@ function buildEditingPrompt(state: AppGenState, conversationContext?: string): s
   const contextAnalysis = state.artifacts?.get('contextAnalysis');
 
   // Build critical sections text from preservedSections Map
-  const criticalSections = preservedSections.size > 0
-    ? Array.from(preservedSections.entries())
-        .map(([file, sections]) => `${file}:\n${sections.map((s: string) => `  - ${s}`).join('\n')}`)
-        .join('\n\n')
-    : '';
+  const criticalSections =
+    preservedSections.size > 0
+      ? Array.from(preservedSections.entries())
+          .map(
+            ([file, sections]) => `${file}:\n${sections.map((s: string) => `  - ${s}`).join('\n')}`
+          )
+          .join('\n\n')
+      : '';
 
   // Build database instructions if needed
   let databaseInstructions = '';
@@ -1511,10 +1650,14 @@ ${DATABASE_PRESERVATION_RULES}
 CRITICAL SECTIONS TO PRESERVE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${Array.from(preservedSections.entries()).map(([file, sections]) => `
+${Array.from(preservedSections.entries())
+  .map(
+    ([file, sections]) => `
 📄 ${file}:
 ${sections.map((s: string) => `  ✓ ${s}`).join('\n')}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ⚠️ DO NOT modify these sections unless the user explicitly requests it!
 
@@ -1523,18 +1666,20 @@ ${sections.map((s: string) => `  ✓ ${s}`).join('\n')}
   }
 
   // Build list of files to modify
-  const filesToModify = state.editingSession?.filesToModify || files.map(f => f.path);
-  const filesToModifyText = filesToModify.length > 0
-    ? `\n📝 FILES TO MODIFY (${filesToModify.length}):\n${filesToModify.map(f => `  • ${f}`).join('\n')}\n`
-    : '';
+  const filesToModify = state.editingSession?.filesToModify || files.map((f) => f.path);
+  const filesToModifyText =
+    filesToModify.length > 0
+      ? `\n📝 FILES TO MODIFY (${filesToModify.length}):\n${filesToModify.map((f) => `  • ${f}`).join('\n')}\n`
+      : '';
 
   // Build output format
-  const isMultiFile = files.length > 1 || files.some(f => f.path.includes('/'));
+  const isMultiFile = files.length > 1 || files.some((f) => f.path.includes('/'));
   const outputFormat = isMultiFile
     ? `OUTPUT: Use ---FILE:path--- ... ---ENDFILE--- for each modified file. Return ONLY the ${filesToModify.length} file(s) in "FILES TO MODIFY".`
     : `OUTPUT: Return complete HTML starting with <!DOCTYPE html>. No markdown, no explanations.`;
 
-  const conversationSection = conversationContext ? `
+  const conversationSection = conversationContext
+    ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 CONVERSATION HISTORY (CHECK THIS FIRST!)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1546,7 +1691,8 @@ ${conversationContext}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-` : '';
+`
+    : '';
 
   return `${conversationSection}
 ${getTypeScriptConstraints()}
@@ -1561,7 +1707,7 @@ Change Scope: ${changeScope}
 ${contextAnalysis?.reasoning ? `Strategy: ${contextAnalysis.editingStrategy} - ${contextAnalysis.reasoning}` : ''}
 ${filesToModifyText}
 CURRENT CODE (${files.length} files):
-${files.map(f => `\n═══ ${f.path} (${f.content.length} chars) ═══\n${f.content}`).join('\n')}
+${files.map((f) => `\n═══ ${f.path} (${f.content.length} chars) ═══\n${f.content}`).join('\n')}
 
 ${databaseInstructions}
 
@@ -1575,7 +1721,6 @@ ${outputFormat}
 
 Generate IMMEDIATELY without explanations!`;
 }
-
 
 // Export traced version of editor node
 export const editorNode = withLangSmithTracing('editor', editorNodeImpl);

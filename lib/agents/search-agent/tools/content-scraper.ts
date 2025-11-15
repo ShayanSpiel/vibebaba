@@ -4,19 +4,20 @@
  * Extract content, copy, and tone from websites
  */
 
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { z } from "zod";
-import { getMCPManager } from "@/lib/mcp/client";
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { getMCPManager } from '@/lib/mcp/client';
 
 export function createContentScraperTool() {
   return new DynamicStructuredTool({
-    name: "content_scraper",
-    description: "Extract content, copy, and tone from websites. Best for: analyzing landing page copy, understanding brand voice, extracting text content.",
+    name: 'content_scraper',
+    description:
+      'Extract content, copy, and tone from websites. Best for: analyzing landing page copy, understanding brand voice, extracting text content.',
     schema: z.object({
-      url: z.string().describe("URL to scrape content from"),
-      extractTone: z.boolean().default(true).describe("Analyze the tone/voice of content"),
-      extractCopy: z.boolean().default(true).describe("Extract key copy/headlines"),
-      sections: z.array(z.string()).optional().describe("Specific CSS selectors to target"),
+      url: z.string().describe('URL to scrape content from'),
+      extractTone: z.boolean().default(true).describe('Analyze the tone/voice of content'),
+      extractCopy: z.boolean().default(true).describe('Extract key copy/headlines'),
+      sections: z.array(z.string()).optional().describe('Specific CSS selectors to target'),
     }),
     func: async ({ url, extractTone, extractCopy, sections }) => {
       try {
@@ -26,7 +27,7 @@ export function createContentScraperTool() {
         if (!fetchClient) {
           return JSON.stringify({
             success: false,
-            error: "Fetch MCP not available",
+            error: 'Fetch MCP not available',
           });
         }
 
@@ -39,7 +40,7 @@ export function createContentScraperTool() {
         if (!result || !result.content) {
           return JSON.stringify({
             success: false,
-            error: "Could not fetch page content",
+            error: 'Could not fetch page content',
           });
         }
 
@@ -79,7 +80,7 @@ function extractContentFromHtml(
   const result: any = {};
 
   // Remove script and style tags
-  let cleanHtml = html
+  const cleanHtml = html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
 
@@ -142,7 +143,7 @@ function extractContentFromHtml(
       casual: ['hey', 'awesome', 'cool', 'super', 'easy'],
       technical: ['api', 'sdk', 'integration', 'configuration', 'deploy'],
       friendly: ['we', 'you', 'your', 'our', 'together'],
-      urgent: ['now', 'today', 'limited', 'hurry', 'don\'t miss'],
+      urgent: ['now', 'today', 'limited', 'hurry', "don't miss"],
     };
 
     const toneScores: Record<string, number> = {};

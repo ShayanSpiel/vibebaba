@@ -41,14 +41,14 @@ export class SearchAnalyticsTracker {
       limit?: number;
     }
   ): Promise<SearchAnalytics[]> {
-    let results = this.analytics.filter(a => a.orgId === orgId);
+    let results = this.analytics.filter((a) => a.orgId === orgId);
 
     if (options?.startDate) {
-      results = results.filter(a => a.timestamp >= options.startDate!);
+      results = results.filter((a) => a.timestamp >= options.startDate!);
     }
 
     if (options?.endDate) {
-      results = results.filter(a => a.timestamp <= options.endDate!);
+      results = results.filter((a) => a.timestamp <= options.endDate!);
     }
 
     if (options?.limit) {
@@ -68,10 +68,10 @@ export class SearchAnalyticsTracker {
     topIntents: { intent: string; count: number }[];
     toolUsage: { tool: string; count: number }[];
   }> {
-    const orgAnalytics = this.analytics.filter(a => a.orgId === orgId);
+    const orgAnalytics = this.analytics.filter((a) => a.orgId === orgId);
 
     const totalSearches = orgAnalytics.length;
-    const successfulSearches = orgAnalytics.filter(a => a.success).length;
+    const successfulSearches = orgAnalytics.filter((a) => a.success).length;
     const successRate = totalSearches > 0 ? successfulSearches / totalSearches : 0;
 
     const averageDuration =

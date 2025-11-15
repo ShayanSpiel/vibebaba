@@ -41,13 +41,13 @@ async function runBiome(options: BuildValidatorOptions): Promise<{
   try {
     const command = autoFix ? 'npx biome check --write .' : 'npx biome check .';
     const { stdout, stderr } = await execAsync(command, {
-      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      maxBuffer: 10 * 1024 * 1024, // 10MB buffer
     });
 
     return {
       success: true,
       output: stdout + stderr,
-      errors: []
+      errors: [],
     };
   } catch (error: any) {
     // Biome returns non-zero exit code when there are issues
@@ -57,7 +57,7 @@ async function runBiome(options: BuildValidatorOptions): Promise<{
     return {
       success: false,
       output,
-      errors
+      errors,
     };
   }
 }
@@ -72,13 +72,13 @@ async function runTypeCheck(options: BuildValidatorOptions): Promise<{
 }> {
   try {
     const { stdout, stderr } = await execAsync('npx tsc --noEmit', {
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: 10 * 1024 * 1024,
     });
 
     return {
       success: true,
       output: stdout + stderr,
-      errors: []
+      errors: [],
     };
   } catch (error: any) {
     const output = error.stdout || error.stderr || error.message;
@@ -87,7 +87,7 @@ async function runTypeCheck(options: BuildValidatorOptions): Promise<{
     return {
       success: false,
       output,
-      errors
+      errors,
     };
   }
 }
@@ -174,7 +174,7 @@ export async function validateBuild(
     valid,
     errors,
     warnings,
-    duration
+    duration,
   };
 }
 

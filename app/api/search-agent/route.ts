@@ -4,8 +4,8 @@
  * REST API for Search Agent - accessible by any part of the application
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { SearchAgent, buildConfig, type SearchContext } from '@/lib/agents/search-agent';
+import { type NextRequest, NextResponse } from 'next/server';
+import { buildConfig, SearchAgent, type SearchContext } from '@/lib/agents/search-agent';
 
 /**
  * POST /api/search-agent

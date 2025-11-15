@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 interface ProgressBarProps {
   progress: number; // 0-100
@@ -17,15 +17,20 @@ interface ProgressStage {
 }
 
 const stages: ProgressStage[] = [
-  { label: "Analyzing your idea", emoji: "🧠", range: [0, 15] },
-  { label: "Designing UI", emoji: "🎨", range: [15, 40] },
-  { label: "Creating database", emoji: "💾", range: [40, 55] },
-  { label: "Building frontend", emoji: "⚡", range: [55, 85] },
-  { label: "Testing & polishing", emoji: "🧪", range: [85, 95] },
-  { label: "Ready to ship!", emoji: "🚀", range: [95, 100] }
+  { label: 'Analyzing your idea', emoji: '🧠', range: [0, 15] },
+  { label: 'Designing UI', emoji: '🎨', range: [15, 40] },
+  { label: 'Creating database', emoji: '💾', range: [40, 55] },
+  { label: 'Building frontend', emoji: '⚡', range: [55, 85] },
+  { label: 'Testing & polishing', emoji: '🧪', range: [85, 95] },
+  { label: 'Ready to ship!', emoji: '🚀', range: [95, 100] },
 ];
 
-export function ProgressBar({ progress, stage, showConfetti = false, className = "" }: ProgressBarProps) {
+export function ProgressBar({
+  progress,
+  stage,
+  showConfetti = false,
+  className = '',
+}: ProgressBarProps) {
   const [displayProgress, setDisplayProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState<ProgressStage>(stages[0]);
   const [stageChanged, setStageChanged] = useState(false);
@@ -37,7 +42,9 @@ export function ProgressBar({ progress, stage, showConfetti = false, className =
     }, 100);
 
     // Determine current stage
-    const newStage = stages.find(s => progress >= s.range[0] && progress < s.range[1]) || stages[stages.length - 1];
+    const newStage =
+      stages.find((s) => progress >= s.range[0] && progress < s.range[1]) ||
+      stages[stages.length - 1];
     if (newStage.label !== currentStage.label) {
       setStageChanged(true);
       setCurrentStage(newStage);
@@ -57,13 +64,13 @@ export function ProgressBar({ progress, stage, showConfetti = false, className =
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 rounded-full shadow-lg"
           initial={{ width: 0 }}
           animate={{ width: `${displayProgress}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
         >
           {/* Shimmer effect */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
             animate={{ x: ['-100%', '100%'] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
           />
         </motion.div>
 
@@ -95,9 +102,7 @@ export function ProgressBar({ progress, stage, showConfetti = false, className =
             >
               {currentStage.emoji}
             </motion.span>
-            <span className="text-text-secondary font-medium">
-              {stage || currentStage.label}
-            </span>
+            <span className="text-text-secondary font-medium">{stage || currentStage.label}</span>
           </div>
 
           {/* Progress percentage */}
@@ -138,9 +143,7 @@ export function ProgressBar({ progress, stage, showConfetti = false, className =
               />
 
               {/* Checkpoint emoji (mobile-hidden) */}
-              <span className="text-xs hidden sm:block opacity-60">
-                {s.emoji}
-              </span>
+              <span className="text-xs hidden sm:block opacity-60">{s.emoji}</span>
             </motion.div>
           );
         })}
@@ -151,7 +154,7 @@ export function ProgressBar({ progress, stage, showConfetti = false, className =
           className="absolute top-1.5 left-0 h-[2px] bg-gradient-to-r from-amber-400 to-yellow-500 -z-0"
           initial={{ width: 0 }}
           animate={{ width: `${displayProgress}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       </div>
 
@@ -174,19 +177,19 @@ function ConfettiEffect() {
           style={{
             backgroundColor: confettiColors[i % confettiColors.length],
             left: `${Math.random() * 100}%`,
-            top: '-10px'
+            top: '-10px',
           }}
           initial={{ y: -10, opacity: 1, rotate: 0 }}
           animate={{
             y: window.innerHeight + 10,
             opacity: [1, 1, 0],
             rotate: Math.random() * 720,
-            x: (Math.random() - 0.5) * 200
+            x: (Math.random() - 0.5) * 200,
           }}
           transition={{
             duration: 2 + Math.random() * 2,
             delay: Math.random() * 0.5,
-            ease: "easeIn"
+            ease: 'easeIn',
           }}
         />
       ))}
@@ -203,7 +206,7 @@ export function CompactProgressBar({ progress, label }: { progress: number; labe
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-yellow-600 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
         />
       </div>
       {label && (

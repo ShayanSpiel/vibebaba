@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { generateProjectName } from '@/lib/generate-project-name';
 
 /**
@@ -11,17 +11,14 @@ export async function POST(req: NextRequest) {
     const { description } = await req.json();
 
     if (!description) {
-      return NextResponse.json(
-        { error: 'Description is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Description is required' }, { status: 400 });
     }
 
     const projectName = await generateProjectName(description);
 
     return NextResponse.json({
       success: true,
-      name: projectName
+      name: projectName,
     });
   } catch (error: any) {
     console.error('Error generating project name:', error);

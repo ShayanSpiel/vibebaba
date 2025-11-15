@@ -92,10 +92,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
       {/* Header */}
       <div className="bg-background-subtle border-b border-light p-4 flex gap-4">
         {Array.from({ length: cols }).map((_, i) => (
-          <div
-            key={i}
-            className="h-4 bg-background-sunken rounded flex-1 animate-pulse"
-          />
+          <div key={i} className="h-4 bg-background-sunken rounded flex-1 animate-pulse" />
         ))}
       </div>
       {/* Rows */}

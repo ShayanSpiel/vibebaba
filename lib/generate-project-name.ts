@@ -133,7 +133,7 @@ export const RESERVED_SUBDOMAINS = [
   'development',
   'staging',
   'production',
-  'prod'
+  'prod',
 ];
 
 /**

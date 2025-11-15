@@ -6,12 +6,19 @@
  * Comprehensive credit management with all admin features
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Mail, Minus, Package, Plus, RotateCcw, Search, Trash2, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -20,15 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Search, Plus, Minus, Mail, RotateCcw, Users, Trash2, Package } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 interface UserCredit {
   id: string;
@@ -80,7 +80,7 @@ export default function CreditsPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '50',
-        ...(searchTerm && { search: searchTerm })
+        ...(searchTerm && { search: searchTerm }),
       });
 
       const res = await fetch(`/api/admin/credits?${params}`);
@@ -107,7 +107,7 @@ export default function CreditsPage() {
       const params = new URLSearchParams({
         page: nextPage.toString(),
         limit: '50',
-        ...(searchTerm && { search: searchTerm })
+        ...(searchTerm && { search: searchTerm }),
       });
 
       const res = await fetch(`/api/admin/credits?${params}`);
@@ -205,7 +205,7 @@ export default function CreditsPage() {
     const confirmMsg = {
       all: 'This will reset ALL credits and remove package. Continue?',
       used: 'This will reset used tokens to 0. Continue?',
-      package: 'This will remove the user\'s package subscription. Continue?',
+      package: "This will remove the user's package subscription. Continue?",
     }[resetType];
 
     if (!confirm(confirmMsg)) return;
@@ -233,7 +233,10 @@ export default function CreditsPage() {
 
   async function bulkOperation(action: 'add' | 'remove') {
     try {
-      const emails = bulkEmails.split('\n').map(e => e.trim()).filter(e => e);
+      const emails = bulkEmails
+        .split('\n')
+        .map((e) => e.trim())
+        .filter((e) => e);
       const tokens = parseInt(bulkTokens);
 
       if (emails.length === 0 || tokens <= 0) {
@@ -406,7 +409,7 @@ export default function CreditsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map(user => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>{user.name || 'N/A'}</TableCell>
@@ -486,12 +489,10 @@ export default function CreditsPage() {
               {currentPage < totalPages && ` (Page ${currentPage} of ${totalPages})`}
             </div>
             {currentPage < totalPages && (
-              <Button
-                onClick={loadMoreUsers}
-                disabled={loadingMore}
-                variant="outline"
-              >
-                {loadingMore ? 'Loading...' : `Load More (${totalPages - currentPage} pages remaining)`}
+              <Button onClick={loadMoreUsers} disabled={loadingMore} variant="outline">
+                {loadingMore
+                  ? 'Loading...'
+                  : `Load More (${totalPages - currentPage} pages remaining)`}
               </Button>
             )}
           </div>
@@ -584,9 +585,7 @@ export default function CreditsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Credits by Email</DialogTitle>
-            <DialogDescription>
-              Add credits to a user by their email address
-            </DialogDescription>
+            <DialogDescription>Add credits to a user by their email address</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -611,9 +610,7 @@ export default function CreditsPage() {
               <Button variant="outline" onClick={() => setShowAddByEmailModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={addTokensByEmail}>
-                Add Credits
-              </Button>
+              <Button onClick={addTokensByEmail}>Add Credits</Button>
             </div>
           </div>
         </DialogContent>
@@ -669,9 +666,7 @@ export default function CreditsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Bulk Credit Operations</DialogTitle>
-            <DialogDescription>
-              Add or remove credits for multiple users at once
-            </DialogDescription>
+            <DialogDescription>Add or remove credits for multiple users at once</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -698,9 +693,7 @@ export default function CreditsPage() {
               <Button variant="outline" onClick={() => setShowBulkModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => bulkOperation('add')}>
-                Add to All
-              </Button>
+              <Button onClick={() => bulkOperation('add')}>Add to All</Button>
               <Button variant="destructive" onClick={() => bulkOperation('remove')}>
                 Remove from All
               </Button>
@@ -736,9 +729,7 @@ export default function CreditsPage() {
               <Button variant="outline" onClick={() => setShowAssignPackageModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={assignPackage}>
-                Assign Package
-              </Button>
+              <Button onClick={assignPackage}>Assign Package</Button>
             </div>
           </div>
         </DialogContent>

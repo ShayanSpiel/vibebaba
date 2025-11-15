@@ -3,9 +3,10 @@
  */
 
 // Detect if we're in development (localhost) or production
-export const isDevelopment = process.env.NODE_ENV === 'development' ||
-                             process.env.NEXT_PUBLIC_ENV === 'development' ||
-                             typeof window !== 'undefined' && window.location.hostname === 'localhost';
+export const isDevelopment =
+  process.env.NODE_ENV === 'development' ||
+  process.env.NEXT_PUBLIC_ENV === 'development' ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
 // Base domain configuration
 export const DOMAIN_CONFIG = {
@@ -22,7 +23,7 @@ export const DOMAIN_CONFIG = {
     deploymentPort: null, // Uses standard ports (80/443)
     protocol: 'https',
     useSubdomains: true,
-  }
+  },
 };
 
 /**
@@ -67,7 +68,10 @@ export function getDeploymentServerUrl(): string {
  * @param subdomain - The subdomain
  * @param includeProtocol - Whether to include the protocol
  */
-export function formatSubdomainDisplay(subdomain: string, includeProtocol: boolean = false): string {
+export function formatSubdomainDisplay(
+  subdomain: string,
+  includeProtocol: boolean = false
+): string {
   const config = getConfig();
   const protocol = includeProtocol ? `${config.protocol}://` : '';
 

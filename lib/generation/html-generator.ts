@@ -25,41 +25,45 @@ export function generateCompleteHTML(
     pageContents?: Record<string, PageContent>;
   }
 ) {
-  const heroTitle = aiContent?.heroTitle || "Welcome to Your App";
-  const heroSubtitle = aiContent?.heroSubtitle || "Build amazing things with our platform";
+  const heroTitle = aiContent?.heroTitle || 'Welcome to Your App';
+  const heroSubtitle = aiContent?.heroSubtitle || 'Build amazing things with our platform';
   const features = aiContent?.features || [
-    { title: "Fast", description: "Lightning-fast performance" },
-    { title: "Secure", description: "Enterprise-grade security" },
-    { title: "Scalable", description: "Grows with your needs" }
+    { title: 'Fast', description: 'Lightning-fast performance' },
+    { title: 'Secure', description: 'Enterprise-grade security' },
+    { title: 'Scalable', description: 'Grows with your needs' },
   ];
 
   // Generate navigation links (ONLY for pages that exist)
-  const navLinks = pages.map(p =>
-    `<a href="#${p.id}" class="nav-link text-beerus-700 hover:text-gohan-100 font-medium transition-colors">${p.name}</a>`
-  ).join('\n          ');
+  const navLinks = pages
+    .map(
+      (p) =>
+        `<a href="#${p.id}" class="nav-link text-beerus-700 hover:text-gohan-100 font-medium transition-colors">${p.name}</a>`
+    )
+    .join('\n          ');
 
   // Generate page sections
-  const pageSections = pages.map((page, index) => {
-    if (page.id === 'home') {
-      return generateHomePage(index === 0, heroTitle, heroSubtitle, features, undefined);
-    } else if (page.id === 'about') {
-      return generateAboutPage(aiContent?.pageContents?.about);
-    } else if (page.id === 'contact') {
-      return generateContactPage();
-    } else if (page.id === 'pricing') {
-      return generatePricingPage();
-    } else if (page.id === 'faq') {
-      return generateFAQPage();
-    } else if (page.id === 'services') {
-      return generateServicesPage();
-    } else if (page.id === 'blog') {
-      return generateBlogPage();
-    } else if (backendConfig && page.id === backendConfig.collections?.[0]?.name) {
-      // Database CRUD page
-      return generateDatabasePage(backendConfig.collections[0]);
-    }
-    // Generic page
-    return `
+  const pageSections = pages
+    .map((page, index) => {
+      if (page.id === 'home') {
+        return generateHomePage(index === 0, heroTitle, heroSubtitle, features, undefined);
+      } else if (page.id === 'about') {
+        return generateAboutPage(aiContent?.pageContents?.about);
+      } else if (page.id === 'contact') {
+        return generateContactPage();
+      } else if (page.id === 'pricing') {
+        return generatePricingPage();
+      } else if (page.id === 'faq') {
+        return generateFAQPage();
+      } else if (page.id === 'services') {
+        return generateServicesPage();
+      } else if (page.id === 'blog') {
+        return generateBlogPage();
+      } else if (backendConfig && page.id === backendConfig.collections?.[0]?.name) {
+        // Database CRUD page
+        return generateDatabasePage(backendConfig.collections[0]);
+      }
+      // Generic page
+      return `
   <!-- ${page.name} Page -->
   <div id="${page.id}" class="page">
     <section class="py-20">
@@ -71,7 +75,8 @@ export function generateCompleteHTML(
       </div>
     </section>
   </div>`;
-  }).join('\n');
+    })
+    .join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -163,9 +168,16 @@ export function generateCompleteHTML(
 </html>`;
 }
 
-function generateHomePage(isActive: boolean, heroTitle: string, heroSubtitle: string, features: Array<{ title: string; description: string }>, heroImageQuery?: string) {
+function generateHomePage(
+  isActive: boolean,
+  heroTitle: string,
+  heroSubtitle: string,
+  features: Array<{ title: string; description: string }>,
+  heroImageQuery?: string
+) {
   // Use fixed high-quality Unsplash images (source API was deprecated)
-  const heroImage = 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&h=600&fit=crop&auto=format';
+  const heroImage =
+    'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&h=600&fit=crop&auto=format';
 
   return `
   <!-- Home Page -->
@@ -183,11 +195,15 @@ function generateHomePage(isActive: boolean, heroTitle: string, heroSubtitle: st
       <div class="max-w-7xl mx-auto px-4">
         <h2 class="text-4xl font-bold text-center text-gohan-100 mb-12">Features</h2>
         <div class="grid md:grid-cols-3 gap-8">
-          ${features.map(f => `
+          ${features
+            .map(
+              (f) => `
           <div class="bg-goku-100 p-8 rounded-xl border border-beerus-200 shadow-sm hover:shadow-lg transition-shadow">
             <h3 class="text-2xl font-bold text-gohan-100 mb-4">${f.title}</h3>
             <p class="text-beerus-600">${f.description}</p>
-          </div>`).join('')}
+          </div>`
+            )
+            .join('')}
         </div>
       </div>
     </section>
@@ -357,8 +373,10 @@ function generateServicesPage() {
 
 function generateBlogPage(blog1ImageQuery?: string, blog2ImageQuery?: string) {
   // Use fixed high-quality Unsplash images (source API was deprecated)
-  const blog1Image = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=400&fit=crop&auto=format';
-  const blog2Image = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=400&fit=crop&auto=format';
+  const blog1Image =
+    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=400&fit=crop&auto=format';
+  const blog2Image =
+    'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=400&fit=crop&auto=format';
 
   return `
   <!-- Blog Page -->
@@ -405,23 +423,29 @@ function generateDatabasePage(collection: DatabaseCollection) {
         <div class="bg-goku-100 p-8 rounded-xl border border-beerus-200 shadow-sm mb-12">
           <h2 class="text-2xl font-bold text-gohan-100 mb-6">Add New ${singularName.charAt(0).toUpperCase() + singularName.slice(1)}</h2>
           <form id="add-form" class="space-y-4">
-            ${fields.map(f => {
-              if (f.type === 'number') {
-                return `<div>
+            ${fields
+              .map((f) => {
+                if (f.type === 'number') {
+                  return `<div>
               <label class="block text-sm font-medium text-gohan-100 mb-2">${f.name.charAt(0).toUpperCase() + f.name.slice(1)}</label>
               <input type="number" name="${f.name}" placeholder="${f.name}" class="w-full px-4 py-3 rounded-lg border border-beerus-200 focus:border-hit-500 focus:outline-none focus:ring-2 focus:ring-hit-100" required>
             </div>`;
-              } else if (f.name.toLowerCase().includes('description') || f.name.toLowerCase().includes('bio') || f.name.toLowerCase().includes('content')) {
-                return `<div>
+                } else if (
+                  f.name.toLowerCase().includes('description') ||
+                  f.name.toLowerCase().includes('bio') ||
+                  f.name.toLowerCase().includes('content')
+                ) {
+                  return `<div>
               <label class="block text-sm font-medium text-gohan-100 mb-2">${f.name.charAt(0).toUpperCase() + f.name.slice(1)}</label>
               <textarea name="${f.name}" placeholder="${f.name}" rows="4" class="w-full px-4 py-3 rounded-lg border border-beerus-200 focus:border-hit-500 focus:outline-none focus:ring-2 focus:ring-hit-100" required></textarea>
             </div>`;
-              }
-              return `<div>
+                }
+                return `<div>
               <label class="block text-sm font-medium text-gohan-100 mb-2">${f.name.charAt(0).toUpperCase() + f.name.slice(1)}</label>
               <input type="text" name="${f.name}" placeholder="${f.name}" class="w-full px-4 py-3 rounded-lg border border-beerus-200 focus:border-hit-500 focus:outline-none focus:ring-2 focus:ring-hit-100" required>
             </div>`;
-            }).join('\n            ')}
+              })
+              .join('\n            ')}
             <button type="submit" class="px-6 py-3 bg-hit-500 hover:bg-hit-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all">Add ${singularName.charAt(0).toUpperCase() + singularName.slice(1)}</button>
           </form>
         </div>
@@ -451,7 +475,7 @@ function generateDatabasePage(collection: DatabaseCollection) {
       items.forEach(item => {
         container.innerHTML += \`
           <div class="bg-goku-100 p-6 rounded-xl border border-beerus-200 shadow-sm hover:shadow-lg transition-shadow">
-            ${fields.map(f => `<p class="mb-2"><strong class="text-gohan-100">${f.name.charAt(0).toUpperCase() + f.name.slice(1)}:</strong> <span class="text-beerus-600">\${item[${JSON.stringify(f.name)}] || 'N/A'}</span></p>`).join('\n            ')}
+            ${fields.map((f) => `<p class="mb-2"><strong class="text-gohan-100">${f.name.charAt(0).toUpperCase() + f.name.slice(1)}:</strong> <span class="text-beerus-600">\${item[${JSON.stringify(f.name)}] || 'N/A'}</span></p>`).join('\n            ')}
             <button onclick="deleteItem('\${item.id}')" class="mt-4 px-4 py-2 bg-trunks-500 hover:bg-trunks-600 text-white rounded-lg text-sm font-medium transition-colors">Delete</button>
           </div>
         \`;
@@ -471,7 +495,7 @@ function generateDatabasePage(collection: DatabaseCollection) {
       e.preventDefault();
       const formData = new FormData(e.target);
       const newItem = {};
-      ${fields.map(f => `newItem[${JSON.stringify(f.name)}] = formData.get(${JSON.stringify(f.name)});`).join('\n      ')}
+      ${fields.map((f) => `newItem[${JSON.stringify(f.name)}] = formData.get(${JSON.stringify(f.name)});`).join('\n      ')}
 
       db.add(${JSON.stringify(collectionName)}, newItem);
       e.target.reset();

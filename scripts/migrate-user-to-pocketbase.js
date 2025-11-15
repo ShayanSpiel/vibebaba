@@ -1,5 +1,5 @@
 // Load environment variables
-require("dotenv").config({ path: ".env.local" });
+require('dotenv').config({ path: '.env.local' });
 
 /**
  * Migrate user from SQLite auth.db to PocketBase
@@ -27,12 +27,14 @@ async function migrateUser() {
     console.log('Credits:', {
       totalTokens: credits.totalTokens,
       usedTokens: credits.usedTokens,
-      dailyTokens: credits.dailyTokens
+      dailyTokens: credits.dailyTokens,
     });
 
     // Get transactions and usage before closing DB
     const transactions = db.prepare('SELECT * FROM transactions WHERE userId = ?').all(user.id);
-    const usageRecords = db.prepare('SELECT * FROM token_usage WHERE userId = ? LIMIT 100').all(user.id);
+    const usageRecords = db
+      .prepare('SELECT * FROM token_usage WHERE userId = ? LIMIT 100')
+      .all(user.id);
 
     db.close();
 
@@ -48,8 +50,8 @@ async function migrateUser() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         identity: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD
-      })
+        password: ADMIN_PASSWORD,
+      }),
     });
     const auth = await authData.json();
     pb.authStore.save(auth.token, auth.admin);
@@ -57,7 +59,7 @@ async function migrateUser() {
     let pbUser;
     try {
       const users = await pb.collection('users').getFullList({
-        filter: `email = "${user.email}"`
+        filter: `email = "${user.email}"`,
       });
 
       if (users.length > 0) {
@@ -76,9 +78,13 @@ async function migrateUser() {
         totalTokens: credits.totalTokens || 0,
         usedTokens: credits.usedTokens || 0,
         dailyTokens: credits.dailyTokens || 0,
-        lastDailyReset: credits.lastDailyReset ? new Date(credits.lastDailyReset).toISOString() : new Date().toISOString(),
+        lastDailyReset: credits.lastDailyReset
+          ? new Date(credits.lastDailyReset).toISOString()
+          : new Date().toISOString(),
         packageId: credits.packageId || undefined,
-        packageExpiry: credits.packageExpiry ? new Date(credits.packageExpiry).toISOString() : undefined
+        packageExpiry: credits.packageExpiry
+          ? new Date(credits.packageExpiry).toISOString()
+          : undefined,
       });
       console.log('✅ User updated successfully');
     } else {
@@ -95,9 +101,13 @@ async function migrateUser() {
         totalTokens: credits.totalTokens || 0,
         usedTokens: credits.usedTokens || 0,
         dailyTokens: credits.dailyTokens || 0,
-        lastDailyReset: credits.lastDailyReset ? new Date(credits.lastDailyReset).toISOString() : new Date().toISOString(),
+        lastDailyReset: credits.lastDailyReset
+          ? new Date(credits.lastDailyReset).toISOString()
+          : new Date().toISOString(),
         packageId: credits.packageId || undefined,
-        packageExpiry: credits.packageExpiry ? new Date(credits.packageExpiry).toISOString() : undefined
+        packageExpiry: credits.packageExpiry
+          ? new Date(credits.packageExpiry).toISOString()
+          : undefined,
       });
       console.log('✅ User created successfully');
     }
@@ -118,7 +128,7 @@ async function migrateUser() {
             packageId: txn.packageId || undefined,
             paymentProvider: txn.paymentProvider || undefined,
             paymentId: txn.paymentId || undefined,
-            status: txn.status || 'completed'
+            status: txn.status || 'completed',
           });
           migratedCount++;
         } catch (error) {
@@ -140,7 +150,7 @@ async function migrateUser() {
           await pb.collection('token_usage').create({
             userId: pbUser.id,
             tokensUsed: usage.tokensUsed,
-            endpoint: usage.endpoint || 'unknown'
+            endpoint: usage.endpoint || 'unknown',
           });
           migratedCount++;
         } catch (error) {
@@ -159,7 +169,9 @@ async function migrateUser() {
     console.log(`   Total Tokens: ${pbUser.totalTokens.toLocaleString()}`);
     console.log(`   Used Tokens: ${pbUser.usedTokens.toLocaleString()}`);
     console.log(`   Daily Tokens: ${pbUser.dailyTokens.toLocaleString()}`);
-    console.log(`   Available: ${(pbUser.totalTokens + pbUser.dailyTokens - pbUser.usedTokens).toLocaleString()}`);
+    console.log(
+      `   Available: ${(pbUser.totalTokens + pbUser.dailyTokens - pbUser.usedTokens).toLocaleString()}`
+    );
 
     if (!pbUser.id.startsWith('existing')) {
       console.log('\n⚠️  IMPORTANT: User password is set to: changeme123');
@@ -167,7 +179,6 @@ async function migrateUser() {
     }
 
     console.log('\n🌐 View user in admin: http://localhost:8090/_/#/collections/users');
-
   } catch (error) {
     console.error('\n❌ Migration failed:', error);
     if (error.response) {

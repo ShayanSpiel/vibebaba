@@ -26,7 +26,9 @@ export async function getAdminPb(): Promise<PocketBase> {
   // Start new authentication
   authPromise = (async () => {
     if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-      throw new Error('Admin credentials not configured. Set POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD');
+      throw new Error(
+        'Admin credentials not configured. Set POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD'
+      );
     }
 
     adminPb = new PocketBase(PB_URL);

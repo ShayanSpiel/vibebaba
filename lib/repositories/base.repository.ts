@@ -1,6 +1,6 @@
 // lib/repositories/base.repository.ts
 import PocketBase from 'pocketbase';
-import { config, CollectionName } from '@/lib/config';
+import { type CollectionName, config } from '@/lib/config';
 import { logger } from '@/lib/logger';
 
 export class BaseRepository<T = any> {
@@ -55,10 +55,12 @@ export class BaseRepository<T = any> {
    */
   async find(filter?: string, options?: { sort?: string; limit?: number }): Promise<T[]> {
     try {
-      const records = await this.pb.collection(this.collectionName).getList(1, options?.limit || 50, {
-        filter,
-        sort: options?.sort,
-      });
+      const records = await this.pb
+        .collection(this.collectionName)
+        .getList(1, options?.limit || 50, {
+          filter,
+          sort: options?.sort,
+        });
       return records.items as T[];
     } catch (error: any) {
       logger.error(`Error querying ${this.collectionName}:`, {}, error);
@@ -126,10 +128,10 @@ export class BaseRepository<T = any> {
       logger.debug(`Cache invalidated: ${this.collectionName}:${id}`);
     } else {
       // Clear all cache for this collection
-      const keys = Array.from(this.cache.keys()).filter(key =>
+      const keys = Array.from(this.cache.keys()).filter((key) =>
         key.startsWith(`${this.collectionName}:`)
       );
-      keys.forEach(key => this.cache.delete(key));
+      keys.forEach((key) => this.cache.delete(key));
       logger.debug(`Cache cleared: ${this.collectionName}`);
     }
   }

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 /**
  * Next.js Middleware for Server-Side Route Protection
@@ -19,13 +19,11 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ['/', '/pricing'];
 
   // Check if current path is protected
-  const isProtectedRoute = protectedRoutes.some(route =>
-    pathname.startsWith(route)
-  );
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
   // Check if current path is public
-  const isPublicRoute = publicRoutes.some(route =>
-    pathname === route || pathname.startsWith(`${route}/`)
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
   // If trying to access protected route without auth, redirect to home
@@ -82,13 +80,13 @@ export function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https:; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self' https: http://localhost:4000 http://localhost:8090 http://127.0.0.1:8090 ws://localhost:* wss://localhost:*; " +
-    "frame-src 'self' http://localhost:4000 http://localhost:8090; " +
-    "frame-ancestors 'none';"
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' https: http://localhost:4000 http://localhost:8090 http://127.0.0.1:8090 ws://localhost:* wss://localhost:*; " +
+      "frame-src 'self' http://localhost:4000 http://localhost:8090; " +
+      "frame-ancestors 'none';"
   );
 
   return response;

@@ -124,9 +124,12 @@ const globalCache = new RequestCache();
 
 // Cleanup expired entries every 10 minutes
 if (typeof window !== 'undefined') {
-  setInterval(() => {
-    globalCache.cleanup();
-  }, 10 * 60 * 1000);
+  setInterval(
+    () => {
+      globalCache.cleanup();
+    },
+    10 * 60 * 1000
+  );
 }
 
 /**

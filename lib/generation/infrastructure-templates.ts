@@ -227,11 +227,12 @@ import { pb } from './pocketbase';
  * - NO raw functions like createCollectionName() exist - use mutation.mutate() instead!
  */
 
-${collections.map(collection => {
-  const collectionName = collection.name;
-  const CollectionName = capitalizeFirst(collectionName);
+${collections
+  .map((collection) => {
+    const collectionName = collection.name;
+    const CollectionName = capitalizeFirst(collectionName);
 
-  return `
+    return `
 // ========== ${collectionName.toUpperCase()} ==========
 
 /**
@@ -317,7 +318,8 @@ export function useDelete${CollectionName}() {
   });
 }
 `;
-}).join('\n')}
+  })
+  .join('\n')}
 `;
 }
 
@@ -594,6 +596,7 @@ export function useToast() {
 // Only include dependencies that are actually used in the project
 export interface FeatureFlags {
   hasBackend?: boolean;
+  hasAuth?: boolean;
   needsForms?: boolean;
   needsModals?: boolean;
   needsDropdowns?: boolean;
@@ -618,7 +621,7 @@ export function generateUpdatedPackageJson(
     tailwindcss: '^3.4.13',
     postcss: '^8.4.47',
     autoprefixer: '^10.4.20',
-    [iconLibrary.package]: iconLibrary.version
+    [iconLibrary.package]: iconLibrary.version,
   };
 
   // Optional dependencies (conditionally included)
@@ -657,6 +660,13 @@ export function generateUpdatedPackageJson(
     optionalDeps['@radix-ui/react-toast'] = '^1.2.1';
   }
 
+  // NextAuth dependencies (only if auth is needed)
+  if (features?.hasAuth) {
+    optionalDeps['next-auth'] = '^4.24.8';
+    optionalDeps['bcryptjs'] = '^2.4.3';
+    optionalDeps['@types/bcryptjs'] = '^2.4.6';
+  }
+
   return {
     name: projectId,
     version: '0.1.0',
@@ -666,13 +676,13 @@ export function generateUpdatedPackageJson(
       build: 'next build',
       start: 'next start',
       lint: 'next lint',
-      export: 'next build && next export'
+      export: 'next build && next export',
     },
     dependencies: { ...baseDeps, ...optionalDeps },
     devDependencies: {
       eslint: '^8.57.1',
-      'eslint-config-next': '^14.2.13'
-    }
+      'eslint-config-next': '^14.2.13',
+    },
   };
 }
 
@@ -827,4 +837,3 @@ export function useAuth() {
   return context;
 }
 `;
-

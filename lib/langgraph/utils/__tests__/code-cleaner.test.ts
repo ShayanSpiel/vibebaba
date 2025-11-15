@@ -2,7 +2,11 @@
  * Tests for code cleaner utilities
  */
 
-import { cleanGeneratedCode, validateGeneratedCode, stripMarkdownCodeBlocks } from '../code-cleaner';
+import {
+  cleanGeneratedCode,
+  stripMarkdownCodeBlocks,
+  validateGeneratedCode,
+} from '../code-cleaner';
 
 describe('Code Cleaner', () => {
   describe('stripMarkdownCodeBlocks', () => {
@@ -95,7 +99,7 @@ const date = new Date(year, month, 0)
     it('should detect backend imports', () => {
       const code = `import express from 'express'`;
       const errors = validateGeneratedCode(code, 'test.tsx');
-      expect(errors.some(e => e.includes('backend-only imports'))).toBe(true);
+      expect(errors.some((e) => e.includes('backend-only imports'))).toBe(true);
     });
 
     it('should detect useState type issues', () => {
@@ -104,13 +108,13 @@ const [month, setMonth] = useState('1')
 const date = new Date(2024, month)
       `;
       const errors = validateGeneratedCode(code, 'test.tsx');
-      expect(errors.some(e => e.includes('incorrect type'))).toBe(true);
+      expect(errors.some((e) => e.includes('incorrect type'))).toBe(true);
     });
 
     it('should detect empty import commas', () => {
       const code = `import { Foo, , Bar } from 'lib'`;
       const errors = validateGeneratedCode(code, 'test.tsx');
-      expect(errors.some(e => e.includes('invalid import syntax'))).toBe(true);
+      expect(errors.some((e) => e.includes('invalid import syntax'))).toBe(true);
     });
   });
 });

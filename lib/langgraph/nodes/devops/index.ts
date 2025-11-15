@@ -1,29 +1,29 @@
 // @ts-nocheck
 // lib/langgraph/nodes/devops-node.ts
 import { pb } from '@/lib/database/pocketbase';
-import type { AppGenState } from '../../types';
-import { emitNodeStart, emitNodeComplete, emitNodeError } from '../../utils/logging/events';
-import { generateScaffold } from '../../../../deployment-server/nextjs-scaffold';
-import { logDeployment } from '@/lib/services/workflow-logger';
 import { withLangSmithTracing } from '@/lib/langsmith/tracing';
+import { messageManager } from '@/lib/messaging/message-manager';
+import { logDeployment } from '@/lib/services/workflow-logger';
+import { generateScaffold } from '../../../../deployment-server/nextjs-scaffold';
+import type { AppGenState } from '../../types';
+import { emitNodeComplete, emitNodeError, emitNodeStart } from '../../utils/logging/events';
 
 async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>> {
   const startTime = Date.now();
 
   try {
-
     // Emit thinking process before starting
     emitNodeStart('devops', state, {
       userInput: `Deploying ${state.files?.length || 0} app files to production environment`,
       interpretation: `I'm preparing your application for deployment! This includes merging your code with Next.js configuration files and setting up the database${state.backendConfig?.collections ? ` (${state.backendConfig.collections.length} collection${state.backendConfig.collections.length > 1 ? 's' : ''})` : ''}.`,
-      plan: "First, I'll bundle your app with all necessary config files. Then I'll save everything to the database and generate your preview URL. Your app will be live in seconds! 🚀"
+      plan: "First, I'll bundle your app with all necessary config files. Then I'll save everything to the database and generate your preview URL. Your app will be live in seconds! 🚀",
     });
 
     if (!state.files || state.files.length === 0) {
       console.error('[DevOps] No files to deploy');
       return {
         errors: [{ node: 'devops', message: 'No files to deploy' }], // Reducer auto-appends
-        completedNodes: ['devops'] // Reducer auto-appends
+        completedNodes: ['devops'], // Reducer auto-appends
       };
     }
 
@@ -36,28 +36,32 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     const fileMap = new Map();
 
     // Add scaffold files first
-    scaffoldFiles.forEach(file => {
+    scaffoldFiles.forEach((file) => {
       fileMap.set(file.path, file);
     });
 
     // Override with user files (these take precedence)
-    state.files.forEach(file => {
+    state.files.forEach((file) => {
       fileMap.set(file.path, file);
     });
 
     const allFiles = Array.from(fileMap.values());
-    const duplicateCount = (scaffoldFiles.length + state.files.length) - allFiles.length;
+    const duplicateCount = scaffoldFiles.length + state.files.length - allFiles.length;
 
-    console.log(`[DevOps] 📦 Total files: ${allFiles.length} (${scaffoldFiles.length} scaffold + ${state.files.length} user)`);
+    console.log(
+      `[DevOps] 📦 Total files: ${allFiles.length} (${scaffoldFiles.length} scaffold + ${state.files.length} user)`
+    );
     if (duplicateCount > 0) {
-      console.log(`[DevOps] ✅ Deduplicated ${duplicateCount} file(s) - user versions take precedence`);
+      console.log(
+        `[DevOps] ✅ Deduplicated ${duplicateCount} file(s) - user versions take precedence`
+      );
     }
 
     // FILE SEPARATION: Hide backend infrastructure from Code tab
     // userFiles: Frontend only (Code tab) - clean, user-facing code
     // deploymentFiles: Frontend + api/* (deployment-server)
     // Reason: Backend files contain internal infrastructure (PocketBase, Express setup)
-    const userFiles = allFiles.filter(file => !file.path.startsWith('api/'));
+    const userFiles = allFiles.filter((file) => !file.path.startsWith('api/'));
 
     // Deployment files include EVERYTHING (user files + backend infrastructure)
     const deploymentFiles = allFiles;
@@ -65,7 +69,9 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
     console.log(`[DevOps] 📂 File separation for storage:`);
     console.log(`[DevOps]   • User-facing files (Code tab): ${userFiles.length}`);
     console.log(`[DevOps]   • Deployment files (backend included): ${deploymentFiles.length}`);
-    console.log(`[DevOps]   • Backend infrastructure files (hidden from users): ${deploymentFiles.length - userFiles.length}`);
+    console.log(
+      `[DevOps]   • Backend infrastructure files (hidden from users): ${deploymentFiles.length - userFiles.length}`
+    );
 
     // Create/update project in PocketBase
     let actualProjectId = state.projectId;
@@ -95,7 +101,7 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         backendConfig: state.backendConfig || null,
         context: state.context || null,
         validationResult: state.validationResult,
-        debugAttempts: state.debugAttempts || 0
+        debugAttempts: state.debugAttempts || 0,
       };
 
       // Check if project already exists (in case of retry/re-generation)
@@ -116,14 +122,20 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         // CRITICAL: Force PocketBase to use the workflow ID instead of generating a new one
         // This ensures collections (projectId_collectionName) use the correct prefix
         project = await serverPb.collection('projects').create({
-          id: state.projectId,  // Force this exact ID
-          ...projectData
+          id: state.projectId, // Force this exact ID
+          ...projectData,
         });
         actualProjectId = project.id;
         console.log('[DevOps] ✅ Project created with ID:', actualProjectId);
       }
 
-      console.log('[DevOps] ✅ Project saved in PocketBase:', actualProjectId, 'with', userFiles.length, 'user-facing files');
+      console.log(
+        '[DevOps] ✅ Project saved in PocketBase:',
+        actualProjectId,
+        'with',
+        userFiles.length,
+        'user-facing files'
+      );
     } catch (error: any) {
       console.error('[DevOps] ❌❌❌ CRITICAL PocketBase ERROR ❌❌❌');
       console.error('[DevOps] Failed to update/create project:', error.message);
@@ -138,13 +150,16 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
 
       // This is a critical error - add to state errors
       return {
-        errors: [...state.errors, {
-          node: 'devops',
-          message: `Database error: ${error.message}. Files generated but not saved.`
-        }],
+        errors: [
+          ...state.errors,
+          {
+            node: 'devops',
+            message: `Database error: ${error.message}. Files generated but not saved.`,
+          },
+        ],
         deployUrl: `/project/${state.projectId}`,
         stage: 'complete',
-        completedNodes: ['devops'] // Reducer auto-appends
+        completedNodes: ['devops'], // Reducer auto-appends
       };
     }
 
@@ -165,21 +180,26 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       }
     });
 
-    // Build conversational deployment summary
+    // ✅ NEW: USE MESSAGE MANAGER for deployment success
     const scaffoldCount = scaffoldFiles.length;
     const userFileCount = state.files.length;
-    const dbInfo = state.backendConfig?.collections
-      ? `Your ${state.backendConfig.collections.length} database collection${state.backendConfig.collections.length > 1 ? 's' : ''} ${state.backendConfig.collections.length > 1 ? 'are' : 'is'} ready: ${state.backendConfig.collections.map((c: any) => c.name).join(', ')}. 🗄️`
-      : 'No database configured.';
 
-    // Build features list for summary
-    const featuresInfo = phase1Features.length > 0
-      ? `\n\n**Features Implemented:**\n${phase1Features.map((f: any) => `✅ ${f.name}`).join('\n')}`
-      : '';
+    await messageManager.sendEvent(
+      state.projectId,
+      {
+        type: 'deployment-success',
+        filesDeployed: deploymentFiles.length,
+        userFiles: userFileCount,
+        scaffoldFiles: scaffoldCount,
+        collections: state.backendConfig?.collections?.map((c: any) => c.name) || [],
+        implementedFeatures: phase1Features.map((f: any) => f.name),
+        previewUrl,
+      },
+      'devops'
+    );
+    console.log('[DevOps] 💬 Sent deployment success via MessageManager');
 
-    const conversationalSummary = `Your app has been deployed successfully! 🚀\n\n**Deployed:** ${deploymentFiles.length} total files (${userFileCount} app files + ${scaffoldCount} config files)\n\n${dbInfo}${featuresInfo}\n\nThe app is ready - you can preview it now! ✨`;
-
-    // Emit completion with detailed task information
+    // Emit completion for workflow tracking (without duplicate summary)
     emitNodeComplete('devops', state, duration, {
       taskDescription: 'Deployed your application',
       success: true,
@@ -189,11 +209,11 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         scaffoldFiles: scaffoldCount,
         previewUrl,
         actualProjectId,
-        hasDatabase: !!(state.backendConfig?.collections),
+        hasDatabase: !!state.backendConfig?.collections,
         databaseCollections: state.backendConfig?.collections?.map((c: any) => c.name) || [],
-        validationStatus: state.validationResult?.valid ? 'valid' : 'has-errors'
+        validationStatus: state.validationResult?.valid ? 'valid' : 'has-errors',
       },
-      summary: conversationalSummary
+      // Note: No summary field - messageManager handles user-facing message
     });
 
     // CRITICAL: Return deploymentFiles (includes api/* backend infrastructure)
@@ -207,7 +227,7 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         deploymentUrl: `http://localhost:4000/apps${deploymentUrl}`,
         buildStatus: 'success',
         dependenciesInstalled: scaffoldFiles.length,
-        deploymentDurationMs: duration
+        deploymentDurationMs: duration,
       });
     }
 
@@ -242,15 +262,15 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
       stage: 'complete',
       completedNodes: ['devops'], // Reducer auto-appends
       allRequestedFeatures: state.allRequestedFeatures, // NEW: Pass features to UI
-      deploymentSummary: { // NEW: Summary data for UI
+      deploymentSummary: {
+        // NEW: Summary data for UI
         filesDeployed: deploymentFiles.length,
         userFiles: userFileCount,
         scaffoldFiles: scaffoldCount,
-        hasDatabase: !!(state.backendConfig?.collections),
-        databaseCollections: state.backendConfig?.collections?.map((c: any) => c.name) || []
-      }
+        hasDatabase: !!state.backendConfig?.collections,
+        databaseCollections: state.backendConfig?.collections?.map((c: any) => c.name) || [],
+      },
     };
-
   } catch (error: any) {
     emitNodeError('devops', error as Error, state);
     console.error('[DevOps] Deployment failed:', error);
@@ -263,17 +283,16 @@ async function devopsNodeImpl(state: AppGenState): Promise<Partial<AppGenState>>
         userId: state.userId,
         buildStatus: 'failed',
         errorMessage: error.message,
-        deploymentDurationMs: errorDuration
+        deploymentDurationMs: errorDuration,
       });
     }
 
     return {
       errors: [{ node: 'devops', message: error.message }], // Reducer auto-appends
-      completedNodes: ['devops'] // Reducer auto-appends
+      completedNodes: ['devops'], // Reducer auto-appends
     };
   }
 }
-
 
 // Export traced version of devops node
 export const devopsNode = withLangSmithTracing('devops', devopsNodeImpl);

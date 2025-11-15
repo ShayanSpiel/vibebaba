@@ -1,6 +1,6 @@
 // app/api/langgraph/stream/route.ts
-import { NextRequest } from "next/server";
-import { workflowEvents } from "@/lib/langgraph/utils/logging/events";
+import type { NextRequest } from 'next/server';
+import { workflowEvents } from '@/lib/langgraph/utils/logging/events';
 
 // Track active connections per project to prevent duplicates
 const activeConnections = new Map<string, number>();
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     type: 'connected',
     projectId,
     timestamp: new Date().toISOString(),
-    message: 'Connected to workflow stream'
+    message: 'Connected to workflow stream',
   });
 
   // Subscribe to workflow events
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
         stage: event.stage,
         timestamp: event.timestamp,
         thinkingProcess: event.thinkingProcess, // CRITICAL: Pass thinking process through
-        message: `Starting ${event.nodeName}...`
+        message: `Starting ${event.nodeName}...`,
       });
     }
   };
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         duration: event.duration,
         timestamp: event.timestamp,
         taskDetails: event.taskDetails, // CRITICAL: Pass task details through
-        message: `Completed ${event.nodeName} in ${event.duration}ms`
+        message: `Completed ${event.nodeName} in ${event.duration}ms`,
       });
     }
   };
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
       sendEvent({
         type: 'node:error',
         ...event,
-        message: `Error in ${event.nodeName}: ${event.error.message}`
+        message: `Error in ${event.nodeName}: ${event.error.message}`,
       });
     }
   };
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
       sendEvent({
         type: 'workflow:complete',
         ...event,
-        message: `${statusEmoji} ${statusText} - ${details}`
+        message: `${statusEmoji} ${statusText} - ${details}`,
       });
 
       // Close stream after workflow completes
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `AI call started: ${event.nodeName} - ${event.callType} (${event.model})`
+        message: `AI call started: ${event.nodeName} - ${event.callType} (${event.model})`,
       });
     }
   };
@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `AI call completed: ${event.nodeName} (${event.duration}ms, ${event.tokens || '?'} tokens)`
+        message: `AI call completed: ${event.nodeName} (${event.duration}ms, ${event.tokens || '?'} tokens)`,
       });
     }
   };
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `AI call error: ${event.nodeName} - ${event.error}`
+        message: `AI call error: ${event.nodeName} - ${event.error}`,
       });
     }
   };
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `AutoGen attempt ${event.attempt}/${event.maxAttempts} starting (${event.initialErrors} errors to fix)`
+        message: `AutoGen attempt ${event.attempt}/${event.maxAttempts} starting (${event.initialErrors} errors to fix)`,
       });
     }
   };
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `AutoGen ${event.agent} agent: ${event.context}`
+        message: `AutoGen ${event.agent} agent: ${event.context}`,
       });
     }
   };
@@ -176,7 +176,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `AutoGen ${event.agent} completed in ${event.duration}ms`
+        message: `AutoGen ${event.agent} completed in ${event.duration}ms`,
       });
     }
   };
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
       const { before, after, analysis } = event;
       sendEvent({
         ...event,
-        message: `Error diff: ${before.count} → ${after.count} errors (${analysis.fixed.length} fixed, ${analysis.new.length} new, ${analysis.remaining.length} remaining)`
+        message: `Error diff: ${before.count} → ${after.count} errors (${analysis.fixed.length} fixed, ${analysis.new.length} new, ${analysis.remaining.length} remaining)`,
       });
     }
   };
@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
     if (event.projectId === projectId) {
       sendEvent({
         ...event,
-        message: `[${event.nodeName}] ${event.message}`
+        message: `[${event.nodeName}] ${event.message}`,
       });
     }
   };
@@ -209,7 +209,7 @@ export async function GET(req: NextRequest) {
         message: event.message,
         metadata: event.metadata,
         timestamp: event.timestamp,
-        projectId: event.projectId
+        projectId: event.projectId,
       });
     }
   };
@@ -309,7 +309,7 @@ export async function GET(req: NextRequest) {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 }

@@ -6,9 +6,10 @@
  * Overview of all system metrics and activity
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Activity, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -17,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, DollarSign, Activity, TrendingUp } from 'lucide-react';
 
 interface DashboardStats {
   totalUsers: number;
@@ -95,9 +95,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-            <p className="text-xs text-text-secondary mt-1">
-              +{stats?.newUsersToday || 0} today
-            </p>
+            <p className="text-xs text-text-secondary mt-1">+{stats?.newUsersToday || 0} today</p>
           </CardContent>
         </Card>
 
@@ -121,9 +119,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalApiCalls || 0}</div>
-            <p className="text-xs text-text-secondary mt-1">
-              +{stats?.apiCallsToday || 0} today
-            </p>
+            <p className="text-xs text-text-secondary mt-1">+{stats?.apiCallsToday || 0} today</p>
           </CardContent>
         </Card>
 
@@ -134,9 +130,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.activeProjects || 0}</div>
-            <p className="text-xs text-text-secondary mt-1">
-              Projects in progress
-            </p>
+            <p className="text-xs text-text-secondary mt-1">Projects in progress</p>
           </CardContent>
         </Card>
       </div>
@@ -158,7 +152,7 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stats?.recentUsers?.map(user => (
+                {stats?.recentUsers?.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>{user.name || 'N/A'}</TableCell>
@@ -196,7 +190,7 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stats?.recentTransactions?.map(tx => (
+                {stats?.recentTransactions?.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell className="font-medium">${tx.amount.toFixed(2)}</TableCell>
                     <TableCell>{tx.tokens.toLocaleString()}</TableCell>

@@ -120,7 +120,7 @@ export async function promoteWinner(
     }
 
     // Determine new weights based on strategy
-    let newWeights: Record<string, number> = {};
+    const newWeights: Record<string, number> = {};
 
     switch (config.strategy) {
       case 'immediate':
@@ -128,7 +128,7 @@ export async function promoteWinner(
         newWeights[winner.name] = 100;
         break;
 
-      case 'gradual':
+      case 'gradual': {
         // Winner gets 70%, others split remaining 30%
         const loserCount = experimentResult.variants.length - 1;
         newWeights[winner.name] = 70;
@@ -138,6 +138,7 @@ export async function promoteWinner(
           }
         }
         break;
+      }
 
       case 'canary':
         // Winner gets 10%, control keeps 90%
@@ -223,10 +224,7 @@ function buildNewConfig(
 /**
  * Send promotion notification
  */
-async function sendPromotionNotification(
-  promotion: PromotionResult,
-  experiment: ExperimentResult
-) {
+async function sendPromotionNotification(promotion: PromotionResult, experiment: ExperimentResult) {
   console.log('\n📧 [Notification] Sending promotion alert...');
 
   const message = `
@@ -236,12 +234,16 @@ Experiment: ${experiment.experimentName}
 Strategy: ${promotion.strategy}
 Promoted: ${promotion.promoted ? 'Yes' : 'No'}
 
-${promotion.winner ? `
+${
+  promotion.winner
+    ? `
 Winner: ${promotion.winner.name}
 Prompt: ${promotion.winner.promptName}
 Confidence: ${((experiment.winner?.confidence || 0) * 100).toFixed(1)}%
 Reason: ${experiment.winner?.reason}
-` : ''}
+`
+    : ''
+}
 
 Reason: ${promotion.reason}
 Timestamp: ${promotion.timestamp}
@@ -299,9 +301,7 @@ export async function rollbackPromotion(
 /**
  * Create backup of current config
  */
-export function backupConfig(
-  configFilePath: string = 'lib/langsmith/ab-test-config.ts'
-): boolean {
+export function backupConfig(configFilePath: string = 'lib/langsmith/ab-test-config.ts'): boolean {
   const fullPath = path.join(process.cwd(), configFilePath);
   const backupPath = fullPath + '.backup';
 

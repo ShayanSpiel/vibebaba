@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { ProfileButton } from "@/components/auth/ProfileButton";
-import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useAuth } from "@/components/auth/PocketBaseAuthProvider";
-import { useState, useEffect, useRef } from "react";
-import PublishModal from "./PublishModal";
-import ProjectSettingsModal from "./ProjectSettingsModal";
-import { useProjectSettings } from "@/lib/contexts/ProjectSettingsContext";
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/components/auth/PocketBaseAuthProvider';
+import { ProfileButton } from '@/components/auth/ProfileButton';
+import { useProjectSettings } from '@/lib/contexts/ProjectSettingsContext';
+import ProjectSettingsModal from './ProjectSettingsModal';
+import PublishModal from './PublishModal';
 
 interface ProjectHeaderProps {
   projectTitle: string;
@@ -29,9 +29,18 @@ const truncateTitle = (title: string, maxWords: number = 4): string => {
   return words.slice(0, maxWords).join(' ') + '...';
 };
 
-export default function ProjectHeader({ projectTitle, activeView, onViewChange, projectId, deployUrl, onUpdateDeployUrl, onUpdateTitle, deploymentStatus = 'idle' }: ProjectHeaderProps) {
+export default function ProjectHeader({
+  projectTitle,
+  activeView,
+  onViewChange,
+  projectId,
+  deployUrl,
+  onUpdateDeployUrl,
+  onUpdateTitle,
+  deploymentStatus = 'idle',
+}: ProjectHeaderProps) {
   const router = useRouter();
-  const t = useTranslations("project");
+  const t = useTranslations('project');
   const { user } = useAuth();
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -83,9 +92,8 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
   }, [showProjectMenu]);
 
   // Check if user has active subscription
-  const hasActiveSubscription = user?.packageId && user?.packageExpiry
-    ? new Date(user.packageExpiry) > new Date()
-    : false;
+  const hasActiveSubscription =
+    user?.packageId && user?.packageExpiry ? new Date(user.packageExpiry) > new Date() : false;
 
   const isPublished = !!deployUrl;
 
@@ -311,11 +319,13 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
       {/* Left: Logo & Title - Fixed width to match chat panel */}
       <div className="flex items-center gap-4 w-96 flex-shrink-0">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push('/')}
           className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center hover:shadow-lg transition-all shadow-md group"
           title="Back to Home"
         >
-          <span className="text-white font-bold text-xl group-hover:scale-110 transition-transform">V</span>
+          <span className="text-white font-bold text-xl group-hover:scale-110 transition-transform">
+            V
+          </span>
         </button>
         <div className="h-8 w-px bg-border-light"></div>
         <div className="flex-1 min-w-0 flex items-center gap-2 group">
@@ -337,8 +347,18 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                 className="p-1 hover:bg-background-subtle rounded transition-colors"
                 title="Save"
               >
-                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </button>
               <button
@@ -346,8 +366,18 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                 className="p-1 hover:bg-background-subtle rounded transition-colors"
                 title="Cancel"
               >
-                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -362,8 +392,18 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                   className="p-1 hover:bg-background-subtle rounded transition-colors opacity-100"
                   title="Project options"
                 >
-                  <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg
+                    className="w-4 h-4 text-text-secondary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
 
@@ -377,9 +417,24 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                       }}
                       className="w-full px-4 py-2.5 text-left text-sm text-text-primary hover:bg-background-subtle transition-colors flex items-center gap-3"
                     >
-                      <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-4 h-4 text-text-secondary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       Settings
                     </button>
@@ -387,8 +442,18 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                       onClick={handleDuplicateProject}
                       className="w-full px-4 py-2.5 text-left text-sm text-text-primary hover:bg-background-subtle transition-colors flex items-center gap-3 border-t border-light"
                     >
-                      <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      <svg
+                        className="w-4 h-4 text-text-secondary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
                       </svg>
                       Duplicate
                     </button>
@@ -413,10 +478,20 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
           >
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
               </svg>
-              {t("preview")}
+              {t('preview')}
             </div>
           </button>
           <button
@@ -429,7 +504,12 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
           >
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
               </svg>
               Files
             </div>
@@ -444,9 +524,14 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
           >
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+                />
               </svg>
-              {t("database")}
+              {t('database')}
             </div>
           </button>
         </div>
@@ -462,7 +547,12 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
             title="Download Code"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
             </svg>
             Download
           </button>
@@ -483,7 +573,12 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                     className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-white text-sm font-semibold rounded-lg hover:from-amber-500 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
                     </svg>
                     Download Code Files
                   </button>
@@ -492,13 +587,24 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                 <div className="p-4 space-y-4">
                   <div className="text-center space-y-2">
                     <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
                       </svg>
                     </div>
                     <h3 className="text-sm font-semibold text-text-primary">Upgrade to Download</h3>
                     <p className="text-xs text-text-secondary">
-                      Download your code files by upgrading to a premium plan. Get unlimited access to all your projects!
+                      Download your code files by upgrading to a premium plan. Get unlimited access
+                      to all your projects!
                     </p>
                   </div>
                   <button
@@ -506,7 +612,12 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
                     className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-white text-sm font-semibold rounded-lg hover:from-amber-500 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
                     </svg>
                     Upgrade Now
                   </button>
@@ -524,7 +635,12 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
             title="Upgrade Subscription"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
             </svg>
             Upgrade
           </button>
@@ -534,7 +650,9 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
         <button
           onClick={() => {
             if (deploymentStatus !== 'deployed') {
-              alert('Your project must be deployed before publishing. Please wait for the deployment to complete.');
+              alert(
+                'Your project must be deployed before publishing. Please wait for the deployment to complete.'
+              );
             } else {
               handlePublish();
             }
@@ -547,18 +665,23 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
           }`}
           title={
             deploymentStatus === 'deployed'
-              ? "Publish Project"
+              ? 'Publish Project'
               : deploymentStatus === 'deploying'
-              ? "Deploying... Please wait"
-              : deploymentStatus === 'failed'
-              ? "Deployment failed. Please fix errors first"
-              : "Waiting for deployment..."
+                ? 'Deploying... Please wait'
+                : deploymentStatus === 'failed'
+                  ? 'Deployment failed. Please fix errors first'
+                  : 'Waiting for deployment...'
           }
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+            />
           </svg>
-          {t("publish")}
+          {t('publish')}
         </button>
 
         {/* Share Button - Only show if published */}
@@ -566,15 +689,35 @@ export default function ProjectHeader({ projectTitle, activeView, onViewChange, 
           <button
             onClick={handleShare}
             className="relative w-10 h-10 bg-background-raised border border-light rounded-xl hover:bg-background-subtle transition-all shadow-sm hover:shadow-md flex items-center justify-center group"
-            title={copySuccess ? "Copied!" : "Copy Share Link"}
+            title={copySuccess ? 'Copied!' : 'Copy Share Link'}
           >
             {copySuccess ? (
-              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="w-5 h-5 text-text-secondary group-hover:text-text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              <svg
+                className="w-5 h-5 text-text-secondary group-hover:text-text-primary transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
               </svg>
             )}
           </button>

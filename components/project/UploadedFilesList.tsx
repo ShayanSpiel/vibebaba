@@ -1,12 +1,7 @@
 'use client';
 
+import { FileImage, FileText, Trash2, Upload as UploadIcon } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Upload as UploadIcon,
-  FileImage,
-  FileText,
-  Trash2
-} from 'lucide-react';
 import type { UploadedFile } from './FileUploadButton';
 
 interface UploadedFilesListProps {
@@ -15,11 +10,7 @@ interface UploadedFilesListProps {
   onRefresh?: () => void;
 }
 
-export function UploadedFilesList({
-  files,
-  onDelete,
-  onRefresh
-}: UploadedFilesListProps) {
+export function UploadedFilesList({ files, onDelete, onRefresh }: UploadedFilesListProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
@@ -38,7 +29,7 @@ export function UploadedFilesList({
 
       const response = await fetch(`/api/files/${id}`, {
         method: 'DELETE',
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
 
       if (!response.ok) {
@@ -111,9 +102,7 @@ export function UploadedFilesList({
                   ) : (
                     <span>⏳ Pending</span>
                   )}
-                  {file.designAnalysis && (
-                    <span className="ml-1 text-amber-400">✨</span>
-                  )}
+                  {file.designAnalysis && <span className="ml-1 text-amber-400">✨</span>}
                 </div>
               </div>
 

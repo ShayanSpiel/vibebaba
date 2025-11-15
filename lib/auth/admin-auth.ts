@@ -1,6 +1,6 @@
 // lib/admin-auth.ts
 // Helper for admin authentication checks
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import PocketBase from 'pocketbase';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';

@@ -27,11 +27,7 @@ export class SuggestionValidator {
    * Check if a suggestion is a duplicate
    * Returns true if duplicate, false if unique
    */
-  isDuplicateSuggestion(
-    error: string,
-    suggestion: string,
-    endpoint: string = 'unknown'
-  ): boolean {
+  isDuplicateSuggestion(error: string, suggestion: string, endpoint: string = 'unknown'): boolean {
     const errorHash = this.hashError(error);
     const suggestionHash = this.hashSuggestion(suggestion);
 
@@ -150,10 +146,7 @@ export class SuggestionValidator {
     const suggestions = this.getSuggestions(error);
 
     return suggestions.filter((record) => {
-      const similarity = this.getSimilarityScore(
-        record.suggestion,
-        suggestion
-      );
+      const similarity = this.getSimilarityScore(record.suggestion, suggestion);
       return similarity >= threshold;
     });
   }
@@ -184,8 +177,7 @@ export class SuggestionValidator {
     return {
       totalErrors,
       totalSuggestions,
-      averageSuggestionsPerError:
-        totalErrors > 0 ? totalSuggestions / totalErrors : 0,
+      averageSuggestionsPerError: totalErrors > 0 ? totalSuggestions / totalErrors : 0,
       mostSuggested,
     };
   }
@@ -234,9 +226,7 @@ export class SuggestionValidator {
 
     if (codeBlocks.length > 0) {
       // Remove the ``` markers and join
-      return codeBlocks
-        .map((block) => block.replace(/```[\w]*\n?/g, '').trim())
-        .join('\n');
+      return codeBlocks.map((block) => block.replace(/```[\w]*\n?/g, '').trim()).join('\n');
     }
 
     // If no code blocks, use the whole suggestion

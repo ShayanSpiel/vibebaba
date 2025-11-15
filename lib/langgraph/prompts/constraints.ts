@@ -50,5 +50,5 @@ export const FILE_TYPE_CONSTRAINTS = {
   'layout.tsx': `Next.js layout - server component unless providers needed`,
   'api/route.ts': `Next.js API route - server-side, export GET/POST/PUT/DELETE`,
   'components/*.tsx': `React component - 'use client' if using hooks`,
-  'lib/*.ts': `Utility functions - no React hooks`
+  'lib/*.ts': `Utility functions - no React hooks`,
 };

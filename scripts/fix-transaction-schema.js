@@ -10,7 +10,9 @@ const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD;
 
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  console.error('❌ Error: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be set in .env.local');
+  console.error(
+    '❌ Error: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be set in .env.local'
+  );
   process.exit(1);
 }
 
@@ -24,8 +26,8 @@ async function fixTransactionSchema() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       identity: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD
-    })
+      password: ADMIN_PASSWORD,
+    }),
   });
 
   if (!authResponse.ok) {
@@ -38,13 +40,13 @@ async function fixTransactionSchema() {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': token
+    Authorization: token,
   };
 
   // Get current transactions collection
   console.log('2. Getting transactions collection...');
   const getResponse = await fetch(`${POCKETBASE_URL}/api/collections/transactions`, {
-    headers
+    headers,
   });
 
   if (!getResponse.ok) {
@@ -56,14 +58,14 @@ async function fixTransactionSchema() {
 
   // Find paymentProvider field and update its values
   console.log('3. Updating paymentProvider field...');
-  const updatedSchema = collection.schema.map(field => {
+  const updatedSchema = collection.schema.map((field) => {
     if (field.name === 'paymentProvider') {
       return {
         ...field,
         options: {
           ...field.options,
-          values: ['stripe', 'paypal', 'zibal', 'zarinpal']
-        }
+          values: ['stripe', 'paypal', 'zibal', 'zarinpal'],
+        },
       };
     }
     return field;
@@ -74,8 +76,8 @@ async function fixTransactionSchema() {
     method: 'PATCH',
     headers,
     body: JSON.stringify({
-      schema: updatedSchema
-    })
+      schema: updatedSchema,
+    }),
   });
 
   if (!updateResponse.ok) {
@@ -89,7 +91,7 @@ async function fixTransactionSchema() {
 }
 
 // Run the script
-fixTransactionSchema().catch(error => {
+fixTransactionSchema().catch((error) => {
   console.error('\n❌ Error:', error.message);
   process.exit(1);
 });

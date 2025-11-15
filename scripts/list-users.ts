@@ -12,7 +12,7 @@ async function listUsers() {
 
   try {
     const records = await pb.collection('users').getFullList({
-      sort: '-created'
+      sort: '-created',
     });
 
     if (records.length === 0) {
@@ -30,7 +30,6 @@ async function listUsers() {
       console.log(`   Created: ${user.created}`);
       console.log('');
     });
-
   } catch (error: any) {
     console.error('❌ Failed to list users:', error.message);
     process.exit(1);

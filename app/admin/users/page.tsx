@@ -16,7 +16,8 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           <p className="text-text-secondary">
-            User management features including role assignment, account status, and user analytics will be available here.
+            User management features including role assignment, account status, and user analytics
+            will be available here.
           </p>
         </CardContent>
       </Card>

@@ -28,7 +28,7 @@ export function createDatabaseInjectionScript(
   projectId: string,
   collections: DatabaseCollection[]
 ): string {
-  const collectionsJson = JSON.stringify(collections.map(c => c.name));
+  const collectionsJson = JSON.stringify(collections.map((c) => c.name));
 
   return `
 <script>

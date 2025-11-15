@@ -4,19 +4,20 @@
  * Extract brand guidelines, colors, fonts, and design tokens
  */
 
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { z } from "zod";
-import { getMCPManager } from "@/lib/mcp/client";
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { getMCPManager } from '@/lib/mcp/client';
 
 export function createBrandScraperTool() {
   return new DynamicStructuredTool({
-    name: "brand_scraper",
-    description: "Extract brand guidelines, colors, fonts, and design tokens from a brand name or URL. Best for: replicating brand design, getting color schemes, analyzing competitor brands.",
+    name: 'brand_scraper',
+    description:
+      'Extract brand guidelines, colors, fonts, and design tokens from a brand name or URL. Best for: replicating brand design, getting color schemes, analyzing competitor brands.',
     schema: z.object({
       brand: z.string().describe("Brand name (e.g., 'stripe', 'linear') or URL"),
-      extractColors: z.boolean().default(true).describe("Extract color palette"),
-      extractTypography: z.boolean().default(true).describe("Extract typography/fonts"),
-      extractSpacing: z.boolean().default(false).describe("Extract spacing scale"),
+      extractColors: z.boolean().default(true).describe('Extract color palette'),
+      extractTypography: z.boolean().default(true).describe('Extract typography/fonts'),
+      extractSpacing: z.boolean().default(false).describe('Extract spacing scale'),
     }),
     func: async ({ brand, extractColors, extractTypography, extractSpacing }) => {
       try {
@@ -42,7 +43,8 @@ export function createBrandScraperTool() {
         return JSON.stringify({
           success: false,
           error: `Could not extract brand guidelines for ${brand}`,
-          suggestion: "Try providing a direct URL to brand guidelines or use clone_analyzer for a full website"
+          suggestion:
+            'Try providing a direct URL to brand guidelines or use clone_analyzer for a full website',
         });
       } catch (error: any) {
         console.error('[BrandScraper] Scraping failed:', error);
@@ -106,7 +108,6 @@ async function scrapeBrandGuidelines(
       }
     } catch (error) {
       console.log(`[BrandScraper] Failed to scrape ${url}:`, error);
-      continue;
     }
   }
 

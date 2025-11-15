@@ -16,7 +16,9 @@ const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD;
 
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  console.error('❌ Error: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be set in .env.local');
+  console.error(
+    '❌ Error: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be set in .env.local'
+  );
   console.error('Please add these to your .env.local file:\n');
   console.error('POCKETBASE_ADMIN_EMAIL=your-admin@email.com');
   console.error('POCKETBASE_ADMIN_PASSWORD=your-admin-password\n');
@@ -33,8 +35,8 @@ async function fixPermissions() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       identity: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD
-    })
+      password: ADMIN_PASSWORD,
+    }),
   });
 
   if (!authResponse.ok) {
@@ -48,7 +50,7 @@ async function fixPermissions() {
   // Headers for authenticated requests
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': token
+    Authorization: token,
   };
 
   // Fix token_usage collection
@@ -61,8 +63,8 @@ async function fixPermissions() {
       viewRule: '@request.auth.id != "" && userId = @request.auth.id',
       createRule: '@request.auth.id != "" && userId = @request.auth.id',
       updateRule: null, // Don't allow updates
-      deleteRule: null  // Don't allow deletes
-    })
+      deleteRule: null, // Don't allow deletes
+    }),
   });
 
   if (!tokenUsageResponse.ok) {
@@ -82,8 +84,8 @@ async function fixPermissions() {
       viewRule: '@request.auth.id != "" && userId = @request.auth.id',
       createRule: '@request.auth.id != "" && userId = @request.auth.id',
       updateRule: null, // Admins only
-      deleteRule: null  // Admins only
-    })
+      deleteRule: null, // Admins only
+    }),
   });
 
   if (!transactionsResponse.ok) {
@@ -103,8 +105,8 @@ async function fixPermissions() {
       viewRule: '@request.auth.id != "" && (userId = @request.auth.id || userId = null)',
       createRule: '@request.auth.id != ""',
       updateRule: '@request.auth.id != "" && userId = @request.auth.id',
-      deleteRule: '@request.auth.id != "" && userId = @request.auth.id'
-    })
+      deleteRule: '@request.auth.id != "" && userId = @request.auth.id',
+    }),
   });
 
   if (!projectsResponse.ok) {
@@ -124,8 +126,8 @@ async function fixPermissions() {
       viewRule: '@request.auth.id != ""',
       createRule: '@request.auth.id != ""',
       updateRule: '@request.auth.id != ""',
-      deleteRule: '@request.auth.id != ""'
-    })
+      deleteRule: '@request.auth.id != ""',
+    }),
   });
 
   if (!filesResponse.ok) {
@@ -145,8 +147,8 @@ async function fixPermissions() {
       viewRule: '@request.auth.id != ""',
       createRule: '@request.auth.id != ""',
       updateRule: '@request.auth.id != ""',
-      deleteRule: '@request.auth.id != ""'
-    })
+      deleteRule: '@request.auth.id != ""',
+    }),
   });
 
   if (!messagesResponse.ok) {
@@ -168,7 +170,7 @@ async function fixPermissions() {
 }
 
 // Run the script
-fixPermissions().catch(error => {
+fixPermissions().catch((error) => {
   console.error('\n❌ Error:', error.message);
   process.exit(1);
 });

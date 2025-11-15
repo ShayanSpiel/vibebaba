@@ -6,8 +6,8 @@
  * Usage: npx tsx scripts/test-search-tools.ts
  */
 
-import { createExaSearchTool } from '../lib/agents/search-agent/tools/exa-search';
 import { createDuckDuckGoSearchTool } from '../lib/agents/search-agent/tools/duckduckgo-search';
+import { createExaSearchTool } from '../lib/agents/search-agent/tools/exa-search';
 
 async function testSearchTools() {
   console.log('🧪 Testing Search Tools\n');

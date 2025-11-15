@@ -4,16 +4,12 @@
  * Comprehensive logging for search operations in workflows
  */
 
-import type { SearchResult, SearchIntent } from './types';
+import type { SearchIntent, SearchResult } from './types';
 
 /**
  * Log search start in workflow
  */
-export function logSearchStart(
-  workflowName: string,
-  query: string,
-  context?: any
-) {
+export function logSearchStart(workflowName: string, query: string, context?: any) {
   console.log('');
   console.log('═'.repeat(80));
   console.log(`🔍 SEARCH AGENT - ${workflowName.toUpperCase()}`);
@@ -97,14 +93,18 @@ export function logSearchStrategy(intent: SearchIntent) {
     strategies.push('🔬 Clone Analysis enabled');
   }
 
-  strategies.forEach(s => console.log(s));
+  strategies.forEach((s) => console.log(s));
   console.log('─'.repeat(80));
 }
 
 /**
  * Log tool execution
  */
-export function logToolExecution(toolName: string, status: 'start' | 'success' | 'error', details?: any) {
+export function logToolExecution(
+  toolName: string,
+  status: 'start' | 'success' | 'error',
+  details?: any
+) {
   const timestamp = new Date().toLocaleTimeString();
 
   if (status === 'start') {
@@ -170,7 +170,9 @@ export function logSearchResults(result: SearchResult) {
     result.brandGuidelines.forEach((brand, i) => {
       console.log(`   ${i + 1}. ${brand.brandName}`);
       if (brand.colors?.primary) {
-        console.log(`      Primary Color: ${brand.colors.primary.name} (${brand.colors.primary.hex})`);
+        console.log(
+          `      Primary Color: ${brand.colors.primary.name} (${brand.colors.primary.hex})`
+        );
       }
       if (brand.typography?.fontFamily) {
         console.log(`      Font: ${brand.typography.fontFamily}`);

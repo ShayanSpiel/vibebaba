@@ -1,4 +1,4 @@
-import { pb, ensureAuth } from './database/pocketbase';
+import { ensureAuth, pb } from './database/pocketbase';
 import { getUserOrganizationSafe } from './services/org-auto-create';
 
 export interface ProjectData {
@@ -41,7 +41,7 @@ export async function createProject(data: Omit<ProjectData, 'createdAt'>): Promi
     const response = await fetch('/api/projects/generate-name', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: data.description })
+      body: JSON.stringify({ description: data.description }),
     });
 
     if (response.ok) {
@@ -71,7 +71,7 @@ export async function createProject(data: Omit<ProjectData, 'createdAt'>): Promi
   // CRITICAL: Force PocketBase to use the same ID to avoid mapping confusion
   // This ensures consistency between workflow ID, PocketBase ID, and collection prefixes
   const project = await pb.collection('projects').create({
-    id: data.id,  // Force this exact ID (must be 15 chars)
+    id: data.id, // Force this exact ID (must be 15 chars)
     userId: data.userId,
     organizationId: organizationId, // ✨ NEW: Auto-assigned to user's org
     name: data.description.substring(0, 100), // Use first 100 chars as name
@@ -85,12 +85,14 @@ export async function createProject(data: Omit<ProjectData, 'createdAt'>): Promi
     context: data.context || null,
     deployUrl: data.deployUrl || '',
     workflowLogs: data.workflowLogs ? JSON.stringify(data.workflowLogs) : '[]',
-    allRequestedFeatures: data.allRequestedFeatures ? JSON.stringify(data.allRequestedFeatures) : '[]',
+    allRequestedFeatures: data.allRequestedFeatures
+      ? JSON.stringify(data.allRequestedFeatures)
+      : '[]',
     defaultName: defaultName,
     subdomain: defaultName, // Initially same as defaultName
     customDomain: '',
     isPublished: false,
-    publishedAt: null
+    publishedAt: null,
   });
 
   console.log('✅ Project created in PocketBase with ID:', project.id);
@@ -101,7 +103,7 @@ export async function createProject(data: Omit<ProjectData, 'createdAt'>): Promi
     JSON.stringify({
       ...data,
       pbId: project.id, // Store PocketBase ID (same as data.id now)
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     })
   );
 
@@ -139,12 +141,14 @@ export async function getProject(projectId: string): Promise<ProjectData | null>
       files: project.files || undefined,
       prototypeCode: project.prototypeCode || undefined,
       workflowLogs: project.workflowLogs ? JSON.parse(project.workflowLogs) : undefined,
-      allRequestedFeatures: project.allRequestedFeatures ? JSON.parse(project.allRequestedFeatures) : undefined,
+      allRequestedFeatures: project.allRequestedFeatures
+        ? JSON.parse(project.allRequestedFeatures)
+        : undefined,
       defaultName: project.defaultName || undefined,
       subdomain: project.subdomain || undefined,
       customDomain: project.customDomain || undefined,
       isPublished: project.isPublished || false,
-      publishedAt: project.publishedAt || undefined
+      publishedAt: project.publishedAt || undefined,
     };
 
     // Update localStorage cache with fresh data from database
@@ -154,7 +158,10 @@ export async function getProject(projectId: string): Promise<ProjectData | null>
     return projectData;
   } catch (error: any) {
     // Fallback to localStorage cache ONLY if PocketBase is unavailable
-    console.warn('Could not fetch from PocketBase, trying localStorage cache:', error?.message || error);
+    console.warn(
+      'Could not fetch from PocketBase, trying localStorage cache:',
+      error?.message || error
+    );
 
     const stored = localStorage.getItem(`project_${projectId}`);
     if (stored) {
@@ -191,7 +198,7 @@ function clearOldProjects(currentProjectId: string): void {
             const project = JSON.parse(data);
             projectKeys.push({
               key,
-              timestamp: new Date(project.createdAt || 0).getTime()
+              timestamp: new Date(project.createdAt || 0).getTime(),
             });
           }
         } catch (e) {
@@ -206,11 +213,11 @@ function clearOldProjects(currentProjectId: string): void {
 
     // Keep current project + 5 most recent, remove the rest
     const toKeep = new Set([`project_${currentProjectId}`]);
-    projectKeys.slice(0, 5).forEach(p => toKeep.add(p.key));
+    projectKeys.slice(0, 5).forEach((p) => toKeep.add(p.key));
 
     // Remove old projects
     let removed = 0;
-    projectKeys.forEach(p => {
+    projectKeys.forEach((p) => {
       if (!toKeep.has(p.key)) {
         localStorage.removeItem(p.key);
         removed++;
@@ -226,16 +233,16 @@ function clearOldProjects(currentProjectId: string): void {
 /**
  * Update a project
  */
-export async function updateProject(projectId: string, updates: Partial<ProjectData>): Promise<void> {
+export async function updateProject(
+  projectId: string,
+  updates: Partial<ProjectData>
+): Promise<void> {
   // First update localStorage immediately
   const stored = localStorage.getItem(`project_${projectId}`);
   if (stored) {
     try {
       const project = JSON.parse(stored);
-      localStorage.setItem(
-        `project_${projectId}`,
-        JSON.stringify({ ...project, ...updates })
-      );
+      localStorage.setItem(`project_${projectId}`, JSON.stringify({ ...project, ...updates }));
     } catch (error) {
       // Handle QuotaExceededError gracefully
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
@@ -245,10 +252,7 @@ export async function updateProject(projectId: string, updates: Partial<ProjectD
         // Retry once after cleanup
         try {
           const project = JSON.parse(stored);
-          localStorage.setItem(
-            `project_${projectId}`,
-            JSON.stringify({ ...project, ...updates })
-          );
+          localStorage.setItem(`project_${projectId}`, JSON.stringify({ ...project, ...updates }));
         } catch (retryError) {
           console.error('[Storage] Failed to save even after cleanup:', retryError);
           // Continue anyway - PocketBase sync will handle persistence
@@ -272,7 +276,8 @@ export async function updateProject(projectId: string, updates: Partial<ProjectD
     // 🔒 CRITICAL: Keep initialPrompt and userDescription separate!
     // initialPrompt is the ORIGINAL user idea - IMMUTABLE after creation
     // userDescription can be the same as initialPrompt, but stored explicitly
-    if ((updates as any).userDescription !== undefined) pbUpdates.userDescription = (updates as any).userDescription;
+    if ((updates as any).userDescription !== undefined)
+      pbUpdates.userDescription = (updates as any).userDescription;
     // NOTE: initialPrompt is NEVER updated - it's set once on creation
     if (updates.stage !== undefined) pbUpdates.stage = updates.stage;
     if (updates.plan !== undefined) pbUpdates.plan = updates.plan;
@@ -283,8 +288,10 @@ export async function updateProject(projectId: string, updates: Partial<ProjectD
     if (updates.deployUrl !== undefined) pbUpdates.deployUrl = updates.deployUrl;
     if (updates.files !== undefined) pbUpdates.files = updates.files;
     if (updates.prototypeCode !== undefined) pbUpdates.prototypeCode = updates.prototypeCode;
-    if (updates.workflowLogs !== undefined) pbUpdates.workflowLogs = JSON.stringify(updates.workflowLogs);
-    if (updates.allRequestedFeatures !== undefined) pbUpdates.allRequestedFeatures = JSON.stringify(updates.allRequestedFeatures);
+    if (updates.workflowLogs !== undefined)
+      pbUpdates.workflowLogs = JSON.stringify(updates.workflowLogs);
+    if (updates.allRequestedFeatures !== undefined)
+      pbUpdates.allRequestedFeatures = JSON.stringify(updates.allRequestedFeatures);
     if (updates.defaultName !== undefined) pbUpdates.defaultName = updates.defaultName;
     if (updates.subdomain !== undefined) pbUpdates.subdomain = updates.subdomain;
     if (updates.customDomain !== undefined) pbUpdates.customDomain = updates.customDomain;
@@ -301,7 +308,10 @@ export async function updateProject(projectId: string, updates: Partial<ProjectD
   } catch (error: any) {
     // Only log non-404 errors
     if (error?.status !== 404) {
-      console.warn('Could not update project in PocketBase, using localStorage:', error?.message || error);
+      console.warn(
+        'Could not update project in PocketBase, using localStorage:',
+        error?.message || error
+      );
     }
   }
 }
@@ -330,7 +340,7 @@ export async function listUserProjects(userId: string): Promise<ProjectData[]> {
     try {
       records = await pb.collection('projects').getFullList({
         filter: `userId = "${userId}"`,
-        sort: '-created'
+        sort: '-created',
       });
     } catch (pbError: any) {
       // Handle PocketBase-specific errors
@@ -345,7 +355,7 @@ export async function listUserProjects(userId: string): Promise<ProjectData[]> {
       console.log(`[listUserProjects] Found ${records.length} projects for user ${userId}`);
     }
 
-    return records.map(project => ({
+    return records.map((project) => ({
       id: project.id,
       description: project.description,
       initialPrompt: project.initialPrompt || project.description, // Fallback to description for old projects
@@ -362,12 +372,14 @@ export async function listUserProjects(userId: string): Promise<ProjectData[]> {
       files: project.files || undefined,
       prototypeCode: project.prototypeCode || undefined,
       workflowLogs: project.workflowLogs ? JSON.parse(project.workflowLogs) : undefined,
-      allRequestedFeatures: project.allRequestedFeatures ? JSON.parse(project.allRequestedFeatures) : undefined,
+      allRequestedFeatures: project.allRequestedFeatures
+        ? JSON.parse(project.allRequestedFeatures)
+        : undefined,
       defaultName: project.defaultName || undefined,
       subdomain: project.subdomain || undefined,
       customDomain: project.customDomain || undefined,
       isPublished: project.isPublished || false,
-      publishedAt: project.publishedAt || undefined
+      publishedAt: project.publishedAt || undefined,
     }));
   } catch (error: any) {
     // Silently handle common expected errors
@@ -390,10 +402,8 @@ export async function listUserProjects(userId: string): Promise<ProjectData[]> {
 
     // Check if error has any meaningful properties
     const errorKeys = Object.keys(error);
-    const hasMeaningfulData = errorKeys.some(key =>
-      error[key] !== undefined &&
-      error[key] !== null &&
-      error[key] !== ''
+    const hasMeaningfulData = errorKeys.some(
+      (key) => error[key] !== undefined && error[key] !== null && error[key] !== ''
     );
 
     // Only log errors with meaningful information
@@ -402,7 +412,7 @@ export async function listUserProjects(userId: string): Promise<ProjectData[]> {
         status: error?.status || error?.code,
         message: error?.message,
         data: error?.data,
-        keys: errorKeys
+        keys: errorKeys,
       });
     }
 

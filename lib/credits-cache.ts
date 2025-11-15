@@ -70,7 +70,7 @@ class CreditsCache {
         keysToDelete.push(key);
       }
     }
-    keysToDelete.forEach(key => this.cache.delete(key));
+    keysToDelete.forEach((key) => this.cache.delete(key));
   }
 
   /**
@@ -119,7 +119,7 @@ class CreditsCache {
     for (const key of keys) {
       const entry = this.cache.get(key);
 
-      if (entry && (now - entry.timestamp <= entry.ttl)) {
+      if (entry && now - entry.timestamp <= entry.ttl) {
         result.set(key, entry.data as T);
       }
     }

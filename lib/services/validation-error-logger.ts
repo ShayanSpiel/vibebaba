@@ -5,8 +5,8 @@
  * Also maintains in-memory cache for faster access
  */
 
-import type { ValidationError } from '@/lib/langgraph/validation/post-gen/types';
 import PocketBase from 'pocketbase';
+import type { ValidationError } from '@/lib/langgraph/validation/post-gen/types';
 
 // Use the deployment server PocketBase instance
 const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090');
@@ -129,7 +129,9 @@ export async function logValidationError(
     }
 
     const logTime = Date.now() - startTime;
-    console.log(`[ValidationLogger] ✅ Logged error: ${error.rule} in ${error.file}:${error.line} (${logTime}ms)`);
+    console.log(
+      `[ValidationLogger] ✅ Logged error: ${error.rule} in ${error.file}:${error.line} (${logTime}ms)`
+    );
   } catch (err) {
     console.error('[ValidationLogger] Failed to log error:', err);
     // Don't throw - logging failure shouldn't break the app
@@ -159,7 +161,7 @@ export async function logValidationErrors(
 
     // Log errors in parallel for performance
     await Promise.all(
-      errors.map(error =>
+      errors.map((error) =>
         logValidationError(error, {
           ...context,
           isFixed: fixedSet.has(error.rule),
@@ -198,7 +200,9 @@ export async function logValidationSession(
     }
 
     const logTime = Date.now() - startTime;
-    console.log(`[ValidationLogger] ✅ Logged session: ${session.sessionType} attempt ${session.attemptNumber} (${logTime}ms)`);
+    console.log(
+      `[ValidationLogger] ✅ Logged session: ${session.sessionType} attempt ${session.attemptNumber} (${logTime}ms)`
+    );
   } catch (err) {
     console.error('[ValidationLogger] Failed to log session:', err);
   }
@@ -223,15 +227,15 @@ export function getAllValidationSessions(): ValidationSessionLog[] {
  */
 export async function getProjectValidationStats(projectId: string) {
   try {
-    const errors = validationErrorsStore.filter(e => e.projectId === projectId);
-    const sessions = validationSessionsStore.filter(s => s.projectId === projectId);
+    const errors = validationErrorsStore.filter((e) => e.projectId === projectId);
+    const sessions = validationSessionsStore.filter((s) => s.projectId === projectId);
 
     return {
-      totalErrors: errors.filter(e => e.severity === 'error').length,
-      totalWarnings: errors.filter(e => e.severity === 'warning').length,
-      totalFixed: errors.filter(e => e.isFixed).length,
+      totalErrors: errors.filter((e) => e.severity === 'error').length,
+      totalWarnings: errors.filter((e) => e.severity === 'warning').length,
+      totalFixed: errors.filter((e) => e.isFixed).length,
       totalSessions: sessions.length,
-      successfulSessions: sessions.filter(s => s.wasSuccessful).length,
+      successfulSessions: sessions.filter((s) => s.wasSuccessful).length,
       mostCommonErrors: getMostCommonErrors(errors),
       errorsByType: groupBy(errors, 'errorType'),
       recentErrors: errors.slice(0, 10),
@@ -292,17 +296,20 @@ export async function getValidationErrors(options: {
         totalPages: result.totalPages,
       };
     } catch (pbErr) {
-      console.warn('[ValidationLogger] Failed to fetch from PocketBase, using in-memory cache:', pbErr);
+      console.warn(
+        '[ValidationLogger] Failed to fetch from PocketBase, using in-memory cache:',
+        pbErr
+      );
 
       // Fallback to in-memory data
       let filtered = [...validationErrorsStore];
 
-      if (projectId) filtered = filtered.filter(e => e.projectId === projectId);
-      if (userId) filtered = filtered.filter(e => e.userId === userId);
-      if (severity) filtered = filtered.filter(e => e.severity === severity);
-      if (errorType) filtered = filtered.filter(e => e.errorType === errorType);
-      if (startDate) filtered = filtered.filter(e => e.timestamp && e.timestamp >= startDate);
-      if (endDate) filtered = filtered.filter(e => e.timestamp && e.timestamp <= endDate);
+      if (projectId) filtered = filtered.filter((e) => e.projectId === projectId);
+      if (userId) filtered = filtered.filter((e) => e.userId === userId);
+      if (severity) filtered = filtered.filter((e) => e.severity === severity);
+      if (errorType) filtered = filtered.filter((e) => e.errorType === errorType);
+      if (startDate) filtered = filtered.filter((e) => e.timestamp && e.timestamp >= startDate);
+      if (endDate) filtered = filtered.filter((e) => e.timestamp && e.timestamp <= endDate);
 
       // Paginate
       const start = (page - 1) * perPage;
@@ -370,16 +377,20 @@ export async function getValidationSessions(options: {
         totalPages: result.totalPages,
       };
     } catch (pbErr) {
-      console.warn('[ValidationLogger] Failed to fetch sessions from PocketBase, using in-memory cache:', pbErr);
+      console.warn(
+        '[ValidationLogger] Failed to fetch sessions from PocketBase, using in-memory cache:',
+        pbErr
+      );
 
       // Fallback to in-memory data
       let filtered = [...validationSessionsStore];
 
-      if (projectId) filtered = filtered.filter(s => s.projectId === projectId);
-      if (userId) filtered = filtered.filter(s => s.userId === userId);
-      if (wasSuccessful !== undefined) filtered = filtered.filter(s => s.wasSuccessful === wasSuccessful);
-      if (startDate) filtered = filtered.filter(s => s.timestamp && s.timestamp >= startDate);
-      if (endDate) filtered = filtered.filter(s => s.timestamp && s.timestamp <= endDate);
+      if (projectId) filtered = filtered.filter((s) => s.projectId === projectId);
+      if (userId) filtered = filtered.filter((s) => s.userId === userId);
+      if (wasSuccessful !== undefined)
+        filtered = filtered.filter((s) => s.wasSuccessful === wasSuccessful);
+      if (startDate) filtered = filtered.filter((s) => s.timestamp && s.timestamp >= startDate);
+      if (endDate) filtered = filtered.filter((s) => s.timestamp && s.timestamp <= endDate);
 
       // Paginate
       const start = (page - 1) * perPage;
@@ -404,7 +415,12 @@ export async function getValidationSessions(options: {
  * Helper: Categorize error by rule name
  */
 function categorizeError(rule: string): ValidationErrorLog['errorType'] {
-  if (rule.includes('doctype') || rule.includes('link') || rule.includes('tag-pair') || rule.includes('extension')) {
+  if (
+    rule.includes('doctype') ||
+    rule.includes('link') ||
+    rule.includes('tag-pair') ||
+    rule.includes('extension')
+  ) {
     return 'structure';
   }
   if (rule.includes('hash-routing') || rule.includes('multipage')) {
@@ -430,7 +446,7 @@ function categorizeError(rule: string): ValidationErrorLog['errorType'] {
  */
 function getMostCommonErrors(errors: any[]): Array<{ rule: string; count: number }> {
   const counts: Record<string, number> = {};
-  errors.forEach(e => {
+  errors.forEach((e) => {
     counts[e.rule] = (counts[e.rule] || 0) + 1;
   });
 
@@ -444,14 +460,17 @@ function getMostCommonErrors(errors: any[]): Array<{ rule: string; count: number
  * Helper: Group by property
  */
 function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-  return array.reduce((result, item) => {
-    const groupKey = String(item[key]);
-    if (!result[groupKey]) {
-      result[groupKey] = [];
-    }
-    result[groupKey].push(item);
-    return result;
-  }, {} as Record<string, T[]>);
+  return array.reduce(
+    (result, item) => {
+      const groupKey = String(item[key]);
+      if (!result[groupKey]) {
+        result[groupKey] = [];
+      }
+      result[groupKey].push(item);
+      return result;
+    },
+    {} as Record<string, T[]>
+  );
 }
 
 /**

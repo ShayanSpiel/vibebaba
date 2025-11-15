@@ -1,6 +1,7 @@
 // lib/repositories/project.repository.ts
-import { BaseRepository } from './base.repository';
+
 import { Collections, config } from '@/lib/config';
+import { BaseRepository } from './base.repository';
 
 export interface ProjectData {
   id: string;
@@ -33,9 +34,7 @@ class ProjectRepository extends BaseRepository<ProjectData> {
    * Get projects by stage
    */
   async findByStage(stage: string, userId?: string): Promise<ProjectData[]> {
-    const filter = userId
-      ? `stage="${stage}" && userId="${userId}"`
-      : `stage="${stage}"`;
+    const filter = userId ? `stage="${stage}" && userId="${userId}"` : `stage="${stage}"`;
     return this.find(filter);
   }
 

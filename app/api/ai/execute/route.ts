@@ -8,10 +8,10 @@
  * - Rate limiting
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getActionRunner } from '@/lib/action-runner';
-import { globalRateLimiter, globalExecutionGuard } from '@/lib/monitoring/error-prevention';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { globalExecutionGuard, globalRateLimiter } from '@/lib/monitoring/error-prevention';
 
 export const maxDuration = 60;
 
@@ -21,10 +21,7 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser(req);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Rate limiting
@@ -44,17 +41,11 @@ export async function POST(req: NextRequest) {
     const { projectId, actions } = body;
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'Project ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
     }
 
     if (!actions || !Array.isArray(actions) || actions.length === 0) {
-      return NextResponse.json(
-        { error: 'Actions array required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Actions array required' }, { status: 400 });
     }
 
     // Get action runner and set project ID
@@ -142,10 +133,7 @@ export async function GET(req: NextRequest) {
     const user = await getAuthenticatedUser(req);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -159,10 +147,7 @@ export async function GET(req: NextRequest) {
       const action = actionRunner.getAction(actionId);
 
       if (!action) {
-        return NextResponse.json(
-          { error: 'Action not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Action not found' }, { status: 404 });
       }
 
       return NextResponse.json({ action });
@@ -202,10 +187,7 @@ export async function DELETE(req: NextRequest) {
     const user = await getAuthenticatedUser(req);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);

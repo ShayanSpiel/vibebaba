@@ -291,7 +291,6 @@ async function setupValidationCollections() {
 
     console.log('🎉 Validation system setup complete!');
     console.log('\n📊 You can now access the dashboard at: http://localhost:3000/admin/validation');
-
   } catch (error: any) {
     console.error('❌ Error setting up collections:', error);
     if (error.data) {

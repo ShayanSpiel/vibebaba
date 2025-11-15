@@ -21,7 +21,10 @@ export function stripMarkdownCodeBlocks(code: string): string {
 
   // Remove opening markdown code fences with language specifiers
   // Matches: ```typescript, ```javascript, ```tsx, ```jsx, ```ts, ```js, or just ```
-  cleaned = cleaned.replace(/^```(?:typescript|javascript|tsx|jsx|ts|js|json|html|css)?\s*\n/gm, '');
+  cleaned = cleaned.replace(
+    /^```(?:typescript|javascript|tsx|jsx|ts|js|json|html|css)?\s*\n/gm,
+    ''
+  );
 
   // Remove closing markdown code fences
   // Matches: ``` at end of line or end of string
@@ -66,7 +69,7 @@ function removeExplanatoryText(code: string): string {
     const trimmed = line.trim();
 
     // Check if this line is explanatory text
-    const isExplanation = explanatoryPatterns.some(pattern => pattern.test(trimmed));
+    const isExplanation = explanatoryPatterns.some((pattern) => pattern.test(trimmed));
 
     if (isExplanation) {
       console.warn(`[CodeCleaner] 🚨 Removing AI explanation: "${trimmed.substring(0, 80)}..."`);
@@ -99,14 +102,16 @@ function removeDuplicateIconDefinitions(code: string): string {
 
   const importedIcons = lucideImportMatch[1]
     .split(',')
-    .map(icon => icon.trim())
-    .filter(icon => icon.length > 0);
+    .map((icon) => icon.trim())
+    .filter((icon) => icon.length > 0);
 
   if (importedIcons.length === 0) {
     return code;
   }
 
-  console.log(`[CodeCleaner] 🔍 Checking for duplicate icon definitions: ${importedIcons.join(', ')}`);
+  console.log(
+    `[CodeCleaner] 🔍 Checking for duplicate icon definitions: ${importedIcons.join(', ')}`
+  );
 
   let cleaned = code;
   let removedCount = 0;
@@ -122,7 +127,9 @@ function removeDuplicateIconDefinitions(code: string): string {
 
     const matches = cleaned.match(duplicatePattern);
     if (matches) {
-      console.warn(`[CodeCleaner] 🚨 Removing duplicate ${iconName} component definition (already imported from lucide-react)`);
+      console.warn(
+        `[CodeCleaner] 🚨 Removing duplicate ${iconName} component definition (already imported from lucide-react)`
+      );
       cleaned = cleaned.replace(duplicatePattern, '');
       removedCount += matches.length;
     }
@@ -144,7 +151,10 @@ export function cleanImports(code: string): string {
 
   // Fix empty destructured imports (e.g., "{ Foo, , Bar }")
   // Pattern: matches commas with only whitespace between them
-  cleaned = cleaned.replace(/,(\s*),/g, ',').replace(/{\s*,/g, '{').replace(/,\s*}/g, '}');
+  cleaned = cleaned
+    .replace(/,(\s*),/g, ',')
+    .replace(/{\s*,/g, '{')
+    .replace(/,\s*}/g, '}');
 
   // CRITICAL: Fix lucide-react imports (remove non-icon component names)
   cleaned = fixLucideImports(cleaned);
@@ -175,7 +185,7 @@ function removeBackendImports(code: string): string {
     'nodemailer',
     'bcrypt',
     'jsonwebtoken',
-    'passport'
+    'passport',
   ];
 
   const backendImportRegex = new RegExp(
@@ -205,59 +215,154 @@ function fixLucideImports(code: string): string {
   // List of VALID lucide-react icons (common ones AI uses)
   const validLucideIcons = new Set([
     // Navigation & UI
-    'Menu', 'X', 'ChevronDown', 'ChevronUp', 'ChevronLeft', 'ChevronRight',
-    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'Menu',
+    'X',
+    'ChevronDown',
+    'ChevronUp',
+    'ChevronLeft',
+    'ChevronRight',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
 
     // Actions
-    'Check', 'CheckCircle', 'CheckSquare', 'Square', 'Circle', 'Plus', 'Minus',
-    'Edit', 'Edit2', 'Edit3', 'Trash', 'Trash2', 'Save', 'Download', 'Upload', 'Copy', 'Share', 'Share2',
-    'Send', 'LogOut', 'LogIn', 'Search', 'Filter', 'SlidersHorizontal', 'MoreVertical', 'MoreHorizontal',
+    'Check',
+    'CheckCircle',
+    'CheckSquare',
+    'Square',
+    'Circle',
+    'Plus',
+    'Minus',
+    'Edit',
+    'Edit2',
+    'Edit3',
+    'Trash',
+    'Trash2',
+    'Save',
+    'Download',
+    'Upload',
+    'Copy',
+    'Share',
+    'Share2',
+    'Send',
+    'LogOut',
+    'LogIn',
+    'Search',
+    'Filter',
+    'SlidersHorizontal',
+    'MoreVertical',
+    'MoreHorizontal',
 
     // Common icons
-    'User', 'Users', 'Mail', 'Lock', 'Unlock', 'Eye', 'EyeOff',
-    'Heart', 'Star', 'Bell', 'Calendar', 'Clock', 'MapPin',
-    'Home', 'Settings', 'Info', 'HelpCircle', 'AlertCircle',
-    'AlertTriangle', 'Loader', 'Loader2',
+    'User',
+    'Users',
+    'Mail',
+    'Lock',
+    'Unlock',
+    'Eye',
+    'EyeOff',
+    'Heart',
+    'Star',
+    'Bell',
+    'Calendar',
+    'Clock',
+    'MapPin',
+    'Home',
+    'Settings',
+    'Info',
+    'HelpCircle',
+    'AlertCircle',
+    'AlertTriangle',
+    'Loader',
+    'Loader2',
 
     // Business/Tech
-    'Zap', 'Shield', 'Rocket', 'Trophy', 'Target', 'Crown', 'Gem',
-    'Lightbulb', 'Sparkles', 'Flame', 'Award', 'TrendingUp', 'TrendingDown',
-    'BarChart', 'PieChart', 'DollarSign', 'CreditCard',
+    'Zap',
+    'Shield',
+    'Rocket',
+    'Trophy',
+    'Target',
+    'Crown',
+    'Gem',
+    'Lightbulb',
+    'Sparkles',
+    'Flame',
+    'Award',
+    'TrendingUp',
+    'TrendingDown',
+    'BarChart',
+    'PieChart',
+    'DollarSign',
+    'CreditCard',
 
     // Communication
-    'MessageSquare', 'MessageCircle', 'Phone', 'Video', 'Mic', 'Volume2',
+    'MessageSquare',
+    'MessageCircle',
+    'Phone',
+    'Video',
+    'Mic',
+    'Volume2',
 
     // Files & Folders
-    'File', 'FileText', 'Folder', 'FolderOpen', 'Image', 'Film',
+    'File',
+    'FileText',
+    'Folder',
+    'FolderOpen',
+    'Image',
+    'Film',
 
     // Code & Tech
-    'Code', 'Terminal', 'Database', 'Server', 'Cpu', 'HardDrive',
-    'Wifi', 'WifiOff', 'Bluetooth', 'Battery', 'BatteryCharging',
+    'Code',
+    'Terminal',
+    'Database',
+    'Server',
+    'Cpu',
+    'HardDrive',
+    'Wifi',
+    'WifiOff',
+    'Bluetooth',
+    'Battery',
+    'BatteryCharging',
 
     // Shopping
-    'ShoppingCart', 'ShoppingBag', 'Package', 'Tag',
+    'ShoppingCart',
+    'ShoppingBag',
+    'Package',
+    'Tag',
 
     // Social
-    'ThumbsUp', 'ThumbsDown', 'Smile', 'Frown', 'Meh',
+    'ThumbsUp',
+    'ThumbsDown',
+    'Smile',
+    'Frown',
+    'Meh',
 
     // Weather
-    'Sun', 'Moon', 'Cloud', 'CloudRain', 'CloudSnow'
+    'Sun',
+    'Moon',
+    'Cloud',
+    'CloudRain',
+    'CloudSnow',
   ]);
 
   // Find lucide-react import line
   const lucideImportRegex = /import\s+{\s*([^}]+)\s*}\s+from\s+['"]lucide-react['"]/;
   const match = code.match(lucideImportRegex);
 
-  if (!match) return code;  // No lucide import found
+  if (!match) return code; // No lucide import found
 
   const [fullImport, importsString] = match;
-  const imports = importsString.split(',').map(i => i.trim()).filter(i => i);
+  const imports = importsString
+    .split(',')
+    .map((i) => i.trim())
+    .filter((i) => i);
 
   // Separate valid icons from invalid component names
   const validImports: string[] = [];
   const invalidImports: string[] = [];
 
-  imports.forEach(importName => {
+  imports.forEach((importName) => {
     if (validLucideIcons.has(importName)) {
       validImports.push(importName);
     } else {
@@ -268,7 +373,9 @@ function fixLucideImports(code: string): string {
   // If no invalid imports, return as-is
   if (invalidImports.length === 0) return code;
 
-  console.warn(`[CodeCleaner] 🔧 Removing invalid lucide-react imports: ${invalidImports.join(', ')}`);
+  console.warn(
+    `[CodeCleaner] 🔧 Removing invalid lucide-react imports: ${invalidImports.join(', ')}`
+  );
   console.log(`[CodeCleaner] ✅ Keeping valid icons: ${validImports.join(', ')}`);
 
   // Replace import line with only valid icons
@@ -300,7 +407,7 @@ function fixUseClientPosition(code: string): string {
   // Add 'use client' as the FIRST line
   cleaned = `'use client';\n\n${cleaned}`;
 
-  console.log('[CodeCleaner] 📍 Moved \'use client\' directive to first line');
+  console.log("[CodeCleaner] 📍 Moved 'use client' directive to first line");
 
   return cleaned;
 }
@@ -324,8 +431,14 @@ function removeFileDelimiterMarkers(code: string): string {
   cleaned = cleaned.replace(endMarkerPattern, '');
 
   if (cleaned.length !== beforeLength) {
-    console.warn('[CodeCleaner] 🚨 Removed file delimiter markers from code (AI appended multiple files)');
-    console.warn('[CodeCleaner] 📏 Removed', beforeLength - cleaned.length, 'characters of delimiter markers');
+    console.warn(
+      '[CodeCleaner] 🚨 Removed file delimiter markers from code (AI appended multiple files)'
+    );
+    console.warn(
+      '[CodeCleaner] 📏 Removed',
+      beforeLength - cleaned.length,
+      'characters of delimiter markers'
+    );
   }
 
   return cleaned;
@@ -364,15 +477,23 @@ export function cleanGeneratedCode(code: string, filename: string): string {
   // 5. CRITICAL: Validate dependencies before writing
   const depValidation = validateFileDependencies(cleaned, filename);
   if (!depValidation.valid) {
-    console.error(`[CodeCleaner] 🚨 Missing dependencies in ${filename}:`, depValidation.missingPackages);
-    console.error(`[CodeCleaner] 💡 Add these to package.json or AI needs to use different packages`);
+    console.error(
+      `[CodeCleaner] 🚨 Missing dependencies in ${filename}:`,
+      depValidation.missingPackages
+    );
+    console.error(
+      `[CodeCleaner] 💡 Add these to package.json or AI needs to use different packages`
+    );
   }
 
   // 6. CRITICAL: Validate TypeScript syntax before returning
   if (filename.endsWith('.ts') || filename.endsWith('.tsx')) {
     const validation = validateTypeScriptSyntax(cleaned, filename);
     if (!validation.valid) {
-      console.error(`[CodeCleaner] 🚨 FATAL: TypeScript syntax errors in ${filename}:`, validation.errors);
+      console.error(
+        `[CodeCleaner] 🚨 FATAL: TypeScript syntax errors in ${filename}:`,
+        validation.errors
+      );
       console.error(`[CodeCleaner] 🚨 Will attempt to write file anyway, but deployment will fail`);
       // Still return the cleaned code - let the deployment fail with clear error
     }
@@ -405,7 +526,7 @@ function removeDuplicateImports(code: string): string {
       const importsSet = imports.get(source) || new Set<string>();
 
       // Add all imported items
-      items.split(',').forEach(item => {
+      items.split(',').forEach((item) => {
         const cleaned = item.trim();
         if (cleaned) importsSet.add(cleaned);
       });
@@ -582,7 +703,9 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
   const useEffectWithoutDeps = /useEffect\(\s*\(\s*\)\s*=>\s*{[\s\S]*?}\s*\)(?!\s*,)/g;
   const missingDeps = code.match(useEffectWithoutDeps);
   if (missingDeps && missingDeps.length > 0) {
-    errors.push(`${filename}: useEffect without dependency array detected (${missingDeps.length} occurrence(s)) - WILL CAUSE INFINITE LOOP! Add empty [] for mount-only, or specify dependencies.`);
+    errors.push(
+      `${filename}: useEffect without dependency array detected (${missingDeps.length} occurrence(s)) - WILL CAUSE INFINITE LOOP! Add empty [] for mount-only, or specify dependencies.`
+    );
   }
 
   // 🚨 CRITICAL: Check for dangerous useEffect patterns that cause loops
@@ -595,27 +718,33 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
 
     // Extract state setters called in the effect body
     const setterCalls = effectBody.match(/set(\w+)\s*\(/g) || [];
-    const stateVarsModified = setterCalls.map(call => call.match(/set(\w+)/)?.[1]?.toLowerCase());
+    const stateVarsModified = setterCalls.map((call) => call.match(/set(\w+)/)?.[1]?.toLowerCase());
 
     // Extract dependencies
-    const deps = depsArray.split(',').map(d => d.trim().toLowerCase());
+    const deps = depsArray.split(',').map((d) => d.trim().toLowerCase());
 
     // Check if effect modifies variables that are in its dependencies
     for (const stateVar of stateVarsModified) {
-      if (stateVar && deps.some(dep => dep.includes(stateVar.toLowerCase()))) {
-        errors.push(`${filename}: useEffect modifies '${stateVar}' which is in its dependency array - WILL CAUSE INFINITE LOOP!`);
+      if (stateVar && deps.some((dep) => dep.includes(stateVar.toLowerCase()))) {
+        errors.push(
+          `${filename}: useEffect modifies '${stateVar}' which is in its dependency array - WILL CAUSE INFINITE LOOP!`
+        );
       }
     }
   }
 
   // Check for window.location.reload() in useEffect
   if (code.includes('useEffect') && code.includes('window.location.reload()')) {
-    errors.push(`${filename}: window.location.reload() found in useEffect - may cause refresh loops`);
+    errors.push(
+      `${filename}: window.location.reload() found in useEffect - may cause refresh loops`
+    );
   }
 
   // Check for router.refresh() in useEffect without proper dependencies
   if (code.includes('useEffect') && code.includes('router.refresh()')) {
-    errors.push(`${filename}: router.refresh() found in useEffect - may cause refresh loops. Ensure proper dependencies or remove.`);
+    errors.push(
+      `${filename}: router.refresh() found in useEffect - may cause refresh loops. Ensure proper dependencies or remove.`
+    );
   }
 
   // 🚨 CRITICAL: Check for background colors without matching foreground colors (bad contrast)
@@ -626,7 +755,7 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
     { bg: 'bg-destructive', fg: 'text-destructive-foreground' },
     { bg: 'bg-success', fg: 'text-success-foreground' },
     { bg: 'bg-warning', fg: 'text-warning-foreground' },
-    { bg: 'bg-muted', fg: 'text-muted-foreground' }
+    { bg: 'bg-muted', fg: 'text-muted-foreground' },
   ];
 
   for (const { bg, fg } of bgPatterns) {
@@ -637,24 +766,31 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
       const className = match[0];
       // Check if matching foreground is present in the same className
       if (!className.includes(fg) && !className.includes('text-foreground')) {
-        errors.push(`${filename}: Found '${bg}' without matching '${fg}' in className - WILL HAVE BAD CONTRAST! Always pair background with foreground.`);
+        errors.push(
+          `${filename}: Found '${bg}' without matching '${fg}' in className - WILL HAVE BAD CONTRAST! Always pair background with foreground.`
+        );
         break; // Only report once per bg color to avoid spam
       }
     }
   }
 
   // Check for hardcoded color values (bg-[#xxx], text-[#xxx], bg-blue-500, etc.)
-  const hardcodedColorPattern = /(bg|text|border)-(\\[#[0-9a-fA-F]{3,6}\\]|blue-|red-|green-|yellow-|purple-|pink-|gray-|slate-|zinc-|neutral-|stone-|orange-|amber-|lime-|emerald-|teal-|cyan-|sky-|indigo-|violet-|fuchsia-|rose-)/;
+  const hardcodedColorPattern =
+    /(bg|text|border)-(\\[#[0-9a-fA-F]{3,6}\\]|blue-|red-|green-|yellow-|purple-|pink-|gray-|slate-|zinc-|neutral-|stone-|orange-|amber-|lime-|emerald-|teal-|cyan-|sky-|indigo-|violet-|fuchsia-|rose-)/;
   if (hardcodedColorPattern.test(code)) {
     const matches = code.match(hardcodedColorPattern);
     if (matches) {
-      errors.push(`${filename}: Hardcoded color values detected (${matches[0]}) - Use semantic tokens instead (bg-primary, text-foreground, etc.)`);
+      errors.push(
+        `${filename}: Hardcoded color values detected (${matches[0]}) - Use semantic tokens instead (bg-primary, text-foreground, etc.)`
+      );
     }
   }
 
   // Check for bg-white, bg-black, text-white, text-black (should use semantic tokens)
   if (/(bg|text)-(white|black)/.test(code)) {
-    errors.push(`${filename}: Direct white/black colors detected - Use semantic tokens (bg-background, text-foreground) for proper theme support`);
+    errors.push(
+      `${filename}: Direct white/black colors detected - Use semantic tokens (bg-background, text-foreground) for proper theme support`
+    );
   }
 
   // 🚨 CRITICAL: Check for buttons without utility classes (causes inconsistent styling)
@@ -667,7 +803,9 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
       // Check if it's using inline styles instead (px-*, py-*, rounded-*, bg-primary, etc.)
       const hasInlineStyles = /px-|py-|rounded-|bg-primary|bg-secondary|bg-accent/.test(className);
       if (hasInlineStyles) {
-        errors.push(`${filename}: Button found with inline styles instead of utility classes - Use .btn .btn-primary .btn-lg pattern for consistency. Found: className="${className}"`);
+        errors.push(
+          `${filename}: Button found with inline styles instead of utility classes - Use .btn .btn-primary .btn-lg pattern for consistency. Found: className="${className}"`
+        );
         break; // Only report once to avoid spam
       }
     }
@@ -677,17 +815,23 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
   const nonFunctionalButtonPattern = /<button(?![^>]*onClick)(?![^>]*type="submit")[^>]*>/g;
   const nonFunctionalButtons = code.match(nonFunctionalButtonPattern);
   if (nonFunctionalButtons && nonFunctionalButtons.length > 0) {
-    errors.push(`${filename}: Found ${nonFunctionalButtons.length} button(s) without onClick handler or type="submit" - ALL buttons must be functional!`);
+    errors.push(
+      `${filename}: Found ${nonFunctionalButtons.length} button(s) without onClick handler or type="submit" - ALL buttons must be functional!`
+    );
   }
 
   // Check for empty onClick handlers
   if (/onClick=\{(?:\(\s*\)\s*=>)?\s*\{\s*\}\s*\}/.test(code)) {
-    errors.push(`${filename}: Found button(s) with empty onClick handler - Implement actual functionality!`);
+    errors.push(
+      `${filename}: Found button(s) with empty onClick handler - Implement actual functionality!`
+    );
   }
 
   // Check for Link components without href
   if (/<Link(?![^>]*href)[^>]*>/.test(code)) {
-    errors.push(`${filename}: Found Link component(s) without href attribute - ALL links must have destinations!`);
+    errors.push(
+      `${filename}: Found Link component(s) without href attribute - ALL links must have destinations!`
+    );
   }
 
   // 🚨 CRITICAL: Check for wrong navigation patterns (causes 404 and bad UX)
@@ -695,26 +839,35 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
   const internalAnchorPattern = /<a\s+href="\/[^"]*"/g;
   const internalAnchors = code.match(internalAnchorPattern);
   if (internalAnchors && internalAnchors.length > 0) {
-    errors.push(`${filename}: Found internal navigation using <a href="/..."> (${internalAnchors.length} occurrence(s)) - Use <Link href="/..."> from 'next/link' for client-side navigation!`);
+    errors.push(
+      `${filename}: Found internal navigation using <a href="/..."> (${internalAnchors.length} occurrence(s)) - Use <Link href="/..."> from 'next/link' for client-side navigation!`
+    );
   }
 
   // Pattern 2: Using window.location for navigation
   if (/window\.location\.(href|pathname)\s*=/.test(code)) {
-    errors.push(`${filename}: Found window.location navigation - Use Next.js router.push() or <Link> for better UX!`);
+    errors.push(
+      `${filename}: Found window.location navigation - Use Next.js router.push() or <Link> for better UX!`
+    );
   }
 
   // Pattern 3: Buttons that navigate but don't use router
   const buttonNavPattern = /<button[^>]*onClick=.*?(href|location|navigate)[^>]*>/;
   if (buttonNavPattern.test(code) && !code.includes('useRouter')) {
-    errors.push(`${filename}: Buttons seem to navigate but useRouter not imported - Import { useRouter } from 'next/navigation' and use router.push()`);
+    errors.push(
+      `${filename}: Buttons seem to navigate but useRouter not imported - Import { useRouter } from 'next/navigation' and use router.push()`
+    );
   }
 
   // Check for lucide-react icons used as full components (common mistake)
   // Pattern: Icon names from lucide-react used with large size classes
-  const lucideIconPattern = /<(LineChart|AreaChart|BarChart|PieChart|Calendar|Table|Grid)\s+className="[^"]*(?:w-full|h-full|h-\d{2,}|w-\d{2,})"/g;
+  const lucideIconPattern =
+    /<(LineChart|AreaChart|BarChart|PieChart|Calendar|Table|Grid)\s+className="[^"]*(?:w-full|h-full|h-\d{2,}|w-\d{2,})"/g;
   const largeIconUsage = code.match(lucideIconPattern);
   if (largeIconUsage) {
-    errors.push(`${filename}: Icons used as full components (${largeIconUsage.map(m => m.match(/<(\w+)/)?.[1]).join(', ')}). Icons are SVGs, not full components! Use small sizes (h-4, h-5, h-6) or create placeholder divs.`);
+    errors.push(
+      `${filename}: Icons used as full components (${largeIconUsage.map((m) => m.match(/<(\w+)/)?.[1]).join(', ')}). Icons are SVGs, not full components! Use small sizes (h-4, h-5, h-6) or create placeholder divs.`
+    );
   }
 
   // 🚨 CRITICAL: Check for useState without generic types (TypeScript inference errors)
@@ -734,13 +887,19 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
     if (!hasGeneric) {
       // Check for problematic initial values that cause wrong type inference
       if (initialValue === '[]') {
-        errors.push(`${filename}: useState([]) without generic will infer 'never[]'. Fix: useState<TypeName[]>([])`);
+        errors.push(
+          `${filename}: useState([]) without generic will infer 'never[]'. Fix: useState<TypeName[]>([])`
+        );
         inferenceIssues.push(varName);
       } else if (initialValue === 'null') {
-        errors.push(`${filename}: useState(null) without generic will infer 'null'. Fix: useState<TypeName | null>(null)`);
+        errors.push(
+          `${filename}: useState(null) without generic will infer 'null'. Fix: useState<TypeName | null>(null)`
+        );
         inferenceIssues.push(varName);
       } else if (initialValue === '{}') {
-        errors.push(`${filename}: useState({}) without generic may cause type issues. Fix: useState<TypeName>({})`);
+        errors.push(
+          `${filename}: useState({}) without generic may cause type issues. Fix: useState<TypeName>({})`
+        );
         inferenceIssues.push(varName);
       } else if (/^['"`]\d+['"`]$/.test(initialValue)) {
         // String numbers like '1', "1", `1` - might be used in numeric contexts
@@ -750,7 +909,9 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
           'g'
         );
         if (numericUsageRegex.test(code)) {
-          errors.push(`${filename}: useState(${initialValue}) used in numeric context without type. Fix: useState<number>(${initialValue.replace(/['"`]/g, '')})`);
+          errors.push(
+            `${filename}: useState(${initialValue}) used in numeric context without type. Fix: useState<number>(${initialValue.replace(/['"`]/g, '')})`
+          );
           inferenceIssues.push(varName);
         }
       }
@@ -758,7 +919,9 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
   }
 
   if (inferenceIssues.length > 0) {
-    console.warn(`[CodeCleaner] 🚨 TypeScript inference issues in ${filename}: ${inferenceIssues.join(', ')}`);
+    console.warn(
+      `[CodeCleaner] 🚨 TypeScript inference issues in ${filename}: ${inferenceIssues.join(', ')}`
+    );
   }
 
   // 🚨 CRITICAL: Check for card/component alignment issues in same section
@@ -773,9 +936,11 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
     const cardsInGrid = gridContent.match(/<div[^>]*className="[^"]*card[^"]*"[^>]*>/g);
     if (cardsInGrid && cardsInGrid.length > 1) {
       // Check if any card is missing h-full
-      const missingHeightFull = cardsInGrid.some(card => !card.includes('h-full'));
+      const missingHeightFull = cardsInGrid.some((card) => !card.includes('h-full'));
       if (missingHeightFull) {
-        errors.push(`${filename}: Cards in grid without 'h-full' will have inconsistent heights. Add h-full to all cards in the same grid for proper alignment.`);
+        errors.push(
+          `${filename}: Cards in grid without 'h-full' will have inconsistent heights. Add h-full to all cards in the same grid for proper alignment.`
+        );
       }
     }
   }
@@ -792,7 +957,9 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
     if (paddingMatches && paddingMatches.length > 2) {
       const uniquePaddings = [...new Set(paddingMatches)];
       if (uniquePaddings.length > 2) {
-        errors.push(`${filename}: Inconsistent padding in section - found ${uniquePaddings.join(', ')}. Use consistent padding (same p-value) for all cards in a section.`);
+        errors.push(
+          `${filename}: Inconsistent padding in section - found ${uniquePaddings.join(', ')}. Use consistent padding (same p-value) for all cards in a section.`
+        );
       }
     }
   }
@@ -809,7 +976,9 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
     if (gridColMatches && gridColMatches.length > 1) {
       const uniqueGridCols = [...new Set(gridColMatches)];
       if (uniqueGridCols.length > 1) {
-        errors.push(`${filename}: Inconsistent grid columns in component - found ${uniqueGridCols.join(', ')}. Use same grid-cols-N value throughout each section for alignment.`);
+        errors.push(
+          `${filename}: Inconsistent grid columns in component - found ${uniqueGridCols.join(', ')}. Use same grid-cols-N value throughout each section for alignment.`
+        );
       }
     }
   }
@@ -822,12 +991,16 @@ export function validateGeneratedCode(code: string, filename: string): string[] 
  * Checks if all imported packages are available
  * CRITICAL: Prevents deployment failures from missing dependencies
  */
-export function validateFileDependencies(code: string, filename: string): { valid: boolean; errors: string[]; missingPackages: string[] } {
+export function validateFileDependencies(
+  code: string,
+  filename: string
+): { valid: boolean; errors: string[]; missingPackages: string[] } {
   const errors: string[] = [];
   const missingPackages: string[] = [];
 
   // Extract all import statements
-  const importRegex = /import\s+(?:(?:{[^}]+}|\w+|\*\s+as\s+\w+)(?:\s*,\s*(?:{[^}]+}|\w+))*\s+)?from\s+['"]([@\w\-\/]+)['"]/g;
+  const importRegex =
+    /import\s+(?:(?:{[^}]+}|\w+|\*\s+as\s+\w+)(?:\s*,\s*(?:{[^}]+}|\w+))*\s+)?from\s+['"]([@\w\-/]+)['"]/g;
   let match: RegExpExecArray | null;
 
   const packages = new Set<string>();
@@ -857,18 +1030,20 @@ export function validateFileDependencies(code: string, filename: string): { vali
     const path = require('path');
 
     // Try to find package.json in parent directories
-    let currentDir = process.cwd();
-    let packageJsonPath = path.join(currentDir, 'package.json');
+    const currentDir = process.cwd();
+    const packageJsonPath = path.join(currentDir, 'package.json');
 
     if (!fs.existsSync(packageJsonPath)) {
-      console.warn(`[CodeCleaner] ⚠️ package.json not found, skipping dependency validation for ${filename}`);
+      console.warn(
+        `[CodeCleaner] ⚠️ package.json not found, skipping dependency validation for ${filename}`
+      );
       return { valid: true, errors: [], missingPackages: [] };
     }
 
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     const allDeps = {
-      ...packageJson.dependencies || {},
-      ...packageJson.devDependencies || {}
+      ...(packageJson.dependencies || {}),
+      ...(packageJson.devDependencies || {}),
     };
 
     // Check each package
@@ -884,9 +1059,10 @@ export function validateFileDependencies(code: string, filename: string): { vali
       return { valid: false, errors, missingPackages };
     }
 
-    console.log(`[CodeCleaner] ✅ Dependency validation passed for ${filename} (${packages.size} packages)`);
+    console.log(
+      `[CodeCleaner] ✅ Dependency validation passed for ${filename} (${packages.size} packages)`
+    );
     return { valid: true, errors: [], missingPackages: [] };
-
   } catch (error: any) {
     console.error(`[CodeCleaner] ⚠️ Dependency validation error for ${filename}:`, error.message);
     // Don't block if validation fails
@@ -899,7 +1075,10 @@ export function validateFileDependencies(code: string, filename: string): { vali
  * Uses TypeScript compiler API to detect syntax errors
  * CRITICAL: Prevents writing files with compilation errors
  */
-export function validateTypeScriptSyntax(code: string, filename: string): { valid: boolean; errors: string[] } {
+export function validateTypeScriptSyntax(
+  code: string,
+  filename: string
+): { valid: boolean; errors: string[] } {
   try {
     const ts = require('typescript');
 
@@ -917,17 +1096,18 @@ export function validateTypeScriptSyntax(code: string, filename: string): { vali
     });
 
     // Check for syntax errors (not type errors)
-    const syntaxErrors = result.diagnostics?.filter(d => {
-      // Only include syntax errors (1xxx category)
-      return d.code >= 1000 && d.code < 2000;
-    }) || [];
+    const syntaxErrors =
+      result.diagnostics?.filter((d) => {
+        // Only include syntax errors (1xxx category)
+        return d.code >= 1000 && d.code < 2000;
+      }) || [];
 
     if (syntaxErrors.length > 0) {
-      const errorMessages = syntaxErrors.map(diagnostic => {
+      const errorMessages = syntaxErrors.map((diagnostic) => {
         const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        const line = diagnostic.file ?
-          diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start || 0).line + 1 :
-          'unknown';
+        const line = diagnostic.file
+          ? diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start || 0).line + 1
+          : 'unknown';
         return `Line ${line}: ${message}`;
       });
 
@@ -937,7 +1117,6 @@ export function validateTypeScriptSyntax(code: string, filename: string): { vali
 
     console.log(`[CodeCleaner] ✅ TypeScript syntax validation passed for ${filename}`);
     return { valid: true, errors: [] };
-
   } catch (error: any) {
     console.error(`[CodeCleaner] ⚠️ TypeScript validation error for ${filename}:`, error.message);
     // Don't block file write if validation itself fails - log and continue

@@ -1,19 +1,24 @@
 // app/api/langgraph/execute/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
-import { createAppGenWorkflow } from "@/lib/langgraph/workflow";
-import type { AppGenState } from "@/lib/langgraph/types";
-import { customAlphabet } from "nanoid";
-import { emitWorkflowStart, emitWorkflowComplete } from "@/lib/langgraph/utils/logging/events";
-import { unifiedSearch } from "@/lib/mcp/unified-search";
+
+import { customAlphabet } from 'nanoid';
+import { type NextRequest, NextResponse } from 'next/server';
+import { pb } from '@/lib/database/pocketbase';
+import {
+  checkAndResetDailyTokens,
+  consumeTokens,
+  getAvailableTokens,
+} from '@/lib/database/pocketbase-credits';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import type { AppGenState } from '@/lib/langgraph/types';
+import { emitWorkflowComplete, emitWorkflowStart } from '@/lib/langgraph/utils/logging/events';
+import { createAppGenWorkflow } from '@/lib/langgraph/workflow';
+import { unifiedSearch } from '@/lib/mcp/unified-search';
 import {
   addUserMessage,
   conversationMemoryStore,
   storeProjectConfig,
-  storeWorkflowMetadata
-} from "@/lib/memory/conversation-memory";
-import { pb } from "@/lib/database/pocketbase";
+  storeWorkflowMetadata,
+} from '@/lib/memory/conversation-memory';
 
 // PocketBase-compatible ID generator (alphanumeric only, no hyphens)
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 15);
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     let description: string;
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!description) {
-      return NextResponse.json({ error: "Description is required" }, { status: 400 });
+      return NextResponse.json({ error: 'Description is required' }, { status: 400 });
     }
 
     // Estimate tokens (full pipeline uses more)
@@ -66,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     if (availableTokens < estimatedTokens) {
       return NextResponse.json(
-        { error: "Insufficient tokens. Please purchase more credits.", insufficientTokens: true },
+        { error: 'Insufficient tokens. Please purchase more credits.', insufficientTokens: true },
         { status: 402 }
       );
     }
@@ -113,7 +118,7 @@ export async function POST(req: NextRequest) {
           plan: '',
           planMessages: JSON.stringify([]),
           context: JSON.stringify({}),
-          backendConfig: null
+          backendConfig: null,
         });
 
         console.log(`[LangGraph] ✅ Project created in PocketBase: ${projectId}`);
@@ -146,7 +151,7 @@ export async function POST(req: NextRequest) {
       useCache: true,
       minStars: 10, // Lowered from 20 to get more results
       maxResults: 5,
-      timeout: 10000 // Increased to 10 seconds for better results
+      timeout: 10000, // Increased to 10 seconds for better results
     });
 
     // Create workflow
@@ -160,43 +165,51 @@ export async function POST(req: NextRequest) {
       stage: 'initial',
 
       // ✅ HYDRATE FROM MEMORY:
-      files: memory?.projectConfig?.files?.map(f => ({
-        path: f.path,
-        content: '', // Content loaded separately if needed
-        language: f.path.endsWith('.tsx') || f.path.endsWith('.ts') ? 'typescript' : 'javascript'
-      })) || [],
+      files:
+        memory?.projectConfig?.files?.map((f) => ({
+          path: f.path,
+          content: '', // Content loaded separately if needed
+          language: f.path.endsWith('.tsx') || f.path.endsWith('.ts') ? 'typescript' : 'javascript',
+        })) || [],
 
       backendConfig: memory?.projectConfig?.backendConfig || null,
       stylingConfig: memory?.projectConfig?.stylingConfig || null,
       allRequestedFeatures: (memory?.projectConfig?.allRequestedFeatures || []).map((f: any) => ({
         ...f,
-        dependencies: f.dependencies || [] // Ensure dependencies property exists
+        dependencies: f.dependencies || [], // Ensure dependencies property exists
       })),
-      context: memory?.projectConfig?.context ? {
-        appType: memory.projectConfig.context.appType || 'app',
-        complexity: memory.projectConfig.context.complexity || 'moderate',
-        designStyle: memory.projectConfig.context.designStyle || 'modern',
-        visualTone: memory.projectConfig.context.visualTone || 'professional',
-        animationLevel: memory.projectConfig.context.animationLevel || 'subtle',
-        targetAudience: memory.projectConfig.context.targetAudience || 'general',
-        pmPlan: (memory.projectConfig.context as any).pmPlan
-      } : {
-        appType: 'app',
-        complexity: 'moderate',
-        designStyle: 'modern',
-        visualTone: 'professional',
-        animationLevel: 'subtle',
-        targetAudience: 'general'
-      },
+      context: memory?.projectConfig?.context
+        ? {
+            appType: memory.projectConfig.context.appType || 'app',
+            complexity: memory.projectConfig.context.complexity || 'moderate',
+            designStyle: memory.projectConfig.context.designStyle || 'modern',
+            visualTone: memory.projectConfig.context.visualTone || 'professional',
+            animationLevel: memory.projectConfig.context.animationLevel || 'subtle',
+            targetAudience: memory.projectConfig.context.targetAudience || 'general',
+            pmPlan: (memory.projectConfig.context as any).pmPlan,
+          }
+        : {
+            appType: 'app',
+            complexity: 'moderate',
+            designStyle: 'modern',
+            visualTone: 'professional',
+            animationLevel: 'subtle',
+            targetAudience: 'general',
+          },
       plan: memory?.projectConfig?.plan || '',
-      designSystem: memory?.projectConfig?.designSystem as 'ant-design' | 'tailwind-shadcn' | 'v0-inspired' | 'enhanced-2025' | undefined,
+      designSystem: memory?.projectConfig?.designSystem as
+        | 'ant-design'
+        | 'tailwind-shadcn'
+        | 'v0-inspired'
+        | 'enhanced-2025'
+        | undefined,
 
       // Background context from unified search
       backgroundContext: searchResult.success ? searchResult : undefined,
 
       completedNodes: [],
       errors: [],
-      artifacts: new Map()
+      artifacts: new Map(),
     };
 
     // ✨ Add user message to conversation memory
@@ -208,7 +221,9 @@ export async function POST(req: NextRequest) {
     console.log(`[LangGraph] Memory hydrated: ${memory ? 'YES' : 'NO'}`);
     console.log(`[LangGraph] Files restored: ${initialState.files?.length || 0}`);
     console.log(`[LangGraph] Backend restored: ${initialState.backendConfig ? 'YES' : 'NO'}`);
-    console.log(`[LangGraph] Search results: ${searchResult.success ? searchResult.source : 'none'}`);
+    console.log(
+      `[LangGraph] Search results: ${searchResult.success ? searchResult.source : 'none'}`
+    );
     emitWorkflowStart(projectId, description);
 
     // Run FULL workflow with timeout (20 minutes max)
@@ -217,7 +232,7 @@ export async function POST(req: NextRequest) {
 
     try {
       const workflowPromise = workflow.invoke(initialState as any, {
-        recursionLimit: 30 // Higher limit for full pipeline
+        recursionLimit: 30, // Higher limit for full pipeline
       }) as unknown as Promise<AppGenState>;
 
       // Add timeout wrapper
@@ -237,8 +252,8 @@ export async function POST(req: NextRequest) {
           projectId,
           metadata: {
             errors: [{ node: 'workflow', message: error.message }],
-            duration: Date.now() - workflowStartTime
-          }
+            duration: Date.now() - workflowStartTime,
+          },
         },
         { status: 500 }
       );
@@ -248,7 +263,9 @@ export async function POST(req: NextRequest) {
     emitWorkflowComplete(result, totalDuration);
 
     // Get token usage stats
-    const { aiConversationLogger } = await import('@/lib/langgraph/utils/logging/ai-conversation-logger');
+    const { aiConversationLogger } = await import(
+      '@/lib/langgraph/utils/logging/ai-conversation-logger'
+    );
     const stats = aiConversationLogger.getProjectStats(projectId);
 
     console.log('[LangGraph] ✅ Pipeline COMPLETE!');
@@ -256,7 +273,9 @@ export async function POST(req: NextRequest) {
     console.log(`[LangGraph] Files: ${result.files?.length || 0}`);
     console.log(`[LangGraph] Debug attempts: ${result.debugAttempts || 0}`);
     console.log(`[LangGraph] 💰 Total tokens used: ${stats.totalTokens.toLocaleString()} tokens`);
-    console.log(`[LangGraph] 🤖 AI calls: ${stats.totalCalls} (${stats.successfulCalls} successful, ${stats.failedCalls} failed)`);
+    console.log(
+      `[LangGraph] 🤖 AI calls: ${stats.totalCalls} (${stats.successfulCalls} successful, ${stats.failedCalls} failed)`
+    );
     console.log(`[LangGraph] Deploy URL: ${result.deployUrl}`);
 
     // ✅ UNIFIED MEMORY: Store full project config
@@ -266,13 +285,13 @@ export async function POST(req: NextRequest) {
       designSystem: result.designSystem,
       stylingConfig: result.stylingConfig, // Complete 80+ design tokens
       backendConfig: result.backendConfig,
-      files: result.files?.map(f => ({
+      files: result.files?.map((f) => ({
         path: f.path,
         size: f.content?.length || 0,
-        purpose: (f as any).purpose
+        purpose: (f as any).purpose,
       })),
       context: result.context,
-      allRequestedFeatures: result.allRequestedFeatures
+      allRequestedFeatures: result.allRequestedFeatures,
     });
 
     // ✅ UNIFIED MEMORY: Store workflow metadata
@@ -281,16 +300,18 @@ export async function POST(req: NextRequest) {
       totalDuration,
       tokenUsage: {
         total: stats.totalTokens,
-        byNode: (stats as any).tokensByNode || {}
+        byNode: (stats as any).tokensByNode || {},
       },
       deployUrl: result.deployUrl,
-      validationResult: result.validationResult ? {
-        valid: result.validationResult.valid || false,
-        errors: result.validationResult.report?.errors?.length || 0,
-        warnings: result.validationResult.report?.warnings?.length || 0
-      } : undefined,
+      validationResult: result.validationResult
+        ? {
+            valid: result.validationResult.valid || false,
+            errors: result.validationResult.report?.errors?.length || 0,
+            warnings: result.validationResult.report?.warnings?.length || 0,
+          }
+        : undefined,
       debugAttempts: result.debugAttempts || 0,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     });
 
     // ✅ OPTIONAL: Persist stylingConfig to project_settings_memory database
@@ -300,14 +321,28 @@ export async function POST(req: NextRequest) {
       console.log('[LangGraph] 🔍 === RESULT OBJECT DEBUG ===');
       console.log('[LangGraph] 🔍 result.stylingConfig exists?', !!result.stylingConfig);
       console.log('[LangGraph] 🔍 result.stylingConfig type:', typeof result.stylingConfig);
-      console.log('[LangGraph] 🔍 result.stylingConfig keys:', result.stylingConfig ? Object.keys(result.stylingConfig) : 'N/A');
+      console.log(
+        '[LangGraph] 🔍 result.stylingConfig keys:',
+        result.stylingConfig ? Object.keys(result.stylingConfig) : 'N/A'
+      );
 
       if (result.stylingConfig) {
         console.log('[LangGraph] 🎨 Styling config FULL STRUCTURE:');
-        console.log('[LangGraph] 🎨   - brand:', !!result.stylingConfig.brand, result.stylingConfig.brand?.brandName || 'N/A');
+        console.log(
+          '[LangGraph] 🎨   - brand:',
+          !!result.stylingConfig.brand,
+          result.stylingConfig.brand?.brandName || 'N/A'
+        );
         console.log('[LangGraph] 🎨   - enhancedColors:', !!result.stylingConfig.enhancedColors);
-        console.log('[LangGraph] 🎨   - enhancedTypography:', !!result.stylingConfig.enhancedTypography);
-        console.log('[LangGraph] 🎨   - components:', !!result.stylingConfig.components, result.stylingConfig.components ? Object.keys(result.stylingConfig.components) : []);
+        console.log(
+          '[LangGraph] 🎨   - enhancedTypography:',
+          !!result.stylingConfig.enhancedTypography
+        );
+        console.log(
+          '[LangGraph] 🎨   - components:',
+          !!result.stylingConfig.components,
+          result.stylingConfig.components ? Object.keys(result.stylingConfig.components) : []
+        );
         console.log('[LangGraph] 🎨   - spacing:', !!result.stylingConfig.spacing);
         console.log('[LangGraph] 🎨   - shadows:', !!result.stylingConfig.shadows);
         console.log('[LangGraph] 🎨   - colorTheme:', !!result.stylingConfig.colorTheme);
@@ -321,16 +356,21 @@ export async function POST(req: NextRequest) {
       try {
         await pb.collection('project_settings_memory').getList(1, 1);
       } catch (collectionError: any) {
-        console.warn('[LangGraph] ⚠️ project_settings_memory collection not set up, skipping persistence');
+        console.warn(
+          '[LangGraph] ⚠️ project_settings_memory collection not set up, skipping persistence'
+        );
         console.warn('[LangGraph] Run setup script or create collection manually');
         throw collectionError; // Exit early if collection doesn't exist
       }
 
       const existing = await pb.collection('project_settings_memory').getFullList({
-        filter: `projectId = "${projectId}"`
+        filter: `projectId = "${projectId}"`,
       });
 
-      const projectName = (result as any).requirements?.projectName || result.userDescription?.split(' ').slice(0, 3).join(' ') || 'Untitled Project';
+      const projectName =
+        (result as any).requirements?.projectName ||
+        result.userDescription?.split(' ').slice(0, 3).join(' ') ||
+        'Untitled Project';
 
       const settingsData = {
         projectId,
@@ -339,28 +379,41 @@ export async function POST(req: NextRequest) {
         initialPrompt: result.userDescription || '',
         stylingConfig: JSON.stringify(result.stylingConfig || {}),
         timestamp: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
 
       // 🔍 DEBUG: Show what we're about to save
       const stylingConfigPreview = result.stylingConfig || {};
       console.log('[LangGraph] 💾 About to save to database:');
       console.log('[LangGraph] 💾   - projectName:', projectName);
-      console.log('[LangGraph] 💾   - stylingConfig string length:', settingsData.stylingConfig.length, 'bytes');
+      console.log(
+        '[LangGraph] 💾   - stylingConfig string length:',
+        settingsData.stylingConfig.length,
+        'bytes'
+      );
       console.log('[LangGraph] 💾   - stylingConfig has brand?', !!stylingConfigPreview.brand);
-      console.log('[LangGraph] 💾   - stylingConfig has enhancedColors?', !!stylingConfigPreview.enhancedColors);
+      console.log(
+        '[LangGraph] 💾   - stylingConfig has enhancedColors?',
+        !!stylingConfigPreview.enhancedColors
+      );
 
       if (existing.length > 0) {
-        const saved = await pb.collection('project_settings_memory').update(existing[0].id, settingsData);
-        console.log(`[LangGraph] ✅ Updated project_settings_memory for ${projectId} (record ID: ${saved.id})`);
+        const saved = await pb
+          .collection('project_settings_memory')
+          .update(existing[0].id, settingsData);
+        console.log(
+          `[LangGraph] ✅ Updated project_settings_memory for ${projectId} (record ID: ${saved.id})`
+        );
       } else {
         const saved = await pb.collection('project_settings_memory').create(settingsData);
-        console.log(`[LangGraph] ✅ Created project_settings_memory for ${projectId} (record ID: ${saved.id})`);
+        console.log(
+          `[LangGraph] ✅ Created project_settings_memory for ${projectId} (record ID: ${saved.id})`
+        );
       }
 
       // 🔍 VERIFY: Read back what was saved
       const verification = await pb.collection('project_settings_memory').getFullList({
-        filter: `projectId = "${projectId}"`
+        filter: `projectId = "${projectId}"`,
       });
       if (verification.length > 0) {
         const savedConfig = JSON.parse(verification[0].stylingConfig || '{}');
@@ -376,18 +429,25 @@ export async function POST(req: NextRequest) {
 
     // ✅ UNIFIED MEMORY: Save everything to PocketBase (persistent across sessions)
     await conversationMemoryStore.saveMemory(projectId);
-    console.log('[LangGraph] 💾 Saved unified memory (conversations + project config + workflow metadata) to PocketBase');
+    console.log(
+      '[LangGraph] 💾 Saved unified memory (conversations + project config + workflow metadata) to PocketBase'
+    );
 
     // Consume tokens
-    await consumeTokens(user.id, estimatedTokens, "/api/langgraph/execute");
+    await consumeTokens(user.id, estimatedTokens, '/api/langgraph/execute');
 
     // Determine if workflow was truly successful (consistent with emitWorkflowComplete)
     const hasFiles = (result.files?.length || 0) > 0;
     const hasDeployUrl = !!result.deployUrl;
     const hasCriticalErrors = result.errors.some(
-      err => err.node === 'devops' || err.node === 'qa' || err.node === 'frontend' || err.node === 'backend'
+      (err) =>
+        err.node === 'devops' ||
+        err.node === 'qa' ||
+        err.node === 'frontend' ||
+        err.node === 'backend'
     );
-    const validationFailed = !result.validationResult?.valid && (result.validationResult?.report?.errors || []).length > 0;
+    const validationFailed =
+      !result.validationResult?.valid && (result.validationResult?.report?.errors || []).length > 0;
 
     // SUCCESS CRITERIA: Has files, has deploy URL, no critical errors, validation passed
     const workflowSuccess = hasFiles && hasDeployUrl && !hasCriticalErrors && !validationFailed;
@@ -415,16 +475,12 @@ export async function POST(req: NextRequest) {
           hasFiles,
           hasDeployUrl,
           hasCriticalErrors,
-          validationFailed
-        }
-      }
+          validationFailed,
+        },
+      },
     });
-
   } catch (error: any) {
-    console.error("[LangGraph] Pipeline execution failed:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('[LangGraph] Pipeline execution failed:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

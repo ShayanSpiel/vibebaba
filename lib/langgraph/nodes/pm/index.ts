@@ -20,15 +20,18 @@
  * - Output structure (CRITICAL - downstream nodes depend on this)
  */
 
+import { FEATURE_EXTRACTION_RULES, ROUTE_PATTERNS } from '@/lib/langgraph/prompts/feature-plan';
+import { conversationMemoryStore } from '@/lib/memory/conversation-memory';
+import { messageManager } from '@/lib/messaging/message-manager';
 import type { AppGenState } from '../../types';
-import { emitNodeStart, emitNodeComplete, emitNodeError, emitProgress } from '../../utils/logging/events';
-import { generateWithLogging, estimateTokens } from '../../utils/logging/ai-with-logging';
 import { extractAndParseJson } from '../../utils/json-parser';
-import { addAssistantMessage, conversationMemoryStore } from '@/lib/memory/conversation-memory';
+import { estimateTokens, generateWithLogging } from '../../utils/logging/ai-with-logging';
 import {
-  FEATURE_EXTRACTION_RULES,
-  ROUTE_PATTERNS
-} from '@/lib/langgraph/prompts/feature-plan';
+  emitNodeComplete,
+  emitNodeError,
+  emitNodeStart,
+  emitProgress,
+} from '../../utils/logging/events';
 
 export async function pmNode(state: AppGenState): Promise<Partial<AppGenState>> {
   const startTime = Date.now();
@@ -51,6 +54,16 @@ export async function pmNode(state: AppGenState): Promise<Partial<AppGenState>> 
       console.log('[PM] 🚀 NEW PROJECT MODE: Creating from scratch');
     }
 
+    // Check if this is an incremental feature addition from editing workflow
+    const isIncrementalFeature =
+      isExistingProject && state.editingSession?.requiresFullWorkflow === true;
+
+    if (isIncrementalFeature) {
+      console.log('[PM] 🎯 INCREMENTAL FEATURE MODE: User requested feature addition');
+      console.log('[PM]   Source: Context Analyzer detected feature request');
+      console.log('[PM]   Action: Skip phasing - implement immediately (Phase 1)');
+    }
+
     // Extract requirements as string
     let requirements: string;
     if (typeof state.refinedRequirements === 'string') {
@@ -65,7 +78,7 @@ export async function pmNode(state: AppGenState): Promise<Partial<AppGenState>> 
 
     // For existing projects, clarify we're adding a feature
     const userRequest = isExistingProject
-      ? `Add the following feature to the existing app: ${requirements}\n\nExisting features: ${existingFeatures.map(f => f.name).join(', ')}`
+      ? `Add the following feature to the existing app: ${requirements}\n\nExisting features: ${existingFeatures.map((f) => f.name).join(', ')}`
       : requirements;
 
     console.log(`[PM] 📝 Requirements: "${userRequest.substring(0, 100)}..."`);
@@ -77,7 +90,7 @@ export async function pmNode(state: AppGenState): Promise<Partial<AppGenState>> 
         : 'Analyzing requirements to determine app type, complexity, and create product plan with routes.',
       plan: isExistingProject
         ? 'I will extract the new feature, ensure no conflicts with existing features, and plan integration with current backend/routes.'
-        : 'I will classify the app, extract features with routes, detect backend needs, and create a comprehensive plan.'
+        : 'I will classify the app, extract features with routes, detect backend needs, and create a comprehensive plan.',
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -89,7 +102,9 @@ export async function pmNode(state: AppGenState): Promise<Partial<AppGenState>> 
       // Reuse existing context
       context = existingContext;
       console.log('[PM] 📊 Reusing existing context (incremental mode)');
-      console.log(`[PM]   App: ${context.appType}, Complexity: ${context.complexity}, Design: ${context.designStyle}`);
+      console.log(
+        `[PM]   App: ${context.appType}, Complexity: ${context.complexity}, Design: ${context.designStyle}`
+      );
     } else {
       // New project - analyze app type
       const appTypeAnalysisPrompt = `Analyze: "${requirements}"
@@ -119,7 +134,7 @@ RULES:
         nodeName: 'pm',
         callType: 'analysis',
         estimatedTokens: estimateTokens(appTypeAnalysisPrompt),
-        attempt: 1
+        attempt: 1,
       });
 
       context = extractAndParseJson(appTypeResult, {
@@ -128,17 +143,25 @@ RULES:
         designStyle: 'modern',
         visualTone: 'light',
         animationLevel: 'subtle',
-        targetAudience: 'General users'
+        targetAudience: 'General users',
       });
 
-      console.log(`[PM] 📊 App: ${context.appType}, Complexity: ${context.complexity}, Design: ${context.designStyle}`);
+      console.log(
+        `[PM] 📊 App: ${context.appType}, Complexity: ${context.complexity}, Design: ${context.designStyle}`
+      );
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // STEP 2: FEATURE EXTRACTION WITH ROUTES
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     console.log('[PM] 🔍 Extracting features and routes...');
-    emitProgress('pm', state.projectId, isExistingProject ? 'Extracting new feature and planning integration...' : 'Extracting features and planning routes...');
+    emitProgress(
+      'pm',
+      state.projectId,
+      isExistingProject
+        ? 'Extracting new feature and planning integration...'
+        : 'Extracting features and planning routes...'
+    );
 
     const featureExtractionPrompt = `User Request: "${userRequest}"
 
@@ -147,7 +170,7 @@ ${FEATURE_EXTRACTION_RULES}
 ${ROUTE_PATTERNS}
 
 REMEMBER:
-- Extract ALL features the user mentioned
+- Extract all features the user mentioned
 - Mark infrastructure features with classification='infrastructure'
 - Ensure all features get appropriate routes
 - Phasing (which to build first) will be determined automatically
@@ -159,11 +182,11 @@ REMEMBER:
       nodeName: 'pm',
       callType: 'feature-extraction',
       estimatedTokens: estimateTokens(featureExtractionPrompt),
-      attempt: 1
+      attempt: 1,
     });
 
     const extractedData = extractAndParseJson(featureResult, {
-      features: []
+      features: [],
     });
 
     // Process all extracted features (both regular and infrastructure)
@@ -197,7 +220,7 @@ REMEMBER:
         classification: item.classification || 'regular',
         suggested: false, // User explicitly requested these
         userRequested: true,
-        phase: 2 // Will be set by phasing logic (default to Phase 2)
+        phase: 2, // Will be set by phasing logic (default to Phase 2)
       };
 
       backendReqs[featureId] = item.backend_required || false;
@@ -208,14 +231,21 @@ REMEMBER:
     // INFRASTRUCTURE FEATURE SUGGESTIONS (if not explicitly requested)
     // IMPROVED: Stricter detection to reduce false positives
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const allExtractedFeatureIds = features.map(f => f.id);
+    const allExtractedFeatureIds = features.map((f) => f.id);
 
-    // Suggest Auth ONLY if user management is explicitly mentioned (login/signup keywords)
-    const hasAuthKeywords = features.some(f =>
-      /(login|signup|register|sign up|sign in|authentication|user registration)/i.test(f.name + ' ' + f.description)
-    );
-    const hasAuthFeature = allExtractedFeatureIds.includes('authentication') ||
-                           allExtractedFeatureIds.includes('user-authentication');
+    // Suggest Auth if any authentication-related keywords are mentioned
+    const hasAuthKeywords =
+      features.some((f) =>
+        /(login|signup|register|sign up|sign in|authentication|user registration|user account|auth|sign-in|sign-up|log in|log out|logout|user login|user signup|create account|member|membership)/i.test(
+          f.name + ' ' + f.description
+        )
+      ) ||
+      /(login|signup|register|sign up|sign in|authentication|user account|auth|sign-in|sign-up|log in|create account|member|membership)/i.test(
+        state.userRequest || ''
+      );
+    const hasAuthFeature =
+      allExtractedFeatureIds.includes('authentication') ||
+      allExtractedFeatureIds.includes('user-authentication');
 
     if (hasAuthKeywords && !hasAuthFeature) {
       features.push({
@@ -226,23 +256,29 @@ REMEMBER:
         complexity: 'moderate',
         included_in_mvp: false, // Phasing will be determined by AI analysis
         completed: false,
-        routes: [{ path: '/login', purpose: 'User login' }, { path: '/signup', purpose: 'User registration' }],
+        routes: [
+          { path: '/login', purpose: 'User login' },
+          { path: '/signup', purpose: 'User registration' },
+        ],
         backend_required: true,
         classification: 'infrastructure',
         suggested: true,
         userRequested: false,
-        phase: 2
+        phase: 2,
       });
       backendReqs['user-authentication'] = true;
       console.log('[PM] 💡 Suggested: User Authentication (detected login/signup features)');
     }
 
     // Suggest Payments ONLY if payment PROCESSING is mentioned (not donation wallets)
-    const hasPaymentProcessing = features.some(f =>
-      /(stripe|paypal|payment processing|checkout.*pay|subscription payment|credit card)/i.test(f.description)
+    const hasPaymentProcessing = features.some((f) =>
+      /(stripe|paypal|payment processing|checkout.*pay|subscription payment|credit card)/i.test(
+        f.description
+      )
     );
-    const hasPaymentFeature = allExtractedFeatureIds.includes('payment') ||
-                              allExtractedFeatureIds.includes('payment-integration');
+    const hasPaymentFeature =
+      allExtractedFeatureIds.includes('payment') ||
+      allExtractedFeatureIds.includes('payment-integration');
 
     if (hasPaymentProcessing && !hasPaymentFeature) {
       features.push({
@@ -258,18 +294,20 @@ REMEMBER:
         classification: 'infrastructure',
         suggested: true,
         userRequested: false,
-        phase: 2
+        phase: 2,
       });
       backendReqs['payment-integration'] = true;
       console.log('[PM] 💡 Suggested: Payment Integration (detected payment processing)');
     }
 
     // Suggest Admin Panel ONLY if explicitly mentioned or user roles + moderation detected
-    const hasAdminKeywords = features.some(f =>
-      /(admin|moderate content|manage users|user roles|permissions|admin panel|cms)/i.test(f.description)
+    const hasAdminKeywords = features.some((f) =>
+      /(admin|moderate content|manage users|user roles|permissions|admin panel|cms)/i.test(
+        f.description
+      )
     );
-    const hasAdminFeature = allExtractedFeatureIds.includes('admin') ||
-                           allExtractedFeatureIds.includes('admin-panel');
+    const hasAdminFeature =
+      allExtractedFeatureIds.includes('admin') || allExtractedFeatureIds.includes('admin-panel');
 
     if (hasAdminKeywords && !hasAdminFeature) {
       features.push({
@@ -285,7 +323,7 @@ REMEMBER:
         classification: 'infrastructure',
         suggested: true,
         userRequested: false,
-        phase: 2
+        phase: 2,
       });
       backendReqs['admin-panel'] = true;
       console.log('[PM] 💡 Suggested: Admin Panel (detected admin/moderation features)');
@@ -300,10 +338,11 @@ REMEMBER:
       console.log('[PM] 🔄 Merging new features with existing features...');
 
       // Filter out duplicate features (by ID)
-      const newFeatures = features.filter(newF =>
-        !existingFeatures.some((existingF: any) =>
-          existingF.id.toLowerCase() === newF.id.toLowerCase()
-        )
+      const newFeatures = features.filter(
+        (newF) =>
+          !existingFeatures.some(
+            (existingF: any) => existingF.id.toLowerCase() === newF.id.toLowerCase()
+          )
       );
 
       console.log(`[PM]   New features: ${newFeatures.length}`);
@@ -311,17 +350,14 @@ REMEMBER:
 
       // Mark new features as not yet completed
       // Phasing will be determined by smart logic below
-      newFeatures.forEach(f => {
+      newFeatures.forEach((f) => {
         f.completed = false;
         f.included_in_mvp = false; // Will be set by phasing logic
         f.phase = 2; // Default to Phase 2, will be updated if selected
       });
 
       // Merge: Existing features + New features
-      allFeaturesList = [
-        ...existingFeatures,
-        ...newFeatures
-      ];
+      allFeaturesList = [...existingFeatures, ...newFeatures];
 
       console.log(`[PM] ✅ Total features after merge: ${allFeaturesList.length}`);
     } else {
@@ -331,24 +367,57 @@ REMEMBER:
     }
 
     // Count regular vs infrastructure features
-    const regularFeatures = allFeaturesList.filter(f => f.classification === 'regular');
-    const infrastructureFeatures = allFeaturesList.filter(f => f.classification === 'infrastructure');
-    const userRequestedCount = allFeaturesList.filter(f => f.userRequested).length;
-    const suggestedCount = allFeaturesList.filter(f => f.suggested).length;
+    const regularFeatures = allFeaturesList.filter((f) => f.classification === 'regular');
+    const infrastructureFeatures = allFeaturesList.filter(
+      (f) => f.classification === 'infrastructure'
+    );
+    const userRequestedCount = allFeaturesList.filter((f) => f.userRequested).length;
+    const suggestedCount = allFeaturesList.filter((f) => f.suggested).length;
 
     console.log(`[PM] 📊 Total: ${allFeaturesList.length} features`);
     console.log(`[PM]   └─ User Requested: ${userRequestedCount}`);
     console.log(`[PM]   └─ AI Suggested: ${suggestedCount}`);
-    console.log(`[PM]   └─ Regular: ${regularFeatures.length}, Infrastructure: ${infrastructureFeatures.length}`);
+    console.log(
+      `[PM]   └─ Regular: ${regularFeatures.length}, Infrastructure: ${infrastructureFeatures.length}`
+    );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // STEP 3: SMART PHASING WITH AI CONTEXT ANALYSIS
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    console.log('[PM] 🎯 Analyzing MVP flow with AI...');
-    emitProgress('pm', state.projectId, 'Analyzing MVP flow...');
+    let phase1FeaturesList: any[];
+    let phasingDecision: any = null; // Declare at higher scope for messageManager
 
-    // Use AI to understand core user flow and value proposition
-    const phasingPrompt = `Analyze app to determine MVP (Phase 1) vs enhancements (Phase 2):
+    if (isIncrementalFeature) {
+      // INCREMENTAL MODE: Skip AI phasing - implement all new features immediately
+      console.log('[PM] 🎯 Incremental feature mode - implementing immediately');
+      emitProgress('pm', state.projectId, 'Preparing feature for immediate implementation...');
+
+      // Get only NEW features (not already completed)
+      const newFeatures = allFeaturesList.filter((f) => !f.completed);
+      phase1FeaturesList = newFeatures;
+
+      console.log(`[PM] ✅ ${newFeatures.length} new feature(s) → Phase 1 (MVP)`);
+      newFeatures.forEach((f) => {
+        console.log(`[PM]   - ${f.name} (${f.category})`);
+      });
+
+      // ✅ NEW: Use MessageManager for type-safe messaging
+      await messageManager.sendEvent(
+        state.projectId,
+        {
+          type: 'incremental-feature-planned',
+          featureCount: newFeatures.length,
+          features: newFeatures.map((f) => f.name),
+        },
+        'pm'
+      );
+    } else {
+      // NEW PROJECT MODE: Use AI to analyze MVP vs Phase 2
+      console.log('[PM] 🎯 Analyzing MVP flow with AI...');
+      emitProgress('pm', state.projectId, 'Analyzing MVP flow...');
+
+      // Use AI to understand core user flow and value proposition
+      const phasingPrompt = `Analyze app to determine MVP (Phase 1) vs enhancements (Phase 2):
 
 User Request: "${requirements}"
 
@@ -363,7 +432,7 @@ IMPORTANT: If the user requested ${allFeaturesList.length} features, they likely
 
 RULES:
 1. **Core Value First**: What is the main purpose/benefit of this app?
-2. **Minimum Viable Flow**: Entry → Core Action → Result
+2. **Minimum Viable Flow**: Entry → Core Action → RESULT
 3. **User Journey**: What path must users take to get value?
 4. **Dependencies**: If feature B depends on feature A, both must be in Phase 1 or both in Phase 2
 
@@ -398,7 +467,7 @@ CRITICAL DISTINCTION:
 INFRASTRUCTURE FEATURES:
 - Auth: Phase 1 only if user accounts are core to the value (dashboard, user data)
 - Payments: Phase 1 only if purchasing is the core action
-- Admin: Always Phase 2 (not user-facing)
+- Admin: By default is Phase 2 (not user-facing), unless user explicitly mentions it
 
 Return JSON:
 {
@@ -408,40 +477,46 @@ Return JSON:
   "reasoning": "Why these features deliver the core value"
 }`;
 
-    const phasingResult = await generateWithLogging({
-      prompt: phasingPrompt,
-      projectId: state.projectId,
-      nodeName: 'pm',
-      callType: 'phasing-analysis',
-      estimatedTokens: estimateTokens(phasingPrompt),
-      attempt: 1
-    });
+      const phasingResult = await generateWithLogging({
+        prompt: phasingPrompt,
+        projectId: state.projectId,
+        nodeName: 'pm',
+        callType: 'phasing-analysis',
+        estimatedTokens: estimateTokens(phasingPrompt),
+        attempt: 1,
+      });
 
-    const phasingDecision = extractAndParseJson(phasingResult, {
-      coreValue: 'Complete app functionality',
-      mvpFlow: ['Homepage'],
-      phase1Features: [],
-      reasoning: 'Default phasing'
-    });
+      phasingDecision = extractAndParseJson(phasingResult, {
+        coreValue: 'Complete app functionality',
+        mvpFlow: ['Homepage'],
+        phase1Features: [],
+        reasoning: 'Default phasing',
+      });
 
-    console.log('[PM] 🎯 Smart Phasing Decision:');
-    console.log(`[PM]   Core Value: ${phasingDecision.coreValue}`);
-    console.log(`[PM]   MVP Flow: ${phasingDecision.mvpFlow.join(' → ')}`);
-    console.log(`[PM]   Phase 1 Features: ${phasingDecision.phase1Features.length}`);
-    console.log(`[PM]   Reasoning: ${phasingDecision.reasoning}`);
+      console.log('[PM] 🎯 Smart Phasing Decision:');
+      console.log(`[PM]   Core Value: ${phasingDecision.coreValue}`);
+      console.log(`[PM]   MVP Flow: ${phasingDecision.mvpFlow.join(' → ')}`);
+      console.log(`[PM]   Phase 1 Features: ${phasingDecision.phase1Features.length}`);
+      console.log(`[PM]   Reasoning: ${phasingDecision.reasoning}`);
 
-    // Assign phases based on AI analysis
-    const allFeatures = allFeaturesList.map(f => {
+      // Filter features based on AI decision
+      phase1FeaturesList = allFeaturesList.filter((f) =>
+        phasingDecision.phase1Features.includes(f.id)
+      );
+    }
+
+    // Assign phases based on analysis (works for both incremental and new projects)
+    const allFeatures = allFeaturesList.map((f) => {
       let isPhase1 = false;
 
-      // Check if AI selected this feature for Phase 1
-      if (phasingDecision.phase1Features.includes(f.id)) {
+      // Check if feature is in Phase 1 list
+      if (phase1FeaturesList.some((p1f) => p1f.id === f.id)) {
         isPhase1 = true;
       }
 
-      // Fallback: If AI didn't select any features, use old logic
-      if (phasingDecision.phase1Features.length === 0) {
-        const homepageFeature = allFeaturesList.find(f =>
+      // Fallback: If no features selected, default to homepage
+      if (phase1FeaturesList.length === 0) {
+        const homepageFeature = allFeaturesList.find((f) =>
           f.routes?.some((r: any) => r.path === '/')
         );
         if (f.id === homepageFeature?.id) {
@@ -457,40 +532,49 @@ Return JSON:
       return {
         ...f,
         phase: isPhase1 ? 1 : 2,
-        included_in_mvp: isPhase1
+        included_in_mvp: isPhase1,
       };
     });
 
-    const phase1Features = allFeatures.filter(f => f.phase === 1);
-    const phase2Features = allFeatures.filter(f => f.phase === 2);
+    const phase1Features = allFeatures.filter((f) => f.phase === 1);
+    const phase2Features = allFeatures.filter((f) => f.phase === 2);
 
     // For incremental mode, show only NEW features being added
     if (isExistingProject) {
-      const newFeatures = allFeatures.filter(f => !f.completed);
-      console.log(`[PM] 📋 Adding ${newFeatures.length} new feature(s): ${newFeatures.map(f => f.name).join(', ')}`);
-      console.log(`[PM] 📋 Existing features: ${allFeatures.filter(f => f.completed).map(f => f.name).join(', ')}`);
+      const newFeatures = allFeatures.filter((f) => !f.completed);
+      console.log(
+        `[PM] 📋 Adding ${newFeatures.length} new feature(s): ${newFeatures.map((f) => f.name).join(', ')}`
+      );
+      console.log(
+        `[PM] 📋 Existing features: ${allFeatures
+          .filter((f) => f.completed)
+          .map((f) => f.name)
+          .join(', ')}`
+      );
     } else {
       console.log(`[PM] 📋 Phase 1 (Building Now - ${phase1Features.length} features):`);
-      phase1Features.forEach(f => {
-        console.log(`[PM]   ✅ ${f.name} ${f.classification === 'infrastructure' ? '(infrastructure)' : ''}`);
+      phase1Features.forEach((f) => {
+        console.log(
+          `[PM]   ✅ ${f.name} ${f.classification === 'infrastructure' ? '(infrastructure)' : ''}`
+        );
       });
 
       if (phase2Features.length > 0) {
-        const regularPhase2 = phase2Features.filter(f => f.classification === 'regular');
-        const infraPhase2 = phase2Features.filter(f => f.classification === 'infrastructure');
+        const regularPhase2 = phase2Features.filter((f) => f.classification === 'regular');
+        const infraPhase2 = phase2Features.filter((f) => f.classification === 'infrastructure');
 
         console.log(`[PM] 📋 Phase 2 (Queued for Later - ${phase2Features.length} features):`);
 
         if (regularPhase2.length > 0) {
           console.log(`[PM]   Regular Features (${regularPhase2.length}):`);
-          regularPhase2.forEach(f => {
+          regularPhase2.forEach((f) => {
             console.log(`[PM]     ⏳ ${f.name}${f.suggested ? ' (suggested)' : ''}`);
           });
         }
 
         if (infraPhase2.length > 0) {
           console.log(`[PM]   Infrastructure (${infraPhase2.length}):`);
-          infraPhase2.forEach(f => {
+          infraPhase2.forEach((f) => {
             console.log(`[PM]     ⏳ ${f.name}${f.suggested ? ' (suggested)' : ''}`);
           });
         }
@@ -499,7 +583,7 @@ Return JSON:
 
     // Log assigned routes
     console.log('[PM] 🗺️ Route Assignments:');
-    allFeatures.forEach(f => {
+    allFeatures.forEach((f) => {
       f.routes?.forEach((route: any) => {
         console.log(`[PM]   ${f.name} → ${route.path} (${route.purpose})`);
       });
@@ -515,8 +599,8 @@ Return JSON:
       console.log('[PM] 📝 Updating existing plan with new feature...');
       emitProgress('pm', state.projectId, 'Updating plan with new feature...');
 
-      const newFeatures = allFeatures.filter(f => !f.completed);
-      const newFeaturesList = newFeatures.map(f => `- ${f.name}: ${f.description}`).join('\n');
+      const newFeatures = allFeatures.filter((f) => !f.completed);
+      const newFeaturesList = newFeatures.map((f) => `- ${f.name}: ${f.description}`).join('\n');
 
       const planUpdatePrompt = `Update plan for feature addition:
 
@@ -539,7 +623,7 @@ Keep it concise (2-3 sentences).`;
         nodeName: 'pm',
         callType: 'planning',
         estimatedTokens: estimateTokens(planUpdatePrompt),
-        attempt: 1
+        attempt: 1,
       });
 
       plan = `${state.plan}\n\n### Feature Addition:\n${planUpdate}`;
@@ -550,7 +634,7 @@ Keep it concise (2-3 sentences).`;
       console.log('[PM] 📝 Generating product plan...');
       emitProgress('pm', state.projectId, 'Generating product plan...');
 
-      const mvpFeaturesList = phase1Features.map(f => `- ${f.name}: ${f.description}`).join('\n');
+      const mvpFeaturesList = phase1Features.map((f) => `- ${f.name}: ${f.description}`).join('\n');
 
       const planPrompt = `Create MVP plan for: "${requirements}"
 
@@ -577,29 +661,38 @@ Generate concise plan with these sections:
         nodeName: 'pm',
         callType: 'planning',
         estimatedTokens: estimateTokens(planPrompt),
-        attempt: 1
+        attempt: 1,
       });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ADD PHASE 1 FEATURES LIST TO PLAN MESSAGE
+    // ✅ NEW: USE MESSAGE MANAGER (type-safe, auto-persists + displays)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const phase1FeaturesList = phase1Features.map(f => `✅ ${f.name}`).join('\n');
-    const planWithFeatures = `${plan}\n\n---\n\n**🚀 Phase 1 Features (Building Now):**\n\n${phase1FeaturesList}\n\n*Phase 2 features (${phase2Features.length}) will be added later.*`;
-
-    // Track in conversation memory
-    addAssistantMessage(state.projectId, planWithFeatures, 'pm');
-    console.log('[PM] 💬 Tracked response in conversation memory with Phase 1 features list');
+    await messageManager.sendEvent(
+      state.projectId,
+      {
+        type: 'plan-ready',
+        plan,
+        phase1Features: phase1Features.map((f) => f.name),
+        phase2Count: phase2Features.length,
+        coreValue: phasingDecision?.coreValue,
+        mvpFlow: phasingDecision?.mvpFlow,
+      },
+      'pm'
+    );
+    console.log(
+      '[PM] 💬 Sent plan with Phase 1 features via MessageManager (persisted + displayed)'
+    );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // STEP 5: BACKEND DETECTION (from feature extraction)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const needsBackend = Object.values(backendReqs).some(required => required);
+    const needsBackend = Object.values(backendReqs).some((required) => required);
     console.log(`[PM] ${needsBackend ? '✅ Backend required' : '📦 Static site only'}`);
 
     // Log backend requirements per feature
     console.log('[PM] 🗂️ Backend requirements by feature:');
-    allFeatures.forEach(feature => {
+    allFeatures.forEach((feature) => {
       const required = backendReqs[feature.id];
       console.log(`[PM]   ${feature.name}: ${required ? '✅' : '❌'} Backend`);
     });
@@ -609,6 +702,9 @@ Generate concise plan with these sections:
 
     const duration = Date.now() - startTime;
 
+    // Dynamic summary for technical log
+    const technicalSummary = `Created ${context.complexity} ${context.appType} plan with ${phase1Features.length} MVP features. ${needsBackend ? '🔧 Backend required' : '📦 Static site'}. Routes assigned to all features.`;
+
     emitNodeComplete('pm', state, duration, {
       taskDescription: 'Created product plan with features and routes',
       success: true,
@@ -616,10 +712,14 @@ Generate concise plan with these sections:
         appType: context.appType,
         complexity: context.complexity,
         featureCount: phase1Features.length,
-        needsBackend
+        needsBackend,
       },
-      summary: `Created ${context.complexity} ${context.appType} plan with ${phase1Features.length} MVP features. ${needsBackend ? '🔧 Backend required' : '📦 Static site'}. Routes assigned to all features.`
+      summary: technicalSummary,
     });
+
+    // ✅ REMOVED: Dual API calls (replaced by single MessageManager call above)
+    // The plan-ready message sent via MessageManager includes all necessary context
+    // No need for separate role message - it creates duplicate messages
 
     // Safeguard: Handle edge cases
     if (!allFeatures || allFeatures.length === 0) {
@@ -634,20 +734,20 @@ Generate concise plan with these sections:
         included_in_mvp: true,
         completed: false,
         phase: 1,
-        routes: [{ path: '/', purpose: 'Homepage' }]
+        routes: [{ path: '/', purpose: 'Homepage' }],
       });
     }
 
     // ✅ ENSURE HOMEPAGE: If no route for "/", add primary feature to homepage
-    const hasHomepage = allFeatures.some(f => f.routes?.some((r: any) => r.path === '/'));
+    const hasHomepage = allFeatures.some((f) => f.routes?.some((r: any) => r.path === '/'));
     if (!hasHomepage && allFeatures.length > 0) {
-      const primaryFeature = allFeatures.find(f => f.priority === 'high') || allFeatures[0];
+      const primaryFeature = allFeatures.find((f) => f.priority === 'high') || allFeatures[0];
       if (!primaryFeature.routes) {
         primaryFeature.routes = [];
       }
       primaryFeature.routes.push({
         path: '/',
-        purpose: `Homepage - ${primaryFeature.name}`
+        purpose: `Homepage - ${primaryFeature.name}`,
       });
       console.log('[PM] 🏠 Added homepage route for primary feature:', primaryFeature.name);
     }
@@ -664,30 +764,31 @@ Generate concise plan with these sections:
         animationLevel: context.animationLevel || 'subtle',
         targetAudience: context.targetAudience || 'General users',
         pmPlan: {
-          needsBackend
-        }
+          needsBackend,
+        },
       },
       allRequestedFeatures: allFeatures, // Now includes infrastructure features with classification='infrastructure'
       backendRequirements: backendReqs,
       stage: 'designing',
-      completedNodes: ['pm']
+      completedNodes: ['pm'],
     };
-
   } catch (error) {
     emitNodeError('pm', error as Error, state);
 
     const requirements = state.refinedRequirements || state.userDescription;
-    const fallbackFeature = [{
-      id: 'emergency-fallback',
-      name: 'Main Application',
-      description: requirements?.substring(0, 150) || 'Primary application',
-      priority: 'high' as const,
-      dependencies: [],
-      complexity: 'moderate' as const,
-      included_in_mvp: true,
-      completed: false,
-      routes: [{ path: '/', purpose: 'Homepage' }]
-    }];
+    const fallbackFeature = [
+      {
+        id: 'emergency-fallback',
+        name: 'Main Application',
+        description: requirements?.substring(0, 150) || 'Primary application',
+        priority: 'high' as const,
+        dependencies: [],
+        complexity: 'moderate' as const,
+        included_in_mvp: true,
+        completed: false,
+        routes: [{ path: '/', purpose: 'Homepage' }],
+      },
+    ];
 
     console.log('[PM] 🚨 ERROR FALLBACK: Creating emergency feature');
 
@@ -701,14 +802,13 @@ Generate concise plan with these sections:
         animationLevel: 'subtle',
         targetAudience: 'General users',
         pmPlan: {
-          needsBackend: false
-        }
+          needsBackend: false,
+        },
       },
       allRequestedFeatures: fallbackFeature,
       stage: 'designing',
       completedNodes: ['pm'],
-      errors: [{ node: 'pm', message: (error as Error).message }]
+      errors: [{ node: 'pm', message: (error as Error).message }],
     };
   }
 }
-

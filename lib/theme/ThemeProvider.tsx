@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState, createContext, useContext, useLayoutEffect } from "react";
-import { getThemeCSSVariables, activeTheme, ColorPalette } from "./theme-config";
+import { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import { activeTheme, type ColorPalette, getThemeCSSVariables } from './theme-config';
 
 interface ThemeContextType {
   currentTheme: ColorPalette;
@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
+    throw new Error('useTheme must be used within ThemeProvider');
   }
   return context;
 }
@@ -53,8 +53,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ currentTheme, switchTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={{ currentTheme, switchTheme }}>{children}</ThemeContext.Provider>
   );
 }

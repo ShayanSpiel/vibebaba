@@ -19,7 +19,9 @@ const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD;
 
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  console.error('❌ Error: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be set in .env.local');
+  console.error(
+    '❌ Error: POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be set in .env.local'
+  );
   process.exit(1);
 }
 
@@ -33,8 +35,8 @@ async function fixServerSidePermissions() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       identity: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD
-    })
+      password: ADMIN_PASSWORD,
+    }),
   });
 
   if (!authResponse.ok) {
@@ -47,7 +49,7 @@ async function fixServerSidePermissions() {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': token
+    Authorization: token,
   };
 
   // Fix token_usage collection - Allow creates without auth check (server-side)
@@ -60,8 +62,8 @@ async function fixServerSidePermissions() {
       viewRule: '@request.auth.id != "" && userId = @request.auth.id',
       createRule: null, // Allow all creates (server validates auth)
       updateRule: null, // No updates allowed
-      deleteRule: null  // No deletes allowed
-    })
+      deleteRule: null, // No deletes allowed
+    }),
   });
 
   if (!tokenUsageResponse.ok) {
@@ -81,8 +83,8 @@ async function fixServerSidePermissions() {
       viewRule: '@request.auth.id != "" && userId = @request.auth.id',
       createRule: null, // Allow all creates (server validates auth)
       updateRule: '@request.auth.id = ""', // Only admins can update
-      deleteRule: '@request.auth.id = ""'  // Only admins can delete
-    })
+      deleteRule: '@request.auth.id = ""', // Only admins can delete
+    }),
   });
 
   if (!transactionsResponse.ok) {
@@ -102,8 +104,8 @@ async function fixServerSidePermissions() {
       viewRule: 'userId = @request.auth.id || userId = null || userId = ""',
       createRule: null, // Allow all creates (server validates auth)
       updateRule: 'userId = @request.auth.id || userId = null || userId = ""',
-      deleteRule: '@request.auth.id != "" && userId = @request.auth.id'
-    })
+      deleteRule: '@request.auth.id != "" && userId = @request.auth.id',
+    }),
   });
 
   if (!projectsResponse.ok) {
@@ -123,8 +125,8 @@ async function fixServerSidePermissions() {
       viewRule: null, // Allow all views
       createRule: null, // Allow all creates
       updateRule: null, // Allow all updates
-      deleteRule: null  // Allow all deletes
-    })
+      deleteRule: null, // Allow all deletes
+    }),
   });
 
   if (!projectFilesResponse.ok) {
@@ -141,12 +143,12 @@ async function fixServerSidePermissions() {
   console.log('• transactions: Server can create (API validates auth)');
   console.log('• projects: Server can create (API validates auth)');
   console.log('• project_files: Open for all operations');
-  console.log('• List/View: Still restricted to user\'s own data');
+  console.log("• List/View: Still restricted to user's own data");
   console.log('• Security: Maintained via API route authentication');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 }
 
-fixServerSidePermissions().catch(error => {
+fixServerSidePermissions().catch((error) => {
   console.error('\n❌ Error:', error.message);
   process.exit(1);
 });

@@ -4,19 +4,26 @@
  * Search GitHub repositories for code examples
  */
 
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { z } from "zod";
-import { getMCPManager } from "@/lib/mcp/client";
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { getMCPManager } from '@/lib/mcp/client';
 
 export function createGitHubSearchTool() {
   return new DynamicStructuredTool({
-    name: "github_search",
-    description: "Search GitHub repositories for code examples. Best for: finding Next.js projects, React components, authentication examples, specific features. Returns repository information.",
+    name: 'github_search',
+    description:
+      'Search GitHub repositories for code examples. Best for: finding Next.js projects, React components, authentication examples, specific features. Returns repository information.',
     schema: z.object({
-      query: z.string().describe("GitHub search query (will be enhanced with filters)"),
-      language: z.string().optional().describe("Programming language filter (e.g., 'typescript', 'javascript')"),
+      query: z.string().describe('GitHub search query (will be enhanced with filters)'),
+      language: z
+        .string()
+        .optional()
+        .describe("Programming language filter (e.g., 'typescript', 'javascript')"),
       stars: z.string().optional().describe("Minimum stars filter (e.g., '>100', '>1000')"),
-      numResults: z.number().default(5).describe("Number of results to return (default: 5, max: 10)"),
+      numResults: z
+        .number()
+        .default(5)
+        .describe('Number of results to return (default: 5, max: 10)'),
     }),
     func: async ({ query, language, stars, numResults }) => {
       try {
@@ -26,8 +33,8 @@ export function createGitHubSearchTool() {
         if (!client) {
           return JSON.stringify({
             success: false,
-            error: "GitHub MCP not available",
-            message: "Cannot search GitHub repositories"
+            error: 'GitHub MCP not available',
+            message: 'Cannot search GitHub repositories',
           });
         }
 
@@ -55,7 +62,7 @@ export function createGitHubSearchTool() {
 
         return JSON.stringify({
           success: true,
-          source: "github",
+          source: 'github',
           repositories: repositories.slice(0, numResults).map((repo: any) => ({
             fullName: repo.full_name || repo.name,
             description: repo.description || '',
@@ -72,7 +79,7 @@ export function createGitHubSearchTool() {
         return JSON.stringify({
           success: false,
           error: error.message || 'GitHub search failed',
-          message: "Failed to search GitHub repositories"
+          message: 'Failed to search GitHub repositories',
         });
       }
     },

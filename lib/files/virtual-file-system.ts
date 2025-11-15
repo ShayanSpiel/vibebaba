@@ -14,17 +14,21 @@ interface ProjectFile {
  */
 export function generateMultiFileWrapper(files: ProjectFile[]): string {
   // Find index.html or use first HTML file
-  const indexFile = files.find(f => f.path === 'index.html') || files.find(f => f.path.endsWith('.html'));
+  const indexFile =
+    files.find((f) => f.path === 'index.html') || files.find((f) => f.path.endsWith('.html'));
 
   if (!indexFile) {
     return '<html><body><h1>Error: No HTML files found</h1></body></html>';
   }
 
   // Create a map of all files
-  const filesMap = files.reduce((acc, file) => {
-    acc[file.path] = file.content;
-    return acc;
-  }, {} as Record<string, string>);
+  const filesMap = files.reduce(
+    (acc, file) => {
+      acc[file.path] = file.content;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
 
   // Inject virtual routing system into the index.html
   const injectedHTML = injectVirtualRouter(indexFile.content, filesMap);
@@ -156,7 +160,7 @@ export function convertHashBasedToMultiFile(singleFileHTML: string): ProjectFile
     const headContent = doc.head ? doc.head.innerHTML : '';
 
     // Find all page sections: <div id="page-name" class="page">
-    const pageSections = Array.from(doc.querySelectorAll('[class*="page"]')).filter(el => el.id);
+    const pageSections = Array.from(doc.querySelectorAll('[class*="page"]')).filter((el) => el.id);
 
     if (pageSections.length === 0) {
       // No multi-page structure, return as single index.html
@@ -168,7 +172,7 @@ export function convertHashBasedToMultiFile(singleFileHTML: string): ProjectFile
     const navHTML = nav ? nav.outerHTML : '';
 
     // Create a file for each page section
-    pageSections.forEach(section => {
+    pageSections.forEach((section) => {
       const pageId = section.id;
       const pageContent = section.innerHTML;
 
@@ -187,7 +191,7 @@ export function convertHashBasedToMultiFile(singleFileHTML: string): ProjectFile
 
       files.push({
         path: pageId === 'home' ? 'index.html' : `${pageId}.html`,
-        content: pageHTML
+        content: pageHTML,
       });
     });
 

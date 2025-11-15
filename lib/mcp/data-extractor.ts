@@ -5,7 +5,7 @@
  * from GitHub repositories and web search results
  */
 
-import { BRAND_DATABASE, BrandName } from './query-optimizer';
+import { BRAND_DATABASE, type BrandName } from './query-optimizer';
 
 export interface ExtractedRepository {
   name: string;
@@ -115,17 +115,19 @@ export function extractGitHubData(
   console.log('[Data Extractor] ✅ Found', items.length, 'GitHub repositories');
   const repositories: ExtractedRepository[] = [];
 
-  for (const item of items.slice(0, 10)) { // Process top 10
+  for (const item of items.slice(0, 10)) {
+    // Process top 10
     const repo = extractRepositoryData(item, searchContext);
-    if (repo.relevanceScore > 30) { // Only include relevant repos
+    if (repo.relevanceScore > 30) {
+      // Only include relevant repos
       repositories.push(repo);
     }
   }
 
   // Sort by combined score
   repositories.sort((a, b) => {
-    const scoreA = (a.relevanceScore * 0.6) + (a.qualityScore * 0.4);
-    const scoreB = (b.relevanceScore * 0.6) + (b.qualityScore * 0.4);
+    const scoreA = a.relevanceScore * 0.6 + a.qualityScore * 0.4;
+    const scoreB = b.relevanceScore * 0.6 + b.qualityScore * 0.4;
     return scoreB - scoreA;
   });
 
@@ -202,44 +204,44 @@ function extractRepositoryData(
  */
 function extractTechStack(text: string, topics: string[]): string[] {
   const techMap: Record<string, string[]> = {
-    'React': ['react', 'reactjs', 'react.js'],
+    React: ['react', 'reactjs', 'react.js'],
     'Next.js': ['next.js', 'nextjs', 'next'],
-    'TypeScript': ['typescript', 'ts'],
+    TypeScript: ['typescript', 'ts'],
     'Tailwind CSS': ['tailwind', 'tailwindcss'],
     'Vue.js': ['vue', 'vuejs', 'vue.js'],
-    'Svelte': ['svelte', 'sveltekit'],
+    Svelte: ['svelte', 'sveltekit'],
     'Node.js': ['node.js', 'nodejs', 'node'],
-    'Express': ['express', 'expressjs'],
-    'FastAPI': ['fastapi', 'fast-api'],
-    'Django': ['django'],
-    'Flask': ['flask'],
-    'PostgreSQL': ['postgresql', 'postgres', 'pg'],
-    'MongoDB': ['mongodb', 'mongo'],
-    'Redis': ['redis'],
-    'GraphQL': ['graphql', 'apollo'],
-    'tRPC': ['trpc'],
-    'Prisma': ['prisma'],
-    'Drizzle': ['drizzle', 'drizzle-orm'],
-    'Supabase': ['supabase'],
-    'Firebase': ['firebase'],
-    'Clerk': ['clerk', 'clerk-auth'],
-    'NextAuth': ['nextauth', 'next-auth'],
-    'Stripe': ['stripe'],
+    Express: ['express', 'expressjs'],
+    FastAPI: ['fastapi', 'fast-api'],
+    Django: ['django'],
+    Flask: ['flask'],
+    PostgreSQL: ['postgresql', 'postgres', 'pg'],
+    MongoDB: ['mongodb', 'mongo'],
+    Redis: ['redis'],
+    GraphQL: ['graphql', 'apollo'],
+    tRPC: ['trpc'],
+    Prisma: ['prisma'],
+    Drizzle: ['drizzle', 'drizzle-orm'],
+    Supabase: ['supabase'],
+    Firebase: ['firebase'],
+    Clerk: ['clerk', 'clerk-auth'],
+    NextAuth: ['nextauth', 'next-auth'],
+    Stripe: ['stripe'],
     'Shadcn UI': ['shadcn', 'shadcn-ui', 'shadcn/ui'],
     'Radix UI': ['radix', 'radix-ui'],
     'Framer Motion': ['framer-motion', 'framer'],
-    'Zustand': ['zustand'],
-    'Jotai': ['jotai'],
-    'Zod': ['zod'],
+    Zustand: ['zustand'],
+    Jotai: ['jotai'],
+    Zod: ['zod'],
     'React Query': ['react-query', 'tanstack-query'],
-    'SWR': ['swr'],
+    SWR: ['swr'],
   };
 
   const found = new Set<string>();
   const combinedText = `${text} ${topics.join(' ')}`.toLowerCase();
 
   for (const [tech, keywords] of Object.entries(techMap)) {
-    if (keywords.some(kw => combinedText.includes(kw))) {
+    if (keywords.some((kw) => combinedText.includes(kw))) {
       found.add(tech);
     }
   }
@@ -260,7 +262,7 @@ function extractDesignPatterns(text: string): string[] {
     'Static site generation (SSG)': ['ssg', 'static site', 'static generation'],
     'Incremental static regeneration (ISR)': ['isr', 'incremental static'],
     'API routes': ['api routes', 'api endpoints', 'serverless functions'],
-    'Authentication': ['authentication', 'auth', 'login', 'oauth'],
+    Authentication: ['authentication', 'auth', 'login', 'oauth'],
     'Real-time updates': ['real-time', 'websocket', 'socket.io', 'live updates'],
     'Infinite scroll': ['infinite scroll', 'virtual scroll', 'pagination'],
     'Drag and drop': ['drag and drop', 'dnd', 'draggable'],
@@ -271,13 +273,13 @@ function extractDesignPatterns(text: string): string[] {
     'Code splitting': ['code splitting', 'lazy loading', 'dynamic import'],
     'SEO optimization': ['seo', 'meta tags', 'open graph'],
     'Performance optimization': ['performance', 'optimization', 'lighthouse'],
-    'Testing': ['testing', 'jest', 'cypress', 'playwright'],
+    Testing: ['testing', 'jest', 'cypress', 'playwright'],
   };
 
   const found = new Set<string>();
 
   for (const [pattern, keywords] of Object.entries(patterns)) {
-    if (keywords.some(kw => text.includes(kw))) {
+    if (keywords.some((kw) => text.includes(kw))) {
       found.add(pattern);
     }
   }
@@ -291,35 +293,35 @@ function extractDesignPatterns(text: string): string[] {
 function extractComponents(text: string): string[] {
   const components: Record<string, string[]> = {
     'Navigation bar': ['navbar', 'navigation', 'menu', 'header'],
-    'Sidebar': ['sidebar', 'side panel', 'drawer'],
-    'Footer': ['footer'],
+    Sidebar: ['sidebar', 'side panel', 'drawer'],
+    Footer: ['footer'],
     'Hero section': ['hero', 'hero section', 'landing hero'],
-    'Card': ['card', 'cards', 'card component'],
+    Card: ['card', 'cards', 'card component'],
     'Modal/Dialog': ['modal', 'dialog', 'popup'],
-    'Dropdown': ['dropdown', 'select', 'combobox'],
-    'Table': ['table', 'data table', 'grid'],
-    'Form': ['form', 'input', 'textarea', 'checkbox'],
-    'Button': ['button', 'cta', 'action button'],
-    'Tabs': ['tabs', 'tab panel'],
-    'Accordion': ['accordion', 'collapse'],
+    Dropdown: ['dropdown', 'select', 'combobox'],
+    Table: ['table', 'data table', 'grid'],
+    Form: ['form', 'input', 'textarea', 'checkbox'],
+    Button: ['button', 'cta', 'action button'],
+    Tabs: ['tabs', 'tab panel'],
+    Accordion: ['accordion', 'collapse'],
     'Toast/Notification': ['toast', 'notification', 'snackbar', 'alert'],
-    'Tooltip': ['tooltip', 'popover'],
-    'Avatar': ['avatar', 'profile picture'],
-    'Badge': ['badge', 'chip', 'tag'],
+    Tooltip: ['tooltip', 'popover'],
+    Avatar: ['avatar', 'profile picture'],
+    Badge: ['badge', 'chip', 'tag'],
     'Progress bar': ['progress', 'progress bar', 'loading bar'],
     'Skeleton loader': ['skeleton', 'placeholder', 'loading state'],
-    'Carousel': ['carousel', 'slider', 'slideshow'],
+    Carousel: ['carousel', 'slider', 'slideshow'],
     'Chart/Graph': ['chart', 'graph', 'visualization'],
-    'Calendar': ['calendar', 'date picker'],
-    'Timeline': ['timeline'],
-    'Breadcrumb': ['breadcrumb', 'breadcrumbs'],
-    'Pagination': ['pagination', 'page navigation'],
+    Calendar: ['calendar', 'date picker'],
+    Timeline: ['timeline'],
+    Breadcrumb: ['breadcrumb', 'breadcrumbs'],
+    Pagination: ['pagination', 'page navigation'],
   };
 
   const found = new Set<string>();
 
   for (const [component, keywords] of Object.entries(components)) {
-    if (keywords.some(kw => text.includes(kw))) {
+    if (keywords.some((kw) => text.includes(kw))) {
       found.add(component);
     }
   }
@@ -358,22 +360,22 @@ function extractUIPatterns(text: string): string[] {
   const patterns: Record<string, string[]> = {
     'Grid layout': ['grid', 'grid layout', 'css grid'],
     'Flexbox layout': ['flexbox', 'flex layout'],
-    'Glassmorphism': ['glassmorphism', 'frosted glass', 'backdrop blur'],
-    'Neumorphism': ['neumorphism', 'soft ui'],
-    'Gradient': ['gradient', 'linear gradient', 'radial gradient'],
-    'Animation': ['animation', 'transition', 'motion', 'animated'],
-    'Parallax': ['parallax'],
+    Glassmorphism: ['glassmorphism', 'frosted glass', 'backdrop blur'],
+    Neumorphism: ['neumorphism', 'soft ui'],
+    Gradient: ['gradient', 'linear gradient', 'radial gradient'],
+    Animation: ['animation', 'transition', 'motion', 'animated'],
+    Parallax: ['parallax'],
     'Sticky header': ['sticky', 'fixed header'],
     'Floating action button': ['fab', 'floating button'],
     'Split screen': ['split screen', 'two column'],
     'Full-screen': ['full-screen', 'fullscreen'],
-    'Minimalist': ['minimalist', 'minimal', 'clean'],
+    Minimalist: ['minimalist', 'minimal', 'clean'],
   };
 
   const found = new Set<string>();
 
   for (const [pattern, keywords] of Object.entries(patterns)) {
-    if (keywords.some(kw => text.includes(kw))) {
+    if (keywords.some((kw) => text.includes(kw))) {
       found.add(pattern);
     }
   }
@@ -422,14 +424,16 @@ function calculateRelevanceScore(
 
   // Description match (0-30 points)
   const descWords = context.description.toLowerCase().split(/\s+/);
-  const matchCount = descWords.filter(word =>
+  const matchCount = descWords.filter((word) =>
     data.description.toLowerCase().includes(word)
   ).length;
   score += Math.min(30, (matchCount / descWords.length) * 30);
 
   // App type match (0-20 points)
-  if (data.description.toLowerCase().includes(context.appType.toLowerCase()) ||
-      data.topics.some(t => t.includes(context.appType))) {
+  if (
+    data.description.toLowerCase().includes(context.appType.toLowerCase()) ||
+    data.topics.some((t) => t.includes(context.appType))
+  ) {
     score += 20;
   }
 
@@ -437,9 +441,7 @@ function calculateRelevanceScore(
   if (context.brandName) {
     const brandData = BRAND_DATABASE[context.brandName];
     const brandKeywords = [context.brandName, ...brandData.keywords];
-    if (brandKeywords.some(kw =>
-      data.description.toLowerCase().includes(kw.toLowerCase())
-    )) {
+    if (brandKeywords.some((kw) => data.description.toLowerCase().includes(kw.toLowerCase()))) {
       score += 25;
     }
   }
@@ -481,7 +483,7 @@ function calculateQualityScore(data: {
   const daysSinceUpdate = data.lastUpdated
     ? Math.floor((Date.now() - new Date(data.lastUpdated).getTime()) / (1000 * 60 * 60 * 24))
     : 9999;
-  score += Math.max(0, 20 - (daysSinceUpdate / 30));
+  score += Math.max(0, 20 - daysSinceUpdate / 30);
 
   return Math.min(100, Math.round(score));
 }
@@ -493,7 +495,10 @@ export function extractWebData(
   rawResults: any,
   searchContext: { description: string; appType: string; brandName?: BrandName }
 ): ExtractedWebResult[] {
-  console.log('[Data Extractor] Web raw results structure:', JSON.stringify(rawResults, null, 2).substring(0, 500));
+  console.log(
+    '[Data Extractor] Web raw results structure:',
+    JSON.stringify(rawResults, null, 2).substring(0, 500)
+  );
   console.log('[Data Extractor] Has web.results?', !!rawResults?.web?.results);
   console.log('[Data Extractor] Has results?', !!rawResults?.results);
   console.log('[Data Extractor] Is array?', Array.isArray(rawResults));
@@ -627,10 +632,10 @@ function extractCodeSnippets(text: string): string[] {
 function extractConcepts(text: string): string[] {
   const concepts: Record<string, string[]> = {
     'MVC architecture': ['mvc', 'model view controller'],
-    'Microservices': ['microservices', 'microservice architecture'],
-    'Monorepo': ['monorepo', 'monolithic repository'],
-    'JAMstack': ['jamstack', 'jam stack'],
-    'Serverless': ['serverless', 'faas', 'lambda functions'],
+    Microservices: ['microservices', 'microservice architecture'],
+    Monorepo: ['monorepo', 'monolithic repository'],
+    JAMstack: ['jamstack', 'jam stack'],
+    Serverless: ['serverless', 'faas', 'lambda functions'],
     'Edge computing': ['edge', 'edge computing', 'cloudflare workers'],
     'Progressive Web App (PWA)': ['pwa', 'progressive web app'],
     'Single Page Application (SPA)': ['spa', 'single page application'],
@@ -640,7 +645,7 @@ function extractConcepts(text: string): string[] {
   const found = new Set<string>();
 
   for (const [concept, keywords] of Object.entries(concepts)) {
-    if (keywords.some(kw => text.includes(kw))) {
+    if (keywords.some((kw) => text.includes(kw))) {
       found.add(concept);
     }
   }
@@ -655,9 +660,7 @@ function checkIfOfficial(domain: string, brandName?: BrandName): boolean {
   if (!brandName || !domain) return false;
 
   const brandData = BRAND_DATABASE[brandName];
-  return brandData.officialDomains.some(official =>
-    domain.includes(official)
-  );
+  return brandData.officialDomains.some((official) => domain.includes(official));
 }
 
 /**
@@ -674,20 +677,26 @@ function calculateWebRelevance(
 
   // Title match (0-30 points)
   const titleWords = context.description.toLowerCase().split(/\s+/);
-  const titleMatchCount = titleWords.filter(word =>
+  const titleMatchCount = titleWords.filter((word) =>
     data.title.toLowerCase().includes(word)
   ).length;
   score += Math.min(30, (titleMatchCount / titleWords.length) * 30);
 
   // Description match (0-20 points)
-  const descMatchCount = titleWords.filter(word =>
+  const descMatchCount = titleWords.filter((word) =>
     data.description.toLowerCase().includes(word)
   ).length;
   score += Math.min(20, (descMatchCount / titleWords.length) * 20);
 
   // Trusted domain (0-10 points)
-  const trustedDomains = ['github.com', 'stackoverflow.com', 'dev.to', 'medium.com', 'css-tricks.com'];
-  if (trustedDomains.some(d => data.domain.includes(d))) {
+  const trustedDomains = [
+    'github.com',
+    'stackoverflow.com',
+    'dev.to',
+    'medium.com',
+    'css-tricks.com',
+  ];
+  if (trustedDomains.some((d) => data.domain.includes(d))) {
     score += 10;
   }
 
@@ -704,13 +713,13 @@ export function aggregateExtractedData(
 ): ExtractedContext {
   // Aggregate tech stack
   const techStackMap = new Map<string, number>();
-  repositories.forEach(repo => {
-    repo.techStack.forEach(tech => {
+  repositories.forEach((repo) => {
+    repo.techStack.forEach((tech) => {
       techStackMap.set(tech, (techStackMap.get(tech) || 0) + 1);
     });
   });
-  webResults.forEach(result => {
-    result.tools.forEach(tech => {
+  webResults.forEach((result) => {
+    result.tools.forEach((tech) => {
       techStackMap.set(tech, (techStackMap.get(tech) || 0) + 0.5);
     });
   });
@@ -722,13 +731,13 @@ export function aggregateExtractedData(
 
   // Aggregate design patterns
   const patternMap = new Map<string, number>();
-  repositories.forEach(repo => {
-    repo.designPatterns.forEach(pattern => {
+  repositories.forEach((repo) => {
+    repo.designPatterns.forEach((pattern) => {
       patternMap.set(pattern, (patternMap.get(pattern) || 0) + 1);
     });
   });
-  webResults.forEach(result => {
-    result.designPatterns.forEach(pattern => {
+  webResults.forEach((result) => {
+    result.designPatterns.forEach((pattern) => {
       patternMap.set(pattern, (patternMap.get(pattern) || 0) + 0.5);
     });
   });
@@ -740,8 +749,8 @@ export function aggregateExtractedData(
 
   // Aggregate components
   const componentMap = new Map<string, number>();
-  repositories.forEach(repo => {
-    repo.components.forEach(component => {
+  repositories.forEach((repo) => {
+    repo.components.forEach((component) => {
       componentMap.set(component, (componentMap.get(component) || 0) + 1);
     });
   });
@@ -756,17 +765,16 @@ export function aggregateExtractedData(
 
   // Collect color schemes
   const colorSchemes = repositories
-    .filter(repo => repo.colorScheme)
-    .map(repo => repo.colorScheme!);
+    .filter((repo) => repo.colorScheme)
+    .map((repo) => repo.colorScheme!);
 
   // Calculate average quality
   const totalQuality = repositories.reduce((sum, repo) => sum + repo.qualityScore, 0);
-  const averageQuality = repositories.length > 0
-    ? Math.round(totalQuality / repositories.length)
-    : 0;
+  const averageQuality =
+    repositories.length > 0 ? Math.round(totalQuality / repositories.length) : 0;
 
   // Check for official sources
-  const hasOfficialSources = webResults.some(r => r.isOfficial);
+  const hasOfficialSources = webResults.some((r) => r.isOfficial);
 
   return {
     repositories,

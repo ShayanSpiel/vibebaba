@@ -72,13 +72,23 @@ function loadConfig() {
 
       // Limits (allow override via env)
       MAX_FILE_SIZE: process.env.MAX_FILE_SIZE ? parseInt(process.env.MAX_FILE_SIZE) : undefined,
-      MAX_PROJECT_FILES: process.env.MAX_PROJECT_FILES ? parseInt(process.env.MAX_PROJECT_FILES) : undefined,
-      MAX_MESSAGE_LENGTH: process.env.MAX_MESSAGE_LENGTH ? parseInt(process.env.MAX_MESSAGE_LENGTH) : undefined,
+      MAX_PROJECT_FILES: process.env.MAX_PROJECT_FILES
+        ? parseInt(process.env.MAX_PROJECT_FILES)
+        : undefined,
+      MAX_MESSAGE_LENGTH: process.env.MAX_MESSAGE_LENGTH
+        ? parseInt(process.env.MAX_MESSAGE_LENGTH)
+        : undefined,
 
       // Cache
-      CACHE_TTL_PROJECT: process.env.CACHE_TTL_PROJECT ? parseInt(process.env.CACHE_TTL_PROJECT) : undefined,
-      CACHE_TTL_MEMORY: process.env.CACHE_TTL_MEMORY ? parseInt(process.env.CACHE_TTL_MEMORY) : undefined,
-      CACHE_TTL_FILES: process.env.CACHE_TTL_FILES ? parseInt(process.env.CACHE_TTL_FILES) : undefined,
+      CACHE_TTL_PROJECT: process.env.CACHE_TTL_PROJECT
+        ? parseInt(process.env.CACHE_TTL_PROJECT)
+        : undefined,
+      CACHE_TTL_MEMORY: process.env.CACHE_TTL_MEMORY
+        ? parseInt(process.env.CACHE_TTL_MEMORY)
+        : undefined,
+      CACHE_TTL_FILES: process.env.CACHE_TTL_FILES
+        ? parseInt(process.env.CACHE_TTL_FILES)
+        : undefined,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -118,7 +128,7 @@ export const Collections = {
   SEARCH_USAGE: 'search_usage',
 } as const;
 
-export type CollectionName = typeof Collections[keyof typeof Collections];
+export type CollectionName = (typeof Collections)[keyof typeof Collections];
 
 // Validation helpers
 export function validateFileSize(size: number): boolean {

@@ -59,7 +59,7 @@ function findLucideImports(code: string): Set<string> {
   if (match) {
     const importList = match[1];
     // Split by comma and clean up whitespace
-    importList.split(',').forEach(item => {
+    importList.split(',').forEach((item) => {
       const cleaned = item.trim();
       if (cleaned) {
         imports.add(cleaned);
@@ -83,8 +83,11 @@ function findAllImportedIdentifiers(code: string): Set<string> {
 
   while ((match = namedImportRegex.exec(code)) !== null) {
     const importList = match[1];
-    importList.split(',').forEach(item => {
-      const cleaned = item.trim().split(/\s+as\s+/)[0].trim(); // Handle "import { X as Y }"
+    importList.split(',').forEach((item) => {
+      const cleaned = item
+        .trim()
+        .split(/\s+as\s+/)[0]
+        .trim(); // Handle "import { X as Y }"
       if (cleaned) {
         identifiers.add(cleaned);
       }
@@ -119,7 +122,7 @@ export function detectMissingIconImports(code: string): ImportFixResult {
   // Check which components are valid lucide icons
   const missingIcons: string[] = [];
 
-  usedComponents.forEach(component => {
+  usedComponents.forEach((component) => {
     // Check if it's a valid lucide icon
     if (VALID_LUCIDE_ICONS.includes(component)) {
       // ✨ CRITICAL FIX: Check if it's already imported from lucide-react OR any other source
@@ -136,7 +139,7 @@ export function detectMissingIconImports(code: string): ImportFixResult {
           line,
           identifier: component,
           suggestion: `Add '${component}' to lucide-react imports`,
-          autoFixable: true
+          autoFixable: true,
         });
       }
     }
@@ -165,7 +168,8 @@ export function detectMissingIconImports(code: string): ImportFixResult {
       if (reactMatch) {
         const newImportStatement = `import { ${missingIcons.sort().join(', ')} } from 'lucide-react'\n`;
         const insertIndex = code.indexOf(reactMatch[0]) + reactMatch[0].length;
-        fixedCode = code.substring(0, insertIndex) + '\n' + newImportStatement + code.substring(insertIndex);
+        fixedCode =
+          code.substring(0, insertIndex) + '\n' + newImportStatement + code.substring(insertIndex);
         fixes.push(`Added new lucide-react import: ${missingIcons.join(', ')}`);
       } else {
         // No React import found - add at the top (after 'use client')
@@ -175,7 +179,11 @@ export function detectMissingIconImports(code: string): ImportFixResult {
         if (useClientMatch) {
           const newImportStatement = `\nimport { ${missingIcons.sort().join(', ')} } from 'lucide-react'`;
           const insertIndex = code.indexOf(useClientMatch[0]) + useClientMatch[0].length;
-          fixedCode = code.substring(0, insertIndex) + '\n' + newImportStatement + code.substring(insertIndex);
+          fixedCode =
+            code.substring(0, insertIndex) +
+            '\n' +
+            newImportStatement +
+            code.substring(insertIndex);
         } else {
           // Add at very top
           const newImportStatement = `import { ${missingIcons.sort().join(', ')} } from 'lucide-react'\n\n`;
@@ -189,7 +197,7 @@ export function detectMissingIconImports(code: string): ImportFixResult {
   return {
     issues,
     fixedCode,
-    fixes
+    fixes,
   };
 }
 
@@ -238,7 +246,7 @@ function findApiImports(code: string): Set<string> {
 
   if (match) {
     const importList = match[1];
-    importList.split(',').forEach(item => {
+    importList.split(',').forEach((item) => {
       const cleaned = item.trim();
       if (cleaned) {
         imports.add(cleaned);
@@ -257,7 +265,7 @@ function detectMissingApiImports(code: string): ImportFixResult {
   const fixes: string[] = [];
 
   // Check if @/lib/api.ts is referenced (if not, no API imports needed)
-  if (!code.includes('from \'@/lib/api\'') && !code.includes('from "@/lib/api"')) {
+  if (!code.includes("from '@/lib/api'") && !code.includes('from "@/lib/api"')) {
     // No API imports expected in this file
     return { issues, fixedCode: code, fixes };
   }
@@ -271,7 +279,7 @@ function detectMissingApiImports(code: string): ImportFixResult {
   // Find missing imports
   const missingApiFunctions: string[] = [];
 
-  apiCalls.forEach(funcName => {
+  apiCalls.forEach((funcName) => {
     // Skip non-API functions (useState, useEffect, etc.)
     if (funcName.startsWith('use') || funcName === 'fetch' || funcName === 'console') {
       return;
@@ -290,7 +298,7 @@ function detectMissingApiImports(code: string): ImportFixResult {
         line,
         identifier: funcName,
         suggestion: `Add '${funcName}' to @/lib/api imports`,
-        autoFixable: true
+        autoFixable: true,
       });
     }
   });
@@ -318,7 +326,8 @@ function detectMissingApiImports(code: string): ImportFixResult {
       if (reactMatch) {
         const newImportStatement = `\nimport { ${missingApiFunctions.sort().join(', ')} } from '@/lib/api'`;
         const insertIndex = code.indexOf(reactMatch[0]) + reactMatch[0].length;
-        fixedCode = code.substring(0, insertIndex) + newImportStatement + code.substring(insertIndex);
+        fixedCode =
+          code.substring(0, insertIndex) + newImportStatement + code.substring(insertIndex);
         fixes.push(`Created new @/lib/api import: ${missingApiFunctions.join(', ')}`);
       } else {
         // Add after lucide-react import or at top
@@ -328,7 +337,8 @@ function detectMissingApiImports(code: string): ImportFixResult {
         if (lucideMatch) {
           const newImportStatement = `\nimport { ${missingApiFunctions.sort().join(', ')} } from '@/lib/api'`;
           const insertIndex = code.indexOf(lucideMatch[0]) + lucideMatch[0].length;
-          fixedCode = code.substring(0, insertIndex) + newImportStatement + code.substring(insertIndex);
+          fixedCode =
+            code.substring(0, insertIndex) + newImportStatement + code.substring(insertIndex);
           fixes.push(`Created new @/lib/api import: ${missingApiFunctions.join(', ')}`);
         }
       }
@@ -338,7 +348,7 @@ function detectMissingApiImports(code: string): ImportFixResult {
   return {
     issues,
     fixedCode,
-    fixes
+    fixes,
   };
 }
 
@@ -356,6 +366,6 @@ export function validateAndFixImports(code: string): ImportFixResult {
   return {
     issues: [...iconFixResult.issues, ...apiFixResult.issues],
     fixedCode: apiFixResult.fixedCode,
-    fixes: [...iconFixResult.fixes, ...apiFixResult.fixes]
+    fixes: [...iconFixResult.fixes, ...apiFixResult.fixes],
   };
 }

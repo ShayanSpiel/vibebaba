@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -152,7 +152,7 @@ export function PaymentSuccessModal({
                 top: '-10%',
                 backgroundColor: i % 3 === 0 ? '#22C55E' : i % 3 === 1 ? '#FCD34D' : '#3B82F6',
                 animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
+                animationDuration: `${2 + Math.random() * 2}s`,
               }}
             />
           ))}
@@ -183,20 +183,33 @@ export function PaymentSuccessModal({
           </div>
 
           {/* Success Message - Animated Typography */}
-          <h2 className="text-2xl font-bold text-center mb-2 text-text-primary fade-slide-up" style={{ animationDelay: '0.2s', opacity: 0 }}>
+          <h2
+            className="text-2xl font-bold text-center mb-2 text-text-primary fade-slide-up"
+            style={{ animationDelay: '0.2s', opacity: 0 }}
+          >
             Payment Successful! 🎉
           </h2>
-          <p className="text-center text-text-secondary mb-8 text-sm fade-slide-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
+          <p
+            className="text-center text-text-secondary mb-8 text-sm fade-slide-up"
+            style={{ animationDelay: '0.3s', opacity: 0 }}
+          >
             Your credits have been added to your account
           </p>
 
           {/* Details - Animated Cards */}
           <div className="space-y-3 mb-8">
             {packageName && (
-              <div className="flex items-center justify-between p-4 bg-background-subtle rounded-xl fade-slide-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
+              <div
+                className="flex items-center justify-between p-4 bg-background-subtle rounded-xl fade-slide-up"
+                style={{ animationDelay: '0.4s', opacity: 0 }}
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-brand-primary/20 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-brand-primary" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-4 h-4 text-brand-primary"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                     </svg>
                   </div>
@@ -206,25 +219,38 @@ export function PaymentSuccessModal({
               </div>
             )}
 
-            <div className="flex items-center justify-between p-4 bg-success/10 rounded-xl border border-success/20 fade-slide-up hover:bg-success/15 transition-colors" style={{ animationDelay: '0.5s', opacity: 0 }}>
+            <div
+              className="flex items-center justify-between p-4 bg-success/10 rounded-xl border border-success/20 fade-slide-up hover:bg-success/15 transition-colors"
+              style={{ animationDelay: '0.5s', opacity: 0 }}
+            >
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-success/30 flex items-center justify-center">
                   <svg className="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <span className="text-sm text-text-secondary">Tokens Added</span>
               </div>
-              <span className="font-bold text-lg text-success">
-                +{formatTokens(tokens)}
-              </span>
+              <span className="font-bold text-lg text-success">+{formatTokens(tokens)}</span>
             </div>
 
             {refId && (
               <div className="p-3 bg-background-subtle rounded-lg border-[0.75px] border-border-light">
                 <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-3.5 h-3.5 text-text-tertiary" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                  <svg
+                    className="w-3.5 h-3.5 text-text-tertiary"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <span className="text-xs text-text-tertiary">Reference ID</span>
                 </div>
@@ -236,14 +262,14 @@ export function PaymentSuccessModal({
           {/* Action Buttons - Animated */}
           <div className="space-y-2">
             <button
-              onClick={() => (window.location.href = "/")}
+              onClick={() => (window.location.href = '/')}
               className="w-full px-5 py-3 bg-gradient-success text-white rounded-xl font-medium hover:opacity-90 hover:scale-105 transition-all shadow-md hover:shadow-lg fade-slide-up"
               style={{ animationDelay: '0.6s', opacity: 0 }}
             >
               Start Creating ✨
             </button>
             <button
-              onClick={() => (window.location.href = "/settings")}
+              onClick={() => (window.location.href = '/settings')}
               className="w-full px-5 py-3 bg-background-subtle border-[0.75px] border-border-light text-text-primary rounded-xl font-medium hover:bg-background-raised hover:border-success/30 transition-all fade-slide-up"
               style={{ animationDelay: '0.7s', opacity: 0 }}
             >

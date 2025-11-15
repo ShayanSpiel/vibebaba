@@ -32,7 +32,9 @@ export function preValidateHTML(code: string): string[] {
   // Approximate balance (not perfect, but catches major issues)
   const expectedCloses = openTags - selfClosing;
   if (Math.abs(closeTags - expectedCloses) > 5) {
-    errors.push(`Tag imbalance detected: ${openTags} opening tags, ${closeTags} closing tags (difference > 5)`);
+    errors.push(
+      `Tag imbalance detected: ${openTags} opening tags, ${closeTags} closing tags (difference > 5)`
+    );
   }
 
   // Check 4: Truncation markers (but allow in alt/src attributes)
@@ -51,7 +53,9 @@ export function preValidateHTML(code: string): string[] {
   }
 
   if (suspiciousDots > 0) {
-    errors.push(`CRITICAL: Code contains ${suspiciousDots} "..." truncation marker(s) outside of attributes - AI truncated the implementation`);
+    errors.push(
+      `CRITICAL: Code contains ${suspiciousDots} "..." truncation marker(s) outside of attributes - AI truncated the implementation`
+    );
   }
 
   // Check 5: Missing required elements

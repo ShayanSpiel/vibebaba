@@ -1,10 +1,10 @@
 import type {
   ComponentMetadata,
-  TypeMetadata,
-  RouteMetadata,
-  ImportSpec,
   ExportSpec,
   HookMetadata,
+  ImportSpec,
+  RouteMetadata,
+  TypeMetadata,
 } from './types';
 
 /**
@@ -19,37 +19,137 @@ export class ProjectRegistry {
 
   // Known external packages (for import resolution)
   private readonly KNOWN_PACKAGES = new Set([
-    'react', 'react-dom', 'next', 'next/link', 'next/image', 'next/navigation',
-    'lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-toast',
-    'zustand', 'react-hook-form', 'zod', '@hookform/resolvers/zod',
-    'pocketbase', 'clsx', 'tailwind-merge'
+    'react',
+    'react-dom',
+    'next',
+    'next/link',
+    'next/image',
+    'next/navigation',
+    'lucide-react',
+    '@radix-ui/react-dialog',
+    '@radix-ui/react-toast',
+    'zustand',
+    'react-hook-form',
+    'zod',
+    '@hookform/resolvers/zod',
+    'pocketbase',
+    'clsx',
+    'tailwind-merge',
   ]);
 
   // Known lucide-react icons (from component-catalog.ts)
   private readonly LUCIDE_ICONS = new Set([
-    'Menu', 'X', 'Check', 'ChevronDown', 'ChevronRight', 'ChevronLeft', 'ChevronUp',
-    'ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown',
-    'User', 'Users', 'UserPlus', 'UserCheck', 'UserX',
-    'Mail', 'Send', 'Inbox', 'MessageCircle', 'MessageSquare',
-    'Lock', 'Unlock', 'Key', 'Shield', 'ShieldCheck',
-    'Home', 'Search', 'Settings', 'Bell', 'Calendar',
-    'Clock', 'MapPin', 'Globe', 'Link', 'ExternalLink',
-    'File', 'FileText', 'Folder', 'FolderOpen', 'Upload', 'Download',
-    'Image', 'Video', 'Music', 'Camera', 'Mic',
-    'Heart', 'Star', 'Bookmark', 'Flag', 'Tag',
-    'ShoppingCart', 'ShoppingBag', 'CreditCard', 'DollarSign', 'TrendingUp',
-    'Eye', 'EyeOff', 'Loader', 'Loader2', 'RefreshCw', 'RotateCw',
-    'Edit', 'Edit2', 'Edit3', 'Pen', 'Pencil',
-    'Trash', 'Trash2', 'Delete', 'XCircle', 'CheckCircle',
-    'AlertCircle', 'AlertTriangle', 'Info', 'HelpCircle',
-    'Plus', 'Minus', 'PlusCircle', 'MinusCircle',
-    'Copy', 'Clipboard', 'ClipboardCheck', 'Share', 'Share2',
-    'Filter', 'SortAsc', 'SortDesc', 'Grid', 'List',
-    'MoreVertical', 'MoreHorizontal', 'Maximize', 'Minimize',
-    'Zap', 'Cpu', 'Database', 'Server', 'Cloud',
-    'Package', 'Box', 'Archive', 'Briefcase',
-    'LogIn', 'LogOut', 'UserCircle', 'Activity',
-    'BarChart', 'PieChart', 'LineChart'
+    'Menu',
+    'X',
+    'Check',
+    'ChevronDown',
+    'ChevronRight',
+    'ChevronLeft',
+    'ChevronUp',
+    'ArrowRight',
+    'ArrowLeft',
+    'ArrowUp',
+    'ArrowDown',
+    'User',
+    'Users',
+    'UserPlus',
+    'UserCheck',
+    'UserX',
+    'Mail',
+    'Send',
+    'Inbox',
+    'MessageCircle',
+    'MessageSquare',
+    'Lock',
+    'Unlock',
+    'Key',
+    'Shield',
+    'ShieldCheck',
+    'Home',
+    'Search',
+    'Settings',
+    'Bell',
+    'Calendar',
+    'Clock',
+    'MapPin',
+    'Globe',
+    'Link',
+    'ExternalLink',
+    'File',
+    'FileText',
+    'Folder',
+    'FolderOpen',
+    'Upload',
+    'Download',
+    'Image',
+    'Video',
+    'Music',
+    'Camera',
+    'Mic',
+    'Heart',
+    'Star',
+    'Bookmark',
+    'Flag',
+    'Tag',
+    'ShoppingCart',
+    'ShoppingBag',
+    'CreditCard',
+    'DollarSign',
+    'TrendingUp',
+    'Eye',
+    'EyeOff',
+    'Loader',
+    'Loader2',
+    'RefreshCw',
+    'RotateCw',
+    'Edit',
+    'Edit2',
+    'Edit3',
+    'Pen',
+    'Pencil',
+    'Trash',
+    'Trash2',
+    'Delete',
+    'XCircle',
+    'CheckCircle',
+    'AlertCircle',
+    'AlertTriangle',
+    'Info',
+    'HelpCircle',
+    'Plus',
+    'Minus',
+    'PlusCircle',
+    'MinusCircle',
+    'Copy',
+    'Clipboard',
+    'ClipboardCheck',
+    'Share',
+    'Share2',
+    'Filter',
+    'SortAsc',
+    'SortDesc',
+    'Grid',
+    'List',
+    'MoreVertical',
+    'MoreHorizontal',
+    'Maximize',
+    'Minimize',
+    'Zap',
+    'Cpu',
+    'Database',
+    'Server',
+    'Cloud',
+    'Package',
+    'Box',
+    'Archive',
+    'Briefcase',
+    'LogIn',
+    'LogOut',
+    'UserCircle',
+    'Activity',
+    'BarChart',
+    'PieChart',
+    'LineChart',
   ]);
 
   constructor() {}
@@ -136,7 +236,7 @@ export class ProjectRegistry {
         name,
         source: this.getImportPath(component.path),
         type: 'default',
-        isLocal: true
+        isLocal: true,
       };
     }
 
@@ -147,7 +247,7 @@ export class ProjectRegistry {
         name,
         source: this.getImportPath(type.path),
         type: 'type',
-        isLocal: true
+        isLocal: true,
       };
     }
 
@@ -157,7 +257,7 @@ export class ProjectRegistry {
         name,
         source: 'lucide-react',
         type: 'named',
-        isLocal: false
+        isLocal: false,
       };
     }
 
@@ -168,7 +268,7 @@ export class ProjectRegistry {
         name,
         source: externalSource,
         type: this.getImportType(name, externalSource),
-        isLocal: false
+        isLocal: false,
       };
     }
 
@@ -194,8 +294,19 @@ export class ProjectRegistry {
    */
   private resolveExternalPackage(name: string): string | null {
     // React hooks
-    if (['useState', 'useEffect', 'useCallback', 'useMemo', 'useRef',
-         'useContext', 'useReducer', 'createContext', 'forwardRef'].includes(name)) {
+    if (
+      [
+        'useState',
+        'useEffect',
+        'useCallback',
+        'useMemo',
+        'useRef',
+        'useContext',
+        'useReducer',
+        'createContext',
+        'forwardRef',
+      ].includes(name)
+    ) {
       return 'react';
     }
 
@@ -257,7 +368,7 @@ export class ProjectRegistry {
       components: Array.from(this.components.entries()),
       types: Array.from(this.types.entries()),
       routes: Array.from(this.routes.entries()),
-      hooks: Array.from(this.hooks.entries())
+      hooks: Array.from(this.hooks.entries()),
     };
   }
 

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface CreditPurchaseModalProps {
   isOpen: boolean;
@@ -24,20 +24,17 @@ export default function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseM
   if (!isOpen) return null;
 
   const handlePurchase = () => {
-    router.push("/pricing");
+    router.push('/pricing');
   };
 
   return (
     <div
       className={`transition-all duration-300 ease-out ${
-        isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-4"
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
       }`}
     >
       {/* Modal Container - Positioned above chatbox */}
       <div className="relative w-full bg-background-raised backdrop-blur-sm border-2 border-warning/30 rounded-xl shadow-2xl overflow-hidden">
-
         {/* Animated background gradient - RED/GOLD urgency */}
         <div className="absolute inset-0 bg-gradient-to-br from-error/20 via-warning/15 to-error/10 animate-pulse" />
         <div className="absolute inset-0 bg-gradient-to-tl from-warning/10 via-transparent to-error/5 animate-pulse animation-delay-500" />
@@ -74,9 +71,7 @@ export default function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseM
 
             {/* Text Content */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-warning mb-2">
-                Out of Credits!
-              </h3>
+              <h3 className="text-base font-bold text-warning mb-2">Out of Credits!</h3>
               <p className="text-sm text-text-primary mb-1 leading-relaxed">
                 You've run out of AI credits and can't continue this conversation.
               </p>
@@ -97,7 +92,12 @@ export default function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseM
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -133,16 +133,19 @@ export default function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseM
                     d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
-                <span className="font-medium text-white text-sm">
-                  Get More Credits
-                </span>
+                <span className="font-medium text-white text-sm">Get More Credits</span>
                 <svg
                   className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </div>
             </button>
@@ -159,11 +162,7 @@ export default function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseM
           {/* Extra encouragement text */}
           <div className="mt-4 pt-4 border-t border-subtle">
             <div className="flex items-center gap-2 text-xs text-text-tertiary">
-              <svg
-                className="w-4 h-4 text-warning"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 text-warning" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
               <span>Join thousands of creators building with unlimited AI power</span>

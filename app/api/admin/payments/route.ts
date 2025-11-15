@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-middleware';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
@@ -25,16 +25,13 @@ export async function GET(req: NextRequest) {
         paymentProvider: tx.paymentProvider || null,
         paymentId: tx.paymentId || null,
         status: tx.status,
-        createdAt: new Date(tx.created).getTime()
+        createdAt: new Date(tx.created).getTime(),
       }));
 
       return NextResponse.json({ transactions });
     } catch (error: any) {
       console.error('Error loading transactions:', error);
-      return NextResponse.json(
-        { error: 'Failed to load transactions' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to load transactions' }, { status: 500 });
     }
   });
 }

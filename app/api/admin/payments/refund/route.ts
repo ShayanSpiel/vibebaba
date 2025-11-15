@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { logAdminAction, requireAdmin } from '@/lib/auth/admin-middleware';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
@@ -14,10 +14,7 @@ export async function POST(req: NextRequest) {
       const { transactionId, removeTokens } = await req.json();
 
       if (!transactionId) {
-        return NextResponse.json(
-          { error: 'transactionId is required' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'transactionId is required' }, { status: 400 });
       }
 
       const pb = new PocketBase(PB_URL);
@@ -26,10 +23,7 @@ export async function POST(req: NextRequest) {
       const transaction = await pb.collection('transactions').getOne(transactionId);
 
       if (!transaction) {
-        return NextResponse.json(
-          { error: 'Transaction not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
       }
 
       if (transaction.status !== 'completed') {
@@ -69,18 +63,12 @@ export async function POST(req: NextRequest) {
       });
 
       // Log admin action
-      await logAdminAction(
-        admin.id,
-        'refund_payment',
-        'transaction',
-        transactionId,
-        {
-          originalAmount: transaction.amount,
-          tokens: transaction.tokens,
-          removeTokens,
-          userId: transaction.userId,
-        }
-      );
+      await logAdminAction(admin.id, 'refund_payment', 'transaction', transactionId, {
+        originalAmount: transaction.amount,
+        tokens: transaction.tokens,
+        removeTokens,
+        userId: transaction.userId,
+      });
 
       return NextResponse.json({
         success: true,
@@ -91,10 +79,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (error: any) {
       console.error('Error processing refund:', error);
-      return NextResponse.json(
-        { error: 'Failed to process refund' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to process refund' }, { status: 500 });
     }
   });
 }

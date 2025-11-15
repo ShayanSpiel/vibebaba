@@ -31,7 +31,7 @@ async function seedCategories() {
     // Process each category
     for (const category of EXAMPLE_CATEGORIES) {
       try {
-        const existing = existingCategories.find(c => c.slug === category.slug);
+        const existing = existingCategories.find((c) => c.slug === category.slug);
 
         if (existing) {
           // Update
@@ -78,9 +78,11 @@ async function seedCategories() {
     console.log('═'.repeat(60));
 
     // Stats
-    const highPriority = EXAMPLE_CATEGORIES.filter(c => c.priority >= 8).length;
-    const mediumPriority = EXAMPLE_CATEGORIES.filter(c => c.priority >= 5 && c.priority < 8).length;
-    const lowPriority = EXAMPLE_CATEGORIES.filter(c => c.priority < 5).length;
+    const highPriority = EXAMPLE_CATEGORIES.filter((c) => c.priority >= 8).length;
+    const mediumPriority = EXAMPLE_CATEGORIES.filter(
+      (c) => c.priority >= 5 && c.priority < 8
+    ).length;
+    const lowPriority = EXAMPLE_CATEGORIES.filter((c) => c.priority < 5).length;
     const totalTarget = EXAMPLE_CATEGORIES.reduce((sum, c) => sum + c.targetExamples, 0);
 
     console.log('\n📊 Priority Distribution:');
@@ -90,13 +92,14 @@ async function seedCategories() {
 
     console.log('\n🎯 Target Examples:');
     console.log(`   Total target: ${totalTarget} examples`);
-    console.log(`   High priority: ${EXAMPLE_CATEGORIES.filter(c => c.priority >= 8).reduce((sum, c) => sum + c.targetExamples, 0)} examples\n`);
+    console.log(
+      `   High priority: ${EXAMPLE_CATEGORIES.filter((c) => c.priority >= 8).reduce((sum, c) => sum + c.targetExamples, 0)} examples\n`
+    );
 
     console.log('✅ SUCCESS! Now lock down permissions:');
     console.log('   PocketBase Admin > example_categories > API Rules');
     console.log('   - Create rule: null (admin only)');
     console.log('   - Update rule: null (admin only)\n');
-
   } catch (error: any) {
     console.error('\n❌ SEEDING FAILED:', error.message);
     console.error('\nMake sure:');

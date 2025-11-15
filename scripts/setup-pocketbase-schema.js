@@ -1,5 +1,5 @@
 // Load environment variables
-require("dotenv").config({ path: ".env.local" });
+require('dotenv').config({ path: '.env.local' });
 
 /**
  * PocketBase Schema Setup Script
@@ -29,8 +29,8 @@ async function setupSchema() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         identity: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD
-      })
+        password: ADMIN_PASSWORD,
+      }),
     });
     const auth = await authData.json();
 
@@ -54,39 +54,39 @@ async function setupSchema() {
           name: 'totalTokens',
           type: 'number',
           required: false,
-          options: { min: 0 }
+          options: { min: 0 },
         },
         {
           name: 'usedTokens',
           type: 'number',
           required: false,
-          options: { min: 0 }
+          options: { min: 0 },
         },
         {
           name: 'dailyTokens',
           type: 'number',
           required: false,
-          options: { min: 0 }
+          options: { min: 0 },
         },
         {
           name: 'lastDailyReset',
           type: 'date',
-          required: false
+          required: false,
         },
         {
           name: 'packageId',
           type: 'text',
-          required: false
+          required: false,
         },
         {
           name: 'packageExpiry',
           type: 'date',
-          required: false
-        }
+          required: false,
+        },
       ];
 
       await pb.collections.update(usersCollection.id, {
-        schema: updatedSchema
+        schema: updatedSchema,
       });
       console.log('✅ Users collection updated\n');
     } catch (error) {
@@ -98,7 +98,7 @@ async function setupSchema() {
           {
             name: 'name',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'avatar',
@@ -107,48 +107,48 @@ async function setupSchema() {
             options: {
               maxSelect: 1,
               maxSize: 5242880, // 5MB
-              mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
-            }
+              mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            },
           },
           {
             name: 'totalTokens',
             type: 'number',
             required: false,
-            options: { min: 0 }
+            options: { min: 0 },
           },
           {
             name: 'usedTokens',
             type: 'number',
             required: false,
-            options: { min: 0 }
+            options: { min: 0 },
           },
           {
             name: 'dailyTokens',
             type: 'number',
             required: false,
-            options: { min: 0 }
+            options: { min: 0 },
           },
           {
             name: 'lastDailyReset',
             type: 'date',
-            required: false
+            required: false,
           },
           {
             name: 'packageId',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'packageExpiry',
             type: 'date',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: '@request.auth.id != ""',
         viewRule: '@request.auth.id != ""',
         createRule: '',
         updateRule: '@request.auth.id = id',
-        deleteRule: '@request.auth.id = id'
+        deleteRule: '@request.auth.id = id',
       });
       console.log('✅ Users collection created\n');
     }
@@ -168,58 +168,58 @@ async function setupSchema() {
               collectionId: (await pb.collections.getOne('users')).id,
               cascadeDelete: false,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'type',
             type: 'select',
             required: true,
             options: {
-              values: ['purchase', 'subscription', 'refund']
-            }
+              values: ['purchase', 'subscription', 'refund'],
+            },
           },
           {
             name: 'amount',
             type: 'number',
-            required: true
+            required: true,
           },
           {
             name: 'tokens',
             type: 'number',
-            required: true
+            required: true,
           },
           {
             name: 'currency',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'packageId',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'paymentProvider',
             type: 'select',
             required: false,
             options: {
-              values: ['stripe', 'paypal', 'zibal']
-            }
+              values: ['stripe', 'paypal', 'zibal'],
+            },
           },
           {
             name: 'paymentId',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'status',
             type: 'select',
             required: true,
             options: {
-              values: ['pending', 'completed', 'failed', 'refunded']
-            }
-          }
+              values: ['pending', 'completed', 'failed', 'refunded'],
+            },
+          },
         ],
         listRule: 'userId = @request.auth.id',
         viewRule: 'userId = @request.auth.id',
@@ -228,8 +228,8 @@ async function setupSchema() {
         deleteRule: null, // Admin only
         indexes: [
           'CREATE INDEX idx_transactions_userId ON transactions (userId)',
-          'CREATE INDEX idx_transactions_status ON transactions (status)'
-        ]
+          'CREATE INDEX idx_transactions_status ON transactions (status)',
+        ],
       });
       console.log('✅ Transactions collection created\n');
     } catch (error) {
@@ -255,24 +255,24 @@ async function setupSchema() {
               collectionId: (await pb.collections.getOne('users')).id,
               cascadeDelete: false,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'tokensUsed',
             type: 'number',
-            required: true
+            required: true,
           },
           {
             name: 'endpoint',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'projectId',
             type: 'text',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: 'userId = @request.auth.id',
         viewRule: 'userId = @request.auth.id',
@@ -281,8 +281,8 @@ async function setupSchema() {
         deleteRule: null, // Admin only
         indexes: [
           'CREATE INDEX idx_token_usage_userId ON token_usage (userId)',
-          'CREATE INDEX idx_token_usage_endpoint ON token_usage (endpoint)'
-        ]
+          'CREATE INDEX idx_token_usage_endpoint ON token_usage (endpoint)',
+        ],
       });
       console.log('✅ Token usage collection created\n');
     } catch (error) {
@@ -308,41 +308,41 @@ async function setupSchema() {
               collectionId: (await pb.collections.getOne('users')).id,
               cascadeDelete: false,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'name',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'description',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'stage',
             type: 'select',
             required: true,
             options: {
-              values: ['planning', 'building', 'completed', 'error']
-            }
+              values: ['planning', 'building', 'completed', 'error'],
+            },
           },
           {
             name: 'plan',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'backendConfig',
             type: 'json',
-            required: false
+            required: false,
           },
           {
             name: 'context',
             type: 'json',
-            required: false
+            required: false,
           },
           {
             name: 'thumbnail',
@@ -351,14 +351,14 @@ async function setupSchema() {
             options: {
               maxSelect: 1,
               maxSize: 2097152, // 2MB
-              mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
-            }
+              mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            },
           },
           {
             name: 'deployUrl',
             type: 'url',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: 'userId = @request.auth.id',
         viewRule: 'userId = @request.auth.id',
@@ -367,8 +367,8 @@ async function setupSchema() {
         deleteRule: 'userId = @request.auth.id',
         indexes: [
           'CREATE INDEX idx_projects_userId ON projects (userId)',
-          'CREATE INDEX idx_projects_stage ON projects (stage)'
-        ]
+          'CREATE INDEX idx_projects_stage ON projects (stage)',
+        ],
       });
       console.log('✅ Projects collection created\n');
     } catch (error) {
@@ -394,32 +394,32 @@ async function setupSchema() {
               collectionId: (await pb.collections.getOne('projects')).id,
               cascadeDelete: true, // Delete files when project is deleted
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'path',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'content',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'encoding',
             type: 'select',
             required: false,
             options: {
-              values: ['utf-8', 'base64']
-            }
+              values: ['utf-8', 'base64'],
+            },
           },
           {
             name: 'size',
             type: 'number',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: 'projectId.userId = @request.auth.id',
         viewRule: 'projectId.userId = @request.auth.id',
@@ -428,8 +428,8 @@ async function setupSchema() {
         deleteRule: 'projectId.userId = @request.auth.id',
         indexes: [
           'CREATE INDEX idx_project_files_projectId ON project_files (projectId)',
-          'CREATE UNIQUE INDEX idx_project_files_unique ON project_files (projectId, path)'
-        ]
+          'CREATE UNIQUE INDEX idx_project_files_unique ON project_files (projectId, path)',
+        ],
       });
       console.log('✅ Project files collection created\n');
     } catch (error) {
@@ -455,36 +455,34 @@ async function setupSchema() {
               collectionId: (await pb.collections.getOne('projects')).id,
               cascadeDelete: true, // Delete messages when project is deleted
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'role',
             type: 'select',
             required: true,
             options: {
-              values: ['user', 'assistant', 'system']
-            }
+              values: ['user', 'assistant', 'system'],
+            },
           },
           {
             name: 'content',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'tokens',
             type: 'number',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: 'projectId.userId = @request.auth.id',
         viewRule: 'projectId.userId = @request.auth.id',
         createRule: 'projectId.userId = @request.auth.id',
         updateRule: null, // Messages are immutable
         deleteRule: 'projectId.userId = @request.auth.id',
-        indexes: [
-          'CREATE INDEX idx_project_messages_projectId ON project_messages (projectId)'
-        ]
+        indexes: ['CREATE INDEX idx_project_messages_projectId ON project_messages (projectId)'],
       });
       console.log('✅ Project messages collection created\n');
     } catch (error) {
@@ -505,7 +503,6 @@ async function setupSchema() {
     console.log('   - project_messages');
     console.log('\n🌐 Admin UI: http://localhost:8090/_/');
     console.log('📚 API Docs: http://localhost:8090/api/');
-
   } catch (error) {
     console.error('\n❌ Error setting up schema:', error);
     if (error.response) {

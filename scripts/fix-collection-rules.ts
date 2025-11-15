@@ -23,9 +23,9 @@ async function fixCollectionRules() {
         // Update rules to allow server-side creation (no auth required for createRule)
         // This is safe because the logging functions are only called server-side
         await pb.collections.update(collection.id, {
-          listRule: null,  // Admin-only read
-          viewRule: null,  // Admin-only read
-          createRule: '',  // Allow any request (server-side only)
+          listRule: null, // Admin-only read
+          viewRule: null, // Admin-only read
+          createRule: '', // Allow any request (server-side only)
           updateRule: null, // Admin-only update
           deleteRule: null, // Admin-only delete
         });
@@ -38,7 +38,6 @@ async function fixCollectionRules() {
 
     console.log('\n🎉 Collection rules updated successfully!');
     console.log('📊 Workflow logging will now work without permission errors.\n');
-
   } catch (error: any) {
     console.error('❌ Failed to update collection rules:', error.message);
     process.exit(1);

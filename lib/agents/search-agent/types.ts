@@ -9,19 +9,19 @@
 // ============================================================================
 
 export type IntentCategory =
-  | 'code-search'           // Find code examples, repos
-  | 'brand-clone'           // Replicate brand/design from URL or name
-  | 'design-inspiration'    // Get design ideas, layouts
-  | 'content-research'      // Research content, tone, copy
-  | 'api-documentation'     // Find API documentation
-  | 'tutorial-search'       // Find tutorials, guides
-  | 'library-comparison'    // Compare libraries, tools
-  | 'general-knowledge'     // General web search
+  | 'code-search' // Find code examples, repos
+  | 'brand-clone' // Replicate brand/design from URL or name
+  | 'design-inspiration' // Get design ideas, layouts
+  | 'content-research' // Research content, tone, copy
+  | 'api-documentation' // Find API documentation
+  | 'tutorial-search' // Find tutorials, guides
+  | 'library-comparison' // Compare libraries, tools
+  | 'general-knowledge' // General web search
   // EXPANDABLE: Add new categories as needed
-  | 'ai-model-search'       // Future: Find AI models
-  | 'dataset-search'        // Future: Find datasets
-  | 'pricing-research'      // Future: Competitor pricing
-  | 'feature-research';     // Future: Feature analysis
+  | 'ai-model-search' // Future: Find AI models
+  | 'dataset-search' // Future: Find datasets
+  | 'pricing-research' // Future: Competitor pricing
+  | 'feature-research'; // Future: Feature analysis
 
 export interface ColorIntent {
   name: string;
@@ -36,17 +36,17 @@ export interface SearchIntent {
   subCategory?: string;
 
   // Extracted entities
-  techStack?: string[];       // ['nextjs', 'typescript', 'tailwind']
-  features?: string[];        // ['authentication', 'collaboration', 'dashboard']
-  brandMentions?: string[];   // ['linear', 'stripe', 'notion']
+  techStack?: string[]; // ['nextjs', 'typescript', 'tailwind']
+  features?: string[]; // ['authentication', 'collaboration', 'dashboard']
+  brandMentions?: string[]; // ['linear', 'stripe', 'notion']
   colors?: {
     primary?: ColorIntent;
     secondary?: ColorIntent;
     accent?: ColorIntent;
     others?: ColorIntent[];
   };
-  designStyle?: string[];     // ['trendy', 'high-end', 'minimal', 'modern']
-  urls?: string[];            // URLs mentioned for cloning
+  designStyle?: string[]; // ['trendy', 'high-end', 'minimal', 'modern']
+  urls?: string[]; // URLs mentioned for cloning
 
   // Search strategy
   searchSources: ('github' | 'exa' | 'web' | 'duckduckgo' | 'brave' | 'brand' | 'docs')[];
@@ -56,7 +56,7 @@ export interface SearchIntent {
   requiresCloneAnalysis: boolean;
 
   // Priority & confidence
-  confidence: number;         // 0-1
+  confidence: number; // 0-1
   priority: 'low' | 'medium' | 'high';
 
   // Generated queries
@@ -86,7 +86,7 @@ export interface SearchContext {
 
   // Constraints
   maxResults?: number;
-  timeout?: number;           // milliseconds
+  timeout?: number; // milliseconds
   cacheEnabled?: boolean;
 
   // Previous search context (for multi-turn)
@@ -114,7 +114,7 @@ export interface SearchResult {
     searchId: string;
     orgId: string;
     timestamp: Date;
-    duration: number;        // milliseconds
+    duration: number; // milliseconds
     toolsUsed: string[];
     cacheHit: boolean;
     tokensUsed: number;
@@ -125,29 +125,29 @@ export interface SearchResult {
 }
 
 export interface GitHubRepository {
-  fullName: string;           // owner/repo
+  fullName: string; // owner/repo
   description: string;
   stars: number;
   url: string;
   language: string;
   topics: string[];
   readme?: string;
-  relevanceScore?: number;    // 0-1
+  relevanceScore?: number; // 0-1
 }
 
 export interface ExtractedCode {
-  repo: string;               // owner/repo
+  repo: string; // owner/repo
   path: string;
   content: string;
   language: string;
   size: number;
   relevanceScore?: number;
-  adaptedContent?: string;    // Code adapted to user's stack
+  adaptedContent?: string; // Code adapted to user's stack
 }
 
 export interface BrandGuideline {
   brandName: string;
-  source: string;             // URL where found
+  source: string; // URL where found
 
   colors?: {
     primary?: ColorIntent;
@@ -178,8 +178,8 @@ export interface BrandGuideline {
   };
 
   spacing?: {
-    scale?: number[];         // [4, 8, 12, 16, 24, 32, 48, 64]
-    unit?: string;            // 'px' | 'rem'
+    scale?: number[]; // [4, 8, 12, 16, 24, 32, 48, 64]
+    unit?: string; // 'px' | 'rem'
   };
 
   borderRadius?: {
@@ -198,7 +198,7 @@ export interface BrandGuideline {
   };
 
   extractedAt: Date;
-  confidence: number;         // 0-1
+  confidence: number; // 0-1
 }
 
 export interface DesignTokens {
@@ -219,7 +219,7 @@ export interface WebSearchResult {
 
 export interface CloneAnalysis {
   url: string;
-  framework: string | null;   // 'nextjs' | 'react' | 'vue' | etc.
+  framework: string | null; // 'nextjs' | 'react' | 'vue' | etc.
   componentLibrary: string | null; // 'tailwind' | 'mui' | 'chakra' | etc.
 
   layouts: {
@@ -269,7 +269,7 @@ export interface SearchAgentConfig {
 
   // Cache settings
   cacheEnabled: boolean;
-  cacheTTL: number;           // seconds
+  cacheTTL: number; // seconds
 
   // Quotas
   maxSearchesPerDay?: number;
@@ -277,12 +277,12 @@ export interface SearchAgentConfig {
   maxScreenshotsPerSearch?: number;
 
   // Timeouts
-  searchTimeout?: number;     // milliseconds
-  scrapeTimeout?: number;     // milliseconds
+  searchTimeout?: number; // milliseconds
+  scrapeTimeout?: number; // milliseconds
 
   // LLM settings
-  llmModel?: string;          // Default: claude-3-5-sonnet-20241022
-  llmTemperature?: number;    // Default: 0
+  llmModel?: string; // Default: claude-3-5-sonnet-20241022
+  llmTemperature?: number; // Default: 0
 }
 
 // ============================================================================
@@ -338,7 +338,7 @@ export interface UsageStats {
   };
 
   costs: {
-    total: number;        // Always $0 for free tier
+    total: number; // Always $0 for free tier
     breakdown: Record<string, number>;
   };
 }
@@ -371,14 +371,14 @@ export interface BraveSearchInput {
 }
 
 export interface CodeExtractorInput {
-  repo: string;              // owner/repo
+  repo: string; // owner/repo
   paths?: string[];
   features?: string[];
   maxFiles?: number;
 }
 
 export interface BrandScraperInput {
-  brand: string;             // Brand name or URL
+  brand: string; // Brand name or URL
   extractColors?: boolean;
   extractTypography?: boolean;
   extractSpacing?: boolean;
@@ -386,7 +386,7 @@ export interface BrandScraperInput {
 
 export interface CloneAnalyzerInput {
   url: string;
-  analyzePages?: string[];   // Default: ['/', '/features', '/pricing']
+  analyzePages?: string[]; // Default: ['/', '/features', '/pricing']
   extractCode?: boolean;
 }
 
@@ -394,7 +394,7 @@ export interface ContentScraperInput {
   url: string;
   extractTone?: boolean;
   extractCopy?: boolean;
-  sections?: string[];       // CSS selectors
+  sections?: string[]; // CSS selectors
 }
 
 // ============================================================================

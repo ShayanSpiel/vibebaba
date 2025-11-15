@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 /**
  * CSRF Protection Utilities
@@ -85,7 +85,7 @@ export function validateCsrfToken(req: NextRequest): boolean {
       hasCookie: !!cookieToken,
       hasHeader: !!headerToken,
       method: req.method,
-      path: req.nextUrl.pathname
+      path: req.nextUrl.pathname,
     });
     return false;
   }
@@ -115,10 +115,7 @@ export function addCsrfHeader(headers: HeadersInit = {}): HeadersInit {
 /**
  * Secure fetch wrapper with automatic CSRF token
  */
-export async function secureFetch(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function secureFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const method = options.method?.toUpperCase() || 'GET';
 
   // Add CSRF token for state-changing requests

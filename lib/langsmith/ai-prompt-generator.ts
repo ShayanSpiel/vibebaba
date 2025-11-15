@@ -9,21 +9,22 @@
 // Load environment
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
+import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { generateWithFallback } from '@/lib/ai/ai';
 import { getLangSmithClient } from './client';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
 
 /**
  * Prompt generation strategies
  */
 export type PromptStrategy =
-  | 'concise'      // Short, efficient prompts
-  | 'detailed'     // Comprehensive, thorough prompts
-  | 'structured'   // JSON/structured output focused
-  | 'creative'     // More creative/flexible
-  | 'technical'    // Precise, technical language
+  | 'concise' // Short, efficient prompts
+  | 'detailed' // Comprehensive, thorough prompts
+  | 'structured' // JSON/structured output focused
+  | 'creative' // More creative/flexible
+  | 'technical' // Precise, technical language
   | 'conversational'; // Natural, friendly tone
 
 /**
@@ -36,7 +37,6 @@ export async function generatePromptVariants(config: {
   strategies: PromptStrategy[];
   numVariants?: number;
 }): Promise<Array<{ name: string; template: string; strategy: PromptStrategy }>> {
-
   console.log(`🤖 [AI Generator] Creating prompts for ${config.nodeName}...`);
 
   const variants: Array<{ name: string; template: string; strategy: PromptStrategy }> = [];
@@ -61,7 +61,9 @@ export async function generatePromptVariants(config: {
         strategy,
       });
 
-      console.log(`   ✓ Created "${strategy}" variant (${generatedPrompt.length} chars) using ${result.provider}/${result.model}`);
+      console.log(
+        `   ✓ Created "${strategy}" variant (${generatedPrompt.length} chars) using ${result.provider}/${result.model}`
+      );
     } catch (error: any) {
       console.error(`   ✗ Failed to generate "${strategy}":`, error.message);
     }
@@ -79,7 +81,6 @@ function buildMetaPrompt(
   baseExample: string,
   strategy: PromptStrategy
 ): string {
-
   const strategyInstructions = {
     concise: `
 Create a CONCISE, efficient prompt that:
@@ -176,7 +177,6 @@ export async function uploadPromptsToHub(
   prompts: Array<{ name: string; template: string; strategy: PromptStrategy }>,
   projectName: string
 ): Promise<void> {
-
   console.log(`\n📤 [Hub Upload] Uploading ${prompts.length} prompts...`);
 
   const client = getLangSmithClient();
@@ -203,23 +203,27 @@ export async function uploadPromptsToHub(
       const tempPlaceholder = '___TEMPLATE_VAR_';
 
       // Replace template variables with placeholders
-      escapedTemplate = escapedTemplate.replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, varName) => {
-        templateVars.push(varName);
-        return `${tempPlaceholder}${templateVars.length - 1}___`;
-      });
+      escapedTemplate = escapedTemplate.replace(
+        /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g,
+        (match, varName) => {
+          templateVars.push(varName);
+          return `${tempPlaceholder}${templateVars.length - 1}___`;
+        }
+      );
 
       // Now escape ALL remaining curly braces (these are JSON/literal)
       escapedTemplate = escapedTemplate.replace(/\{/g, '{{').replace(/\}/g, '}}');
 
       // Restore template variables
-      escapedTemplate = escapedTemplate.replace(new RegExp(`${tempPlaceholder}(\\d+)___`, 'g'), (match, index) => {
-        return `{${templateVars[parseInt(index)]}}`;
-      });
+      escapedTemplate = escapedTemplate.replace(
+        new RegExp(`${tempPlaceholder}(\\d+)___`, 'g'),
+        (match, index) => {
+          return `{${templateVars[parseInt(index)]}}`;
+        }
+      );
 
       // Convert template string to ChatPromptTemplate
-      const chatPrompt = ChatPromptTemplate.fromMessages([
-        ['system', escapedTemplate]
-      ]);
+      const chatPrompt = ChatPromptTemplate.fromMessages([['system', escapedTemplate]]);
 
       await client.pushPrompt(promptName, {
         object: chatPrompt,
@@ -245,7 +249,6 @@ export async function autoGenerateNodePrompts(config: {
   projectName: string;
   strategies?: PromptStrategy[];
 }): Promise<void> {
-
   const strategies = config.strategies || ['concise', 'detailed', 'structured'];
 
   console.log(`\n${'━'.repeat(60)}`);
@@ -296,7 +299,7 @@ Provide:
 
   {
     nodeName: 'PM',
-    projectName: 'YOUR-LANGSMITH-USERNAME/pm-planning',  // TODO: Replace with your actual LangSmith username
+    projectName: 'YOUR-LANGSMITH-USERNAME/pm-planning', // TODO: Replace with your actual LangSmith username
     purpose: 'Create product plan with features and design direction',
     baseExample: `Create MVP plan for: "{requirements}"
 
@@ -420,7 +423,8 @@ Return:
   {
     nodeName: 'Autogen',
     projectName: 'YOUR-LANGSMITH-USERNAME/autogen-debugger',
-    purpose: 'Multi-agent automated debugging using analyst, fixer, file operations, and reviewer agents',
+    purpose:
+      'Multi-agent automated debugging using analyst, fixer, file operations, and reviewer agents',
     baseExample: `Debug errors: {errors}
 
 Context:
@@ -445,7 +449,6 @@ Return:
  * Batch generate prompts for all nodes
  */
 export async function generateAllNodePrompts(): Promise<void> {
-
   console.log('🤖 Generating prompts for ALL nodes...\n');
 
   for (const nodeConfig of nodeConfigs) {
@@ -526,14 +529,34 @@ Output:
       let nodesToGenerate: string[] = [];
 
       if (nodesArg === 'all') {
-        nodesToGenerate = ['founder', 'pm', 'ux', 'backend', 'frontend', 'qa', 'devops', 'editor', 'autogen'];
+        nodesToGenerate = [
+          'founder',
+          'pm',
+          'ux',
+          'backend',
+          'frontend',
+          'qa',
+          'devops',
+          'editor',
+          'autogen',
+        ];
       } else {
         // Parse comma-separated list
-        const validNodes = ['founder', 'pm', 'ux', 'backend', 'frontend', 'qa', 'devops', 'editor', 'autogen'];
-        nodesToGenerate = nodesArg.split(',').map(n => n.trim().toLowerCase());
+        const validNodes = [
+          'founder',
+          'pm',
+          'ux',
+          'backend',
+          'frontend',
+          'qa',
+          'devops',
+          'editor',
+          'autogen',
+        ];
+        nodesToGenerate = nodesArg.split(',').map((n) => n.trim().toLowerCase());
 
         // Validate all nodes
-        const invalidNodes = nodesToGenerate.filter(n => !validNodes.includes(n));
+        const invalidNodes = nodesToGenerate.filter((n) => !validNodes.includes(n));
         if (invalidNodes.length > 0) {
           console.error(`❌ Invalid node(s): ${invalidNodes.join(', ')}`);
           console.error(`Valid nodes: ${validNodes.join(', ')}, all`);
@@ -542,7 +565,14 @@ Output:
       }
 
       // Determine which strategies to use
-      const allStrategies: PromptStrategy[] = ['concise', 'detailed', 'structured', 'creative', 'technical', 'conversational'];
+      const allStrategies: PromptStrategy[] = [
+        'concise',
+        'detailed',
+        'structured',
+        'creative',
+        'technical',
+        'conversational',
+      ];
       const strategies = allStrategies.slice(0, countArg);
 
       console.log(`\n${'━'.repeat(60)}`);
@@ -555,8 +585,8 @@ Output:
 
       // Generate for each node
       for (const nodeName of nodesToGenerate) {
-        const nodeConfig = nodeConfigs.find(config =>
-          config.nodeName.toLowerCase() === nodeName.toLowerCase()
+        const nodeConfig = nodeConfigs.find(
+          (config) => config.nodeName.toLowerCase() === nodeName.toLowerCase()
         );
 
         if (!nodeConfig) {
@@ -571,8 +601,9 @@ Output:
       }
 
       console.log('\n🎉 All prompts generated successfully!');
-      console.log(`\nGenerated ${nodesToGenerate.length * strategies.length} prompts across ${nodesToGenerate.length} node(s)`);
-
+      console.log(
+        `\nGenerated ${nodesToGenerate.length * strategies.length} prompts across ${nodesToGenerate.length} node(s)`
+      );
     } catch (error: any) {
       console.error('\n💥 Error:', error.message);
       console.error(error.stack);

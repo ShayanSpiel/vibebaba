@@ -4,7 +4,7 @@
  * Helper functions to integrate SearchAgent into existing workflows
  */
 
-import { SearchAgent, buildConfig, type SearchResult, type SearchContext } from './index';
+import { buildConfig, SearchAgent, type SearchContext, type SearchResult } from './index';
 import { logSearchStart } from './logger';
 
 /**
@@ -113,8 +113,10 @@ export function formatSearchResultForAI(result: SearchResult, query: string): st
       formatted += `### ${brand.brandName}\n`;
       if (brand.colors) {
         formatted += `**Colors**:\n`;
-        if (brand.colors.primary) formatted += `- Primary: ${brand.colors.primary.name} (${brand.colors.primary.hex})\n`;
-        if (brand.colors.secondary) formatted += `- Secondary: ${brand.colors.secondary.name} (${brand.colors.secondary.hex})\n`;
+        if (brand.colors.primary)
+          formatted += `- Primary: ${brand.colors.primary.name} (${brand.colors.primary.hex})\n`;
+        if (brand.colors.secondary)
+          formatted += `- Secondary: ${brand.colors.secondary.name} (${brand.colors.secondary.hex})\n`;
       }
       if (brand.typography) {
         formatted += `**Typography**: ${brand.typography.fontFamily}\n`;

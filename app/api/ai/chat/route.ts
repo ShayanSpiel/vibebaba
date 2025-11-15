@@ -1,11 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { generateWithFallback } from "@/lib/ai/ai";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
-import { conversationMemoryStore } from "@/lib/memory/conversation-memory";
+import { type NextRequest, NextResponse } from 'next/server';
+import { generateWithFallback } from '@/lib/ai/ai';
 // PHASE 3: Accurate token estimation and reservation
-import { getTokenEstimator } from "@/lib/credits/token-estimator";
-import { initializeWorkflowWithCreditCheck, trackNodeExecution, finalizeWorkflow, cancelWorkflow } from "@/lib/langgraph/credit-aware-workflow";
+import { getTokenEstimator } from '@/lib/credits/token-estimator';
+import { checkAndResetDailyTokens } from '@/lib/database/pocketbase-credits';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import {
+  cancelWorkflow,
+  finalizeWorkflow,
+  initializeWorkflowWithCreditCheck,
+  trackNodeExecution,
+} from '@/lib/langgraph/credit-aware-workflow';
+import { conversationMemoryStore } from '@/lib/memory/conversation-memory';
 
 /**
  * Determines if request qualifies for quick edit (skips context analysis)
@@ -25,17 +30,26 @@ function shouldUseQuickEdit(
 
   // Must be simple action keywords
   const simpleActions = ['change', 'update', 'fix', 'modify', 'adjust', 'set'];
-  const hasSimpleAction = simpleActions.some(action => request.includes(action));
+  const hasSimpleAction = simpleActions.some((action) => request.includes(action));
   if (!hasSimpleAction) return false;
 
   // Must NOT be complex actions
-  const complexActions = ['add', 'create', 'new', 'remove', 'delete', 'rename', 'move', 'restructure'];
-  const hasComplexAction = complexActions.some(action => request.includes(action));
+  const complexActions = [
+    'add',
+    'create',
+    'new',
+    'remove',
+    'delete',
+    'rename',
+    'move',
+    'restructure',
+  ];
+  const hasComplexAction = complexActions.some((action) => request.includes(action));
   if (hasComplexAction) return false;
 
   // Must be minor change keywords
   const minorKeywords = ['color', 'font', 'size', 'text', 'title', 'heading', 'button', 'link'];
-  const hasMinorKeyword = minorKeywords.some(kw => request.includes(kw));
+  const hasMinorKeyword = minorKeywords.some((kw) => request.includes(kw));
 
   return hasMinorKeyword;
 }
@@ -45,43 +59,60 @@ export async function POST(req: NextRequest) {
     // Check authentication
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { messages, currentPlan, stage, prototypeCode, files, description, context, backendConfig, projectId } = await req.json();
+    const {
+      messages,
+      currentPlan,
+      stage,
+      prototypeCode,
+      files,
+      description,
+      context,
+      backendConfig,
+      projectId,
+    } = await req.json();
 
     // PHASE 3: Accurate token estimation using tiktoken
     const estimator = getTokenEstimator();
-    const userRequest = messages[messages.length - 1]?.content || "";
+    const userRequest = messages[messages.length - 1]?.content || '';
 
     // Build workflow context for estimation
     const workflowNodes = [
       {
-        name: stage === 'planning' ? 'pm' : stage === 'frontend' ? 'frontend' : stage === 'backend' ? 'backend' : 'chat',
+        name:
+          stage === 'planning'
+            ? 'pm'
+            : stage === 'frontend'
+              ? 'frontend'
+              : stage === 'backend'
+                ? 'backend'
+                : 'chat',
         context: {
           messages,
           plan: currentPlan,
           code: prototypeCode,
-          files: files || []
-        }
-      }
+          files: files || [],
+        },
+      },
     ];
 
     // Initialize workflow with credit check and reservation
     const creditCheck = await initializeWorkflowWithCreditCheck({
       userId: user.id,
-      nodes: workflowNodes
+      nodes: workflowNodes,
     });
 
     if (!creditCheck.canProceed) {
       return NextResponse.json(
         {
           error: creditCheck.insufficientCredits
-            ? "Insufficient tokens. Please purchase more credits."
-            : creditCheck.error || "Failed to reserve credits",
+            ? 'Insufficient tokens. Please purchase more credits.'
+            : creditCheck.error || 'Failed to reserve credits',
           insufficientTokens: creditCheck.insufficientCredits,
           estimatedCost: creditCheck.estimatedCost,
-          breakdown: creditCheck.breakdown
+          breakdown: creditCheck.breakdown,
         },
         { status: 402 }
       );
@@ -90,7 +121,7 @@ export async function POST(req: NextRequest) {
     const reservationId = creditCheck.reservationId!;
     const estimatedTokens = creditCheck.estimatedCost;
 
-    console.log(`[Chat] Reserved ${estimatedTokens} tokens (reservation: ${reservationId})`)
+    console.log(`[Chat] Reserved ${estimatedTokens} tokens (reservation: ${reservationId})`);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ✅ PHASE 2: Load conversation memory from PocketBase
@@ -112,19 +143,19 @@ export async function POST(req: NextRequest) {
     const userPreferences = (projectContext as any)?.userPreferences || {
       colorScheme: 'modern',
       complexity: 'balanced',
-      features: []
+      features: [],
     };
     const storedConversationHistory = memory?.messages || [];
 
     // Build conversation context from current messages
-    const conversationHistory = messages.map((msg: any) =>
-      `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
-    ).join("\n\n");
+    const conversationHistory = messages
+      .map((msg: any) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+      .join('\n\n');
 
     const memoryContext = conversationHistory; // Current messages for now
 
     // Different behavior based on stage
-    if (stage === "planning") {
+    if (stage === 'planning') {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // USE PM NODE FOR PLANNING (FULLY AGENTIC)
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -141,7 +172,7 @@ export async function POST(req: NextRequest) {
         completedNodes: [],
         errors: [],
         artifacts: new Map(),
-        stage: 'planning'
+        stage: 'planning',
       };
 
       // Execute PM node
@@ -163,9 +194,11 @@ Let me know if you'd like to make any adjustments!`;
       console.log('[Chat] Conversation stored in memory via conversationMemoryStore');
 
       return NextResponse.json({ response: responseText, updatedPlan });
-    }
-
-    else if (stage === "building" || stage === "editing" || (stage === "complete" && files && files.length > 0)) {
+    } else if (
+      stage === 'building' ||
+      stage === 'editing' ||
+      (stage === 'complete' && files && files.length > 0)
+    ) {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // NEW: USE LANGGRAPH EDITING WORKFLOW (AGENTIC & ROLE-BASED)
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -179,7 +212,9 @@ Let me know if you'd like to make any adjustments!`;
       console.log(`[Chat] 🔍 Edit type: ${isQuickEdit ? 'QUICK' : 'FULL'}`);
 
       // Import appropriate workflow
-      const { editingWorkflow, quickEditWorkflow } = await import('@/lib/langgraph/workflows/editing-workflow');
+      const { editingWorkflow, quickEditWorkflow } = await import(
+        '@/lib/langgraph/workflows/editing-workflow'
+      );
       const workflowFn = isQuickEdit ? quickEditWorkflow : editingWorkflow;
 
       try {
@@ -195,7 +230,7 @@ Let me know if you'd like to make any adjustments!`;
           // Add memory context
           userPreferences,
           projectMemory: projectContext,
-          conversationMemory: storedConversationHistory
+          conversationMemory: storedConversationHistory,
         };
 
         // Use detected workflow (quick or full)
@@ -203,7 +238,7 @@ Let me know if you'd like to make any adjustments!`;
           files: currentFiles,
           userRequest,
           projectContext: enhancedProjectContext,
-          conversationHistory: messages
+          conversationHistory: messages,
         });
 
         // PHASE 3: Finalize reservation (credits already consumed during workflow)
@@ -223,7 +258,7 @@ Let me know if you'd like to make any adjustments!`;
             inputType: workflowResult.userInputRequest.type,
             files: currentFiles, // Return original files (unchanged)
             updatedCode: currentFiles[0]?.content || '',
-            updatedFiles: currentFiles
+            updatedFiles: currentFiles,
           });
         }
 
@@ -235,36 +270,53 @@ Let me know if you'd like to make any adjustments!`;
         const roleMapping: Record<string, string> = {
           'input-detector': 'Input Validator',
           'context-analyzer': 'Team Lead',
-          'editor': 'Engineer',
-          'qa': 'QA'
+          editor: 'Engineer',
+          qa: 'QA',
         };
 
         const roles = workflowResult.aiMetadata.nodesExecuted
-          .map(node => roleMapping[node] || node)
+          .map((node) => roleMapping[node] || node)
           .join(' → ');
 
         // Build file changes summary
-        const fileChangeSummary = workflowResult.fileChanges && workflowResult.fileChanges.length > 0
-          ? workflowResult.fileChanges.map(fc => {
-              const action = fc.changeType === 'added' ? '➕ Added' : fc.changeType === 'deleted' ? '🗑️ Deleted' : '✏️ Edited';
-              return `${action}: **${fc.path}**`;
-            }).join('\n')
-          : workflowResult.changesApplied.map(c => `- ${c}`).join('\n');
+        const fileChangeSummary =
+          workflowResult.fileChanges && workflowResult.fileChanges.length > 0
+            ? workflowResult.fileChanges
+                .map((fc) => {
+                  const action =
+                    fc.changeType === 'added'
+                      ? '➕ Added'
+                      : fc.changeType === 'deleted'
+                        ? '🗑️ Deleted'
+                        : '✏️ Edited';
+                  return `${action}: **${fc.path}**`;
+                })
+                .join('\n')
+            : workflowResult.changesApplied.map((c) => `- ${c}`).join('\n');
 
-        const validationInfo = workflowResult.validationResult ? `
+        const validationInfo = workflowResult.validationResult
+          ? `
 - Errors: ${workflowResult.validationResult.report?.errors?.length || 0}
 - Warnings: ${workflowResult.validationResult.report?.warnings?.length || 0}
 - Auto-Fixed: ${workflowResult.validationResult.report?.fixed?.length || 0}
 ${workflowResult.debugAttempts ? `- Debug Attempts: ${workflowResult.debugAttempts}` : ''}
-` : '';
+`
+          : '';
 
         // Use editor's formatted message if available, otherwise fall back to generic message
         console.log('[Chat] 🔍 WORKFLOW RESULT RECEIVED:');
         console.log('[Chat]    - editorMessage exists:', !!workflowResult.editorMessage);
-        console.log('[Chat]    - editorMessage preview:', workflowResult.editorMessage ? workflowResult.editorMessage.substring(0, 100) + '...' : 'MISSING');
+        console.log(
+          '[Chat]    - editorMessage preview:',
+          workflowResult.editorMessage
+            ? workflowResult.editorMessage.substring(0, 100) + '...'
+            : 'MISSING'
+        );
         console.log('[Chat]    - lastCheckpointId:', workflowResult.lastCheckpointId);
 
-        const responseMessage = workflowResult.editorMessage || `✅ Changes applied successfully!
+        const responseMessage =
+          workflowResult.editorMessage ||
+          `✅ Changes applied successfully!
 
 📋 **Details:**
 - Roles: ${roles}
@@ -284,7 +336,10 @@ ${fileChangeSummary}
 
         console.log('[Chat] Editing conversation stored in memory via conversationMemoryStore');
         console.log('[Chat] 🔍 FINAL RESPONSE TO FRONTEND:');
-        console.log('[Chat]    - response message (first 100 chars):', responseMessage.substring(0, 100) + '...');
+        console.log(
+          '[Chat]    - response message (first 100 chars):',
+          responseMessage.substring(0, 100) + '...'
+        );
         console.log('[Chat]    - lastCheckpointId:', workflowResult.lastCheckpointId);
         console.log('[Chat]    - fileChanges count:', workflowResult.fileChanges?.length || 0);
 
@@ -298,9 +353,8 @@ ${fileChangeSummary}
           // CRITICAL: Pass through data for enhanced UI (revert button, file lists, features)
           fileChanges: workflowResult.fileChanges,
           changesApplied: workflowResult.changesApplied,
-          lastCheckpointId: workflowResult.lastCheckpointId
+          lastCheckpointId: workflowResult.lastCheckpointId,
         });
-
       } catch (error: any) {
         console.error('[Chat] LangGraph workflow error:', error);
 
@@ -308,7 +362,8 @@ ${fileChangeSummary}
         return NextResponse.json(
           {
             error: `Failed to apply changes: ${error.message}`,
-            details: 'The editing system encountered an error. Please try rephrasing your request or try again.'
+            details:
+              'The editing system encountered an error. Please try rephrasing your request or try again.',
           },
           { status: 500 }
         );
@@ -329,7 +384,9 @@ ${fileChangeSummary}
       console.log(`[Chat] 🔍 Edit type: ${isQuickEdit ? 'QUICK' : 'FULL'}`);
 
       // Import appropriate workflow
-      const { editingWorkflow, quickEditWorkflow } = await import('@/lib/langgraph/workflows/editing-workflow');
+      const { editingWorkflow, quickEditWorkflow } = await import(
+        '@/lib/langgraph/workflows/editing-workflow'
+      );
       const workflowFn = isQuickEdit ? quickEditWorkflow : editingWorkflow;
 
       try {
@@ -343,14 +400,14 @@ ${fileChangeSummary}
           stage: 'editing',
           userPreferences,
           projectMemory: projectContext,
-          conversationMemory: storedConversationHistory
+          conversationMemory: storedConversationHistory,
         };
 
         const workflowResult = await workflowFn({
           files: currentFiles,
           userRequest,
           projectContext: enhancedProjectContext,
-          conversationHistory: messages
+          conversationHistory: messages,
         });
 
         // PHASE 3: Finalize reservation (credits already consumed during workflow)
@@ -366,7 +423,7 @@ ${fileChangeSummary}
             inputType: workflowResult.userInputRequest.type,
             files: currentFiles,
             updatedCode: currentFiles[0]?.content || '',
-            updatedFiles: currentFiles
+            updatedFiles: currentFiles,
           });
         }
 
@@ -374,31 +431,43 @@ ${fileChangeSummary}
         const roleMapping2: Record<string, string> = {
           'input-detector': 'Input Validator',
           'context-analyzer': 'Team Lead',
-          'editor': 'Engineer',
-          'qa': 'QA'
+          editor: 'Engineer',
+          qa: 'QA',
         };
 
         const roles2 = workflowResult.aiMetadata.nodesExecuted
-          .map(node => roleMapping2[node] || node)
+          .map((node) => roleMapping2[node] || node)
           .join(' → ');
 
         // Build file changes summary
-        const fileChangeSummary2 = workflowResult.fileChanges && workflowResult.fileChanges.length > 0
-          ? workflowResult.fileChanges.map(fc => {
-              const action = fc.changeType === 'added' ? '➕ Added' : fc.changeType === 'deleted' ? '🗑️ Deleted' : '✏️ Edited';
-              return `${action}: **${fc.path}**`;
-            }).join('\n')
-          : workflowResult.changesApplied.map((c: string) => `- ${c}`).join('\n');
+        const fileChangeSummary2 =
+          workflowResult.fileChanges && workflowResult.fileChanges.length > 0
+            ? workflowResult.fileChanges
+                .map((fc) => {
+                  const action =
+                    fc.changeType === 'added'
+                      ? '➕ Added'
+                      : fc.changeType === 'deleted'
+                        ? '🗑️ Deleted'
+                        : '✏️ Edited';
+                  return `${action}: **${fc.path}**`;
+                })
+                .join('\n')
+            : workflowResult.changesApplied.map((c: string) => `- ${c}`).join('\n');
 
-        const validationInfo = workflowResult.validationResult ? `
+        const validationInfo = workflowResult.validationResult
+          ? `
 - Errors: ${workflowResult.validationResult.report?.errors?.length || 0}
 - Warnings: ${workflowResult.validationResult.report?.warnings?.length || 0}
 - Auto-Fixed: ${workflowResult.validationResult.report?.fixed?.length || 0}
 ${workflowResult.debugAttempts ? `- Debug Attempts: ${workflowResult.debugAttempts}` : ''}
-` : '';
+`
+          : '';
 
         // Use editor's formatted message if available, otherwise fall back to generic message
-        const responseMessage = workflowResult.editorMessage || `✅ Changes applied successfully!
+        const responseMessage =
+          workflowResult.editorMessage ||
+          `✅ Changes applied successfully!
 
 📋 **Details:**
 - Roles: ${roles2}
@@ -424,9 +493,8 @@ ${fileChangeSummary2}
           // CRITICAL: Pass through data for enhanced UI (revert button, file lists, features)
           fileChanges: workflowResult.fileChanges,
           changesApplied: workflowResult.changesApplied,
-          lastCheckpointId: workflowResult.lastCheckpointId
+          lastCheckpointId: workflowResult.lastCheckpointId,
         });
-
       } catch (error: any) {
         console.error('[Chat] Editing workflow error:', error);
         return NextResponse.json(
@@ -438,12 +506,11 @@ ${fileChangeSummary2}
 
     // No action - return acknowledgment
     console.log('[Chat] ⚠️ No matching condition - stage:', stage, 'files:', files?.length || 0);
-    return NextResponse.json({ response: "I'm ready to help! Please let me know what you'd like to do." });
+    return NextResponse.json({
+      response: "I'm ready to help! Please let me know what you'd like to do.",
+    });
   } catch (error: any) {
-    console.error("Error in chat:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('Error in chat:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

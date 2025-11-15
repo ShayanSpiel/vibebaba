@@ -3,8 +3,8 @@
  * Intelligently selects the best design examples based on context
  */
 
-import { pb, type DesignExample, type ExampleCategory } from '../database/pocketbase';
 import { COMPONENT_LIBRARY } from '../components/design-components';
+import { type DesignExample, type ExampleCategory, pb } from '../database/pocketbase';
 
 export interface SelectionContext {
   projectDescription?: string;
@@ -42,7 +42,7 @@ export function detectIndustryContext(description: string): string[] {
   const detected: string[] = [];
 
   for (const [industry, terms] of Object.entries(keywords)) {
-    if (terms.some(term => lowerDesc.includes(term))) {
+    if (terms.some((term) => lowerDesc.includes(term))) {
       detected.push(industry);
     }
   }
@@ -67,7 +67,7 @@ export function detectStylePreference(description: string): string | null {
   const lowerDesc = description.toLowerCase();
 
   for (const [style, terms] of Object.entries(keywords)) {
-    if (terms.some(term => lowerDesc.includes(term))) {
+    if (terms.some((term) => lowerDesc.includes(term))) {
       return style;
     }
   }
@@ -94,9 +94,7 @@ function calculateMatchScore(
   }
 
   // Industry match (30% weight)
-  const industryMatch = example.industryContext.some(ctx =>
-    detectedIndustries.includes(ctx)
-  );
+  const industryMatch = example.industryContext.some((ctx) => detectedIndustries.includes(ctx));
   if (industryMatch) {
     score += 30;
     reasons.push(`matches ${detectedIndustries.join('/')} industry`);
@@ -149,14 +147,12 @@ export async function selectExamplesForCategory(
     const detectedIndustries = context.projectDescription
       ? detectIndustryContext(context.projectDescription)
       : context.userPreferences?.industryContext
-      ? [context.userPreferences.industryContext]
-      : ['saas'];
+        ? [context.userPreferences.industryContext]
+        : ['saas'];
 
     const preferredStyle =
       context.userPreferences?.styleVariant ||
-      (context.projectDescription
-        ? detectStylePreference(context.projectDescription)
-        : null);
+      (context.projectDescription ? detectStylePreference(context.projectDescription) : null);
 
     const usedExampleIds = context.previousGenerations || [];
 
@@ -184,7 +180,7 @@ export async function selectExamplesForCategory(
     }
 
     // Score and rank examples
-    const scoredExamples = examples.map(example => {
+    const scoredExamples = examples.map((example) => {
       const { score, reasons } = calculateMatchScore(
         example,
         detectedIndustries,
@@ -248,7 +244,7 @@ export async function selectExamplesWithFallback(
     const dbExamples = await selectExamplesForCategory(categorySlug, context, limit);
 
     if (dbExamples.length > 0) {
-      return dbExamples.map(selected => ({
+      return dbExamples.map((selected) => ({
         html: selected.example.htmlContent,
         source: 'database' as const,
       }));
@@ -258,7 +254,7 @@ export async function selectExamplesWithFallback(
     console.log(`Using fallback examples for ${categorySlug}`);
     const fallbackExamples = getFallbackExamples(categorySlug);
 
-    return fallbackExamples.map(html => ({
+    return fallbackExamples.map((html) => ({
       html,
       source: 'fallback' as const,
     }));
@@ -267,7 +263,7 @@ export async function selectExamplesWithFallback(
 
     // Return fallback on error
     const fallbackExamples = getFallbackExamples(categorySlug);
-    return fallbackExamples.map(html => ({
+    return fallbackExamples.map((html) => ({
       html,
       source: 'fallback' as const,
     }));

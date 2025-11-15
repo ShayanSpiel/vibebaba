@@ -8,7 +8,7 @@
 // Comprehensive brand database with metadata
 export const BRAND_DATABASE = {
   // AI & Chatbots
-  'openai': {
+  openai: {
     keywords: ['openai', 'chatgpt', 'gpt-4', 'dalle', 'whisper'],
     designKeywords: ['clean interface', 'minimalist', 'dark mode', 'chat interface', 'sidebar'],
     techStack: ['react', 'typescript', 'tailwind', 'next.js'],
@@ -16,7 +16,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['openai.com', 'chat.openai.com'],
     minStars: 100,
   },
-  'anthropic': {
+  anthropic: {
     keywords: ['anthropic', 'claude', 'claude ai', 'constitutional ai'],
     designKeywords: ['elegant', 'professional', 'conversation UI', 'prompt library'],
     techStack: ['react', 'typescript', 'styled-components'],
@@ -24,7 +24,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['anthropic.com', 'claude.ai'],
     minStars: 50,
   },
-  'midjourney': {
+  midjourney: {
     keywords: ['midjourney', 'discord bot', 'image generation'],
     designKeywords: ['gallery', 'grid layout', 'image showcase', 'dark theme'],
     techStack: ['discord.js', 'node.js', 'react'],
@@ -34,7 +34,7 @@ export const BRAND_DATABASE = {
   },
 
   // Payment & Finance
-  'stripe': {
+  stripe: {
     keywords: ['stripe', 'payment', 'checkout', 'billing'],
     designKeywords: ['professional', 'trustworthy', 'form design', 'payment flow'],
     techStack: ['react', 'node.js', 'stripe-js', 'next.js'],
@@ -42,7 +42,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['stripe.com', 'dashboard.stripe.com'],
     minStars: 100,
   },
-  'paypal': {
+  paypal: {
     keywords: ['paypal', 'payment gateway', 'checkout'],
     designKeywords: ['blue theme', 'secure', 'checkout flow'],
     techStack: ['react', 'javascript', 'paypal-sdk'],
@@ -52,7 +52,7 @@ export const BRAND_DATABASE = {
   },
 
   // E-commerce & Marketplace
-  'shopify': {
+  shopify: {
     keywords: ['shopify', 'ecommerce', 'store', 'products'],
     designKeywords: ['product grid', 'cart', 'checkout', 'storefront'],
     techStack: ['react', 'liquid', 'polaris', 'graphql'],
@@ -60,7 +60,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['shopify.com'],
     minStars: 100,
   },
-  'amazon': {
+  amazon: {
     keywords: ['amazon', 'ecommerce', 'marketplace', 'shopping'],
     designKeywords: ['product listing', 'search bar', 'cart', 'reviews'],
     techStack: ['react', 'node.js', 'aws'],
@@ -68,7 +68,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['amazon.com'],
     minStars: 200,
   },
-  'etsy': {
+  etsy: {
     keywords: ['etsy', 'handmade', 'marketplace', 'crafts'],
     designKeywords: ['warm', 'creative', 'grid layout', 'vintage'],
     techStack: ['react', 'node.js'],
@@ -78,7 +78,7 @@ export const BRAND_DATABASE = {
   },
 
   // Social Media
-  'twitter': {
+  twitter: {
     keywords: ['twitter', 'tweet', 'social media', 'feed'],
     designKeywords: ['timeline', 'feed', 'real-time', 'infinite scroll'],
     techStack: ['react', 'react-query', 'tailwind'],
@@ -86,7 +86,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['twitter.com', 'x.com'],
     minStars: 150,
   },
-  'instagram': {
+  instagram: {
     keywords: ['instagram', 'photo sharing', 'stories', 'reels'],
     designKeywords: ['grid layout', 'stories', 'image gallery', 'mobile-first'],
     techStack: ['react', 'react-native', 'graphql'],
@@ -94,7 +94,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['instagram.com'],
     minStars: 150,
   },
-  'linkedin': {
+  linkedin: {
     keywords: ['linkedin', 'professional network', 'jobs', 'connections'],
     designKeywords: ['professional', 'blue theme', 'feed', 'profile'],
     techStack: ['react', 'java', 'kafka'],
@@ -102,7 +102,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['linkedin.com'],
     minStars: 100,
   },
-  'facebook': {
+  facebook: {
     keywords: ['facebook', 'social network', 'feed', 'posts'],
     designKeywords: ['feed', 'timeline', 'messenger', 'groups'],
     techStack: ['react', 'relay', 'graphql'],
@@ -110,7 +110,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['facebook.com'],
     minStars: 150,
   },
-  'tiktok': {
+  tiktok: {
     keywords: ['tiktok', 'short video', 'fyp', 'vertical feed'],
     designKeywords: ['vertical video', 'swipe', 'dark theme', 'interactive'],
     techStack: ['react', 'react-native', 'video player'],
@@ -118,7 +118,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['tiktok.com'],
     minStars: 100,
   },
-  'reddit': {
+  reddit: {
     keywords: ['reddit', 'forum', 'subreddit', 'upvote'],
     designKeywords: ['forum', 'thread', 'voting', 'comment tree'],
     techStack: ['react', 'python', 'postgresql'],
@@ -128,7 +128,7 @@ export const BRAND_DATABASE = {
   },
 
   // Productivity & Tools
-  'notion': {
+  notion: {
     keywords: ['notion', 'notes', 'workspace', 'blocks'],
     designKeywords: ['block-based', 'drag-drop', 'clean', 'workspace'],
     techStack: ['react', 'prosemirror', 'slate'],
@@ -136,7 +136,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['notion.so'],
     minStars: 150,
   },
-  'linear': {
+  linear: {
     keywords: ['linear', 'project management', 'issue tracking', 'cycles'],
     designKeywords: ['minimal', 'keyboard shortcuts', 'command palette', 'fast'],
     techStack: ['react', 'graphql', 'typescript', 'framer-motion'],
@@ -144,7 +144,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['linear.app'],
     minStars: 100,
   },
-  'figma': {
+  figma: {
     keywords: ['figma', 'design tool', 'prototyping', 'collaboration'],
     designKeywords: ['canvas', 'toolbar', 'panels', 'real-time collaboration'],
     techStack: ['react', 'webgl', 'typescript'],
@@ -152,7 +152,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['figma.com'],
     minStars: 100,
   },
-  'slack': {
+  slack: {
     keywords: ['slack', 'chat', 'workspace', 'channels'],
     designKeywords: ['sidebar', 'channels', 'threads', 'chat interface'],
     techStack: ['react', 'electron', 'node.js'],
@@ -160,7 +160,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['slack.com'],
     minStars: 100,
   },
-  'discord': {
+  discord: {
     keywords: ['discord', 'voice chat', 'servers', 'channels'],
     designKeywords: ['dark theme', 'sidebar', 'voice controls', 'chat'],
     techStack: ['react', 'electron', 'discord.js'],
@@ -168,7 +168,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['discord.com'],
     minStars: 150,
   },
-  'trello': {
+  trello: {
     keywords: ['trello', 'kanban', 'boards', 'cards'],
     designKeywords: ['kanban', 'drag-drop', 'boards', 'cards'],
     techStack: ['react', 'node.js', 'mongodb'],
@@ -176,7 +176,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['trello.com'],
     minStars: 100,
   },
-  'asana': {
+  asana: {
     keywords: ['asana', 'project management', 'tasks', 'timeline'],
     designKeywords: ['task list', 'timeline', 'calendar', 'clean'],
     techStack: ['react', 'graphql', 'typescript'],
@@ -186,7 +186,7 @@ export const BRAND_DATABASE = {
   },
 
   // Media & Entertainment
-  'netflix': {
+  netflix: {
     keywords: ['netflix', 'streaming', 'video player', 'carousel'],
     designKeywords: ['carousel', 'video player', 'dark theme', 'grid'],
     techStack: ['react', 'node.js', 'graphql'],
@@ -194,7 +194,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['netflix.com'],
     minStars: 200,
   },
-  'spotify': {
+  spotify: {
     keywords: ['spotify', 'music player', 'playlist', 'streaming'],
     designKeywords: ['dark theme', 'music player', 'sidebar', 'now playing'],
     techStack: ['react', 'typescript', 'web-playback-sdk'],
@@ -202,7 +202,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['spotify.com'],
     minStars: 150,
   },
-  'youtube': {
+  youtube: {
     keywords: ['youtube', 'video platform', 'player', 'recommendations'],
     designKeywords: ['video player', 'sidebar', 'recommendations', 'comments'],
     techStack: ['react', 'polymer', 'youtube-api'],
@@ -210,7 +210,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['youtube.com'],
     minStars: 200,
   },
-  'soundcloud': {
+  soundcloud: {
     keywords: ['soundcloud', 'audio', 'waveform', 'music'],
     designKeywords: ['waveform', 'audio player', 'orange theme'],
     techStack: ['react', 'web-audio-api'],
@@ -220,7 +220,7 @@ export const BRAND_DATABASE = {
   },
 
   // Travel & Booking
-  'airbnb': {
+  airbnb: {
     keywords: ['airbnb', 'booking', 'listings', 'map'],
     designKeywords: ['card grid', 'map view', 'filters', 'gallery'],
     techStack: ['react', 'graphql', 'mapbox'],
@@ -228,7 +228,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['airbnb.com'],
     minStars: 150,
   },
-  'uber': {
+  uber: {
     keywords: ['uber', 'ride sharing', 'map', 'booking'],
     designKeywords: ['map interface', 'real-time tracking', 'dark theme'],
     techStack: ['react', 'react-native', 'mapbox'],
@@ -236,7 +236,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['uber.com'],
     minStars: 100,
   },
-  'booking': {
+  booking: {
     keywords: ['booking.com', 'hotel booking', 'travel'],
     designKeywords: ['search filters', 'hotel cards', 'booking flow'],
     techStack: ['react', 'node.js'],
@@ -246,7 +246,7 @@ export const BRAND_DATABASE = {
   },
 
   // Developer Tools
-  'github': {
+  github: {
     keywords: ['github', 'git', 'repository', 'code'],
     designKeywords: ['code view', 'dark mode', 'file tree', 'diff view'],
     techStack: ['react', 'ruby', 'graphql'],
@@ -254,7 +254,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['github.com'],
     minStars: 200,
   },
-  'gitlab': {
+  gitlab: {
     keywords: ['gitlab', 'git', 'ci/cd', 'devops'],
     designKeywords: ['sidebar', 'project view', 'pipeline'],
     techStack: ['vue', 'ruby', 'gitlab-ci'],
@@ -262,7 +262,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['gitlab.com'],
     minStars: 100,
   },
-  'vercel': {
+  vercel: {
     keywords: ['vercel', 'deployment', 'hosting', 'serverless'],
     designKeywords: ['minimal', 'dark theme', 'dashboard', 'clean'],
     techStack: ['react', 'next.js', 'typescript'],
@@ -270,7 +270,7 @@ export const BRAND_DATABASE = {
     officialDomains: ['vercel.com'],
     minStars: 100,
   },
-  'supabase': {
+  supabase: {
     keywords: ['supabase', 'database', 'backend', 'postgres'],
     designKeywords: ['dashboard', 'table view', 'green theme'],
     techStack: ['react', 'postgresql', 'typescript'],
@@ -296,13 +296,16 @@ export function detectBrands(description: string): {
   // Check for brand mentions
   for (const [brandName, brandData] of Object.entries(BRAND_DATABASE)) {
     const keywords = [brandName, ...brandData.keywords];
-    if (keywords.some(kw => lowerDesc.includes(kw.toLowerCase()))) {
+    if (keywords.some((kw) => lowerDesc.includes(kw.toLowerCase()))) {
       detectedBrands.push(brandName as BrandName);
     }
   }
 
   // Check if it's a clone/replica request
-  const isClone = /\b(clone|like|similar to|replica|copy|replicate|inspired by|style of|version of)\b/i.test(description);
+  const isClone =
+    /\b(clone|like|similar to|replica|copy|replicate|inspired by|style of|version of)\b/i.test(
+      description
+    );
 
   return {
     brands: detectedBrands,
@@ -348,7 +351,6 @@ export function optimizeGitHubQuery(
 - Clone/replica projects (${minStars}+ stars)
 - Tech stack: ${brandData.techStack.join(', ')}
 - App type: ${appType}`;
-
   } else if (primaryBrand && brandData) {
     // BRAND REFERENCE: Find similar apps (not exact clones)
     strategy = 'Brand-Inspired Search';
@@ -367,7 +369,6 @@ export function optimizeGitHubQuery(
 - Related functionality: ${semanticKeywords.join(', ')}
 - Minimum ${minStars} stars
 - TypeScript implementations`;
-
   } else {
     // GENERIC: Extract keywords and optimize with synonyms
     strategy = 'Semantic Keyword Search';
@@ -431,7 +432,6 @@ export function optimizeWebQuery(
       query = `"${primaryBrand}" ${appType} interface design patterns ${brandData.designKeywords[0]} ${year}`;
       explanation = `Searching for ${primaryBrand}'s interface and design patterns`;
     }
-
   } else if (primaryBrand && brandData) {
     // BRAND REFERENCE: Search for similar functionality patterns
     strategy = 'Functionality Pattern Search';
@@ -441,7 +441,6 @@ export function optimizeWebQuery(
 
     query = `${semanticKeywords.join(' ')} ${appType} design patterns best practices ${year}`;
     explanation = `Searching for ${semanticKeywords.join(', ')} patterns similar to ${primaryBrand}`;
-
   } else {
     // GENERIC: Optimized search for app type with expanded keywords
     strategy = 'Best Practices Search';
@@ -472,46 +471,107 @@ export function optimizeWebQuery(
  */
 const DOMAIN_KEYWORDS = new Set([
   // Productivity & Task Management
-  'calendar', 'checklist', 'todo', 'task', 'schedule', 'event', 'reminder',
-  'planner', 'agenda', 'appointment', 'booking', 'timeline', 'deadline',
+  'calendar',
+  'checklist',
+  'todo',
+  'task',
+  'schedule',
+  'event',
+  'reminder',
+  'planner',
+  'agenda',
+  'appointment',
+  'booking',
+  'timeline',
+  'deadline',
 
   // Data & Content
-  'dashboard', 'analytics', 'chart', 'graph', 'table', 'list', 'grid',
-  'form', 'input', 'search', 'filter', 'sort', 'pagination',
+  'dashboard',
+  'analytics',
+  'chart',
+  'graph',
+  'table',
+  'list',
+  'grid',
+  'form',
+  'input',
+  'search',
+  'filter',
+  'sort',
+  'pagination',
 
   // Social & Communication
-  'chat', 'message', 'comment', 'post', 'feed', 'profile', 'user',
-  'notification', 'follow', 'like', 'share',
+  'chat',
+  'message',
+  'comment',
+  'post',
+  'feed',
+  'profile',
+  'user',
+  'notification',
+  'follow',
+  'like',
+  'share',
 
   // E-commerce & Transactions
-  'cart', 'checkout', 'payment', 'product', 'catalog', 'shop', 'store',
-  'order', 'invoice', 'pricing', 'subscription',
+  'cart',
+  'checkout',
+  'payment',
+  'product',
+  'catalog',
+  'shop',
+  'store',
+  'order',
+  'invoice',
+  'pricing',
+  'subscription',
 
   // Media & Files
-  'image', 'video', 'audio', 'file', 'upload', 'download', 'gallery',
-  'photo', 'document', 'pdf',
+  'image',
+  'video',
+  'audio',
+  'file',
+  'upload',
+  'download',
+  'gallery',
+  'photo',
+  'document',
+  'pdf',
 
   // Authentication & Users
-  'login', 'signup', 'register', 'auth', 'authentication', 'password',
-  'account', 'settings', 'permission', 'role',
+  'login',
+  'signup',
+  'register',
+  'auth',
+  'authentication',
+  'password',
+  'account',
+  'settings',
+  'permission',
+  'role',
 
   // Technical Terms
-  'api', 'database', 'real-time', 'websocket', 'crud', 'admin'
+  'api',
+  'database',
+  'real-time',
+  'websocket',
+  'crud',
+  'admin',
 ]);
 
 /**
  * Synonym map for expanding search queries
  */
 const KEYWORD_SYNONYMS: Record<string, string[]> = {
-  'calendar': ['schedule', 'event', 'date', 'planner'],
-  'checklist': ['todo', 'task', 'list'],
-  'todo': ['task', 'checklist', 'item'],
-  'task': ['todo', 'checklist', 'item', 'assignment'],
-  'chat': ['message', 'messaging', 'conversation'],
-  'dashboard': ['admin', 'panel', 'analytics'],
-  'cart': ['shopping-cart', 'basket', 'checkout'],
-  'auth': ['authentication', 'login', 'signup'],
-  'form': ['input', 'fields', 'validation'],
+  calendar: ['schedule', 'event', 'date', 'planner'],
+  checklist: ['todo', 'task', 'list'],
+  todo: ['task', 'checklist', 'item'],
+  task: ['todo', 'checklist', 'item', 'assignment'],
+  chat: ['message', 'messaging', 'conversation'],
+  dashboard: ['admin', 'panel', 'analytics'],
+  cart: ['shopping-cart', 'basket', 'checkout'],
+  auth: ['authentication', 'login', 'signup'],
+  form: ['input', 'fields', 'validation'],
 };
 
 /**
@@ -520,12 +580,56 @@ const KEYWORD_SYNONYMS: Record<string, string[]> = {
 function extractKeywords(description: string): string[] {
   // Minimal stop words - only remove true filler words
   const stopWords = new Set([
-    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
-    'could', 'may', 'might', 'must', 'can', 'and', 'or', 'but', 'in', 'on',
-    'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'into',
-    'through', 'after', 'over', 'between', 'out', 'against', 'during',
-    'without', 'before', 'under', 'around', 'among'
+    'a',
+    'an',
+    'the',
+    'is',
+    'are',
+    'was',
+    'were',
+    'be',
+    'been',
+    'being',
+    'have',
+    'has',
+    'had',
+    'do',
+    'does',
+    'did',
+    'will',
+    'would',
+    'should',
+    'could',
+    'may',
+    'might',
+    'must',
+    'can',
+    'and',
+    'or',
+    'but',
+    'in',
+    'on',
+    'at',
+    'to',
+    'for',
+    'of',
+    'with',
+    'by',
+    'from',
+    'as',
+    'into',
+    'through',
+    'after',
+    'over',
+    'between',
+    'out',
+    'against',
+    'during',
+    'without',
+    'before',
+    'under',
+    'around',
+    'among',
     // NOTE: Removed 'want', 'need', 'make', 'create', 'build', 'app', 'like' - these can be meaningful
   ]);
 
@@ -533,11 +637,11 @@ function extractKeywords(description: string): string[] {
     .toLowerCase()
     .replace(/[^\w\s-]/g, ' ') // Keep hyphens for terms like 'drag-and-drop'
     .split(/\s+/)
-    .filter(word => word.length > 2 && !stopWords.has(word));
+    .filter((word) => word.length > 2 && !stopWords.has(word));
 
   // Prioritize domain-specific keywords
-  const domainWords = words.filter(w => DOMAIN_KEYWORDS.has(w));
-  const otherWords = words.filter(w => !DOMAIN_KEYWORDS.has(w));
+  const domainWords = words.filter((w) => DOMAIN_KEYWORDS.has(w));
+  const otherWords = words.filter((w) => !DOMAIN_KEYWORDS.has(w));
 
   // Get unique keywords
   const uniqueDomainWords = [...new Set(domainWords)];
@@ -545,9 +649,7 @@ function extractKeywords(description: string): string[] {
 
   // Combine: domain keywords first (sorted by frequency), then others (sorted by length)
   const domainSorted = uniqueDomainWords.slice(0, 4); // Prioritize up to 4 domain keywords
-  const othersSorted = uniqueOtherWords
-    .sort((a, b) => b.length - a.length)
-    .slice(0, 3); // Add up to 3 other descriptive words
+  const othersSorted = uniqueOtherWords.sort((a, b) => b.length - a.length).slice(0, 3); // Add up to 3 other descriptive words
 
   return [...domainSorted, ...othersSorted].slice(0, 5);
 }
@@ -560,7 +662,7 @@ function expandKeywordsWithSynonyms(keywords: string[], maxExpanded: number = 3)
 
   for (const keyword of keywords) {
     if (KEYWORD_SYNONYMS[keyword]) {
-      KEYWORD_SYNONYMS[keyword].slice(0, 1).forEach(syn => expanded.add(syn));
+      KEYWORD_SYNONYMS[keyword].slice(0, 1).forEach((syn) => expanded.add(syn));
     }
   }
 
@@ -578,36 +680,16 @@ export function getSearchSuggestions(appType: string): string[] {
       'modern landing page UI',
       'SaaS landing page',
     ],
-    'dashboard': [
-      'admin dashboard',
-      'analytics dashboard',
-      'data visualization',
-      'dashboard UI kit',
-    ],
+    dashboard: ['admin dashboard', 'analytics dashboard', 'data visualization', 'dashboard UI kit'],
     'saas-app': [
       'SaaS boilerplate',
       'multi-tenant app',
       'subscription management',
       'SaaS architecture',
     ],
-    'ecommerce': [
-      'ecommerce storefront',
-      'product catalog',
-      'checkout flow',
-      'shopping cart',
-    ],
-    'social-media': [
-      'social feed',
-      'user profiles',
-      'real-time updates',
-      'infinite scroll',
-    ],
-    'chat': [
-      'chat interface',
-      'real-time messaging',
-      'WebSocket implementation',
-      'chat UI',
-    ],
+    ecommerce: ['ecommerce storefront', 'product catalog', 'checkout flow', 'shopping cart'],
+    'social-media': ['social feed', 'user profiles', 'real-time updates', 'infinite scroll'],
+    chat: ['chat interface', 'real-time messaging', 'WebSocket implementation', 'chat UI'],
   };
 
   return suggestions[appType] || [];

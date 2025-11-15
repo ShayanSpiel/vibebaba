@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { useProjectSettings } from "@/lib/contexts/ProjectSettingsContext";
+import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useProjectSettings } from '@/lib/contexts/ProjectSettingsContext';
 
 interface ProjectSettingsModalProps {
   isOpen: boolean;
@@ -54,7 +54,7 @@ export default function ProjectSettingsModal({
       console.log('[Settings] Saving settings:', {
         projectId,
         projectName,
-        initialPrompt: prompt
+        initialPrompt: prompt,
       });
 
       // 🎯 SINGLE SOURCE OF TRUTH: Use centralized updateSettings from context
@@ -112,7 +112,10 @@ export default function ProjectSettingsModal({
   }, [stylingConfig]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="bg-background-base rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -173,7 +176,9 @@ export default function ProjectSettingsModal({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-text-tertiary mb-1">Brand Name</p>
-                      <p className="text-sm font-semibold text-text-primary">{brandAssets.brandName}</p>
+                      <p className="text-sm font-semibold text-text-primary">
+                        {brandAssets.brandName}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-text-tertiary mb-1">Design System</p>
@@ -193,7 +198,10 @@ export default function ProjectSettingsModal({
                   <h4 className="text-sm font-semibold text-text-primary mb-3">Color Palette</h4>
                   <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
                     {Object.entries(colors)
-                      .filter(([key]) => key !== 'mode' && typeof colors[key as keyof typeof colors] === 'string')
+                      .filter(
+                        ([key]) =>
+                          key !== 'mode' && typeof colors[key as keyof typeof colors] === 'string'
+                      )
                       .map(([name, color]) => (
                         <div key={name} className="group">
                           <div
@@ -201,15 +209,23 @@ export default function ProjectSettingsModal({
                             style={{ backgroundColor: color as string }}
                             title={`${name}: ${color}`}
                           />
-                          <p className="text-[10px] text-text-tertiary capitalize truncate">{name}</p>
-                          <p className="text-[9px] text-text-tertiary/60 font-mono">{(color as string).substring(0, 7)}</p>
+                          <p className="text-[10px] text-text-tertiary capitalize truncate">
+                            {name}
+                          </p>
+                          <p className="text-[9px] text-text-tertiary/60 font-mono">
+                            {(color as string).substring(0, 7)}
+                          </p>
                         </div>
                       ))}
                   </div>
                   {colors.mode && (
                     <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-background-subtle rounded-full">
-                      <div className={`w-2 h-2 rounded-full ${colors.mode === 'dark' ? 'bg-gray-800' : 'bg-yellow-400'}`} />
-                      <span className="text-xs text-text-secondary capitalize">{colors.mode} Mode</span>
+                      <div
+                        className={`w-2 h-2 rounded-full ${colors.mode === 'dark' ? 'bg-gray-800' : 'bg-yellow-400'}`}
+                      />
+                      <span className="text-xs text-text-secondary capitalize">
+                        {colors.mode} Mode
+                      </span>
                     </div>
                   )}
                 </div>
@@ -221,12 +237,17 @@ export default function ProjectSettingsModal({
                   <h4 className="text-sm font-semibold text-text-primary mb-3">Semantic Colors</h4>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
                     {Object.entries(enhancedColors.semantic).map(([name, color]) => (
-                      <div key={name} className="flex items-center gap-2 p-2 bg-background-raised rounded border border-light">
+                      <div
+                        key={name}
+                        className="flex items-center gap-2 p-2 bg-background-raised rounded border border-light"
+                      >
                         <div
                           className="w-6 h-6 rounded flex-shrink-0 border border-light"
                           style={{ backgroundColor: color as string }}
                         />
-                        <p className="text-[10px] text-text-tertiary truncate">{name.replace(/([A-Z])/g, ' $1').trim()}</p>
+                        <p className="text-[10px] text-text-tertiary truncate">
+                          {name.replace(/([A-Z])/g, ' $1').trim()}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -240,10 +261,15 @@ export default function ProjectSettingsModal({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-background-raised rounded-lg border border-light">
                       <p className="text-xs text-text-tertiary mb-2">Font Family</p>
-                      <p className="text-sm font-semibold text-text-primary" style={{ fontFamily: typography.fontFamily }}>
+                      <p
+                        className="text-sm font-semibold text-text-primary"
+                        style={{ fontFamily: typography.fontFamily }}
+                      >
                         {typography.fontFamily}
                       </p>
-                      <p className="text-2xl mt-2" style={{ fontFamily: typography.fontFamily }}>Aa</p>
+                      <p className="text-2xl mt-2" style={{ fontFamily: typography.fontFamily }}>
+                        Aa
+                      </p>
                     </div>
 
                     <div className="p-4 bg-background-raised rounded-lg border border-light">
@@ -251,9 +277,15 @@ export default function ProjectSettingsModal({
                       <p className="text-sm capitalize text-text-primary">{typography.scale}</p>
                       {typography.fontSizes && (
                         <div className="mt-2 space-y-1">
-                          <p className="text-xs" style={{ fontSize: typography.fontSizes.sm }}>Small</p>
-                          <p className="text-base" style={{ fontSize: typography.fontSizes.base }}>Base</p>
-                          <p className="text-lg" style={{ fontSize: typography.fontSizes.lg }}>Large</p>
+                          <p className="text-xs" style={{ fontSize: typography.fontSizes.sm }}>
+                            Small
+                          </p>
+                          <p className="text-base" style={{ fontSize: typography.fontSizes.base }}>
+                            Base
+                          </p>
+                          <p className="text-lg" style={{ fontSize: typography.fontSizes.lg }}>
+                            Large
+                          </p>
                         </div>
                       )}
                     </div>
@@ -262,10 +294,14 @@ export default function ProjectSettingsModal({
                       <p className="text-xs text-text-tertiary mb-2">Weights</p>
                       <div className="space-y-1">
                         {typography.headingWeight && (
-                          <p className="text-sm text-text-secondary">Heading: {typography.headingWeight}</p>
+                          <p className="text-sm text-text-secondary">
+                            Heading: {typography.headingWeight}
+                          </p>
                         )}
                         {typography.bodyWeight && (
-                          <p className="text-sm text-text-secondary">Body: {typography.bodyWeight}</p>
+                          <p className="text-sm text-text-secondary">
+                            Body: {typography.bodyWeight}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -299,12 +335,18 @@ export default function ProjectSettingsModal({
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-text-primary mb-3">Spacing System</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {spacing.layout && Object.entries(spacing.layout).map(([name, value]) => (
-                      <div key={name} className="p-3 bg-background-raised rounded-lg border border-light">
-                        <p className="text-xs text-text-tertiary mb-1 capitalize">{name.replace(/([A-Z])/g, ' $1').trim()}</p>
-                        <p className="text-sm font-mono text-text-primary">{value as string}</p>
-                      </div>
-                    ))}
+                    {spacing.layout &&
+                      Object.entries(spacing.layout).map(([name, value]) => (
+                        <div
+                          key={name}
+                          className="p-3 bg-background-raised rounded-lg border border-light"
+                        >
+                          <p className="text-xs text-text-tertiary mb-1 capitalize">
+                            {name.replace(/([A-Z])/g, ' $1').trim()}
+                          </p>
+                          <p className="text-sm font-mono text-text-primary">{value as string}</p>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
@@ -319,19 +361,21 @@ export default function ProjectSettingsModal({
                       <div>
                         <p className="text-xs text-text-tertiary mb-2">Buttons</p>
                         <div className="flex flex-wrap gap-2">
-                          {Object.entries(components.button.variants).map(([variant, styles]: [string, any]) => (
-                            <button
-                              key={variant}
-                              className="px-4 py-2 rounded-lg font-medium text-sm transition-all"
-                              style={{
-                                backgroundColor: styles.bg,
-                                color: styles.text,
-                                border: `1px solid ${styles.border}`,
-                              }}
-                            >
-                              {variant.charAt(0).toUpperCase() + variant.slice(1)}
-                            </button>
-                          ))}
+                          {Object.entries(components.button.variants).map(
+                            ([variant, styles]: [string, any]) => (
+                              <button
+                                key={variant}
+                                className="px-4 py-2 rounded-lg font-medium text-sm transition-all"
+                                style={{
+                                  backgroundColor: styles.bg,
+                                  color: styles.text,
+                                  border: `1px solid ${styles.border}`,
+                                }}
+                              >
+                                {variant.charAt(0).toUpperCase() + variant.slice(1)}
+                              </button>
+                            )
+                          )}
                         </div>
                       </div>
                     )}
@@ -371,7 +415,9 @@ export default function ProjectSettingsModal({
                           }}
                         >
                           <h5 className="font-semibold mb-1">Card Title</h5>
-                          <p className="text-sm opacity-80">This is an example card component with your brand styling.</p>
+                          <p className="text-sm opacity-80">
+                            This is an example card component with your brand styling.
+                          </p>
                         </div>
                       </div>
                     )}

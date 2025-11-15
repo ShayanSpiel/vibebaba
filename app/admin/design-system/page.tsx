@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
-  Palette,
   Check,
-  Plus,
-  Trash2,
-  Eye,
-  RefreshCw,
   Download,
-  Upload,
+  Eye,
+  Palette,
+  Plus,
+  RefreshCw,
   Sparkles,
+  Trash2,
+  Upload,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import * as allThemes from '@/lib/theme/theme-config';
 
 interface ThemeInfo {
@@ -106,7 +106,9 @@ export default function DesignSystemPage() {
         }
 
         // Show success message
-        alert(`Theme switched to ${data.activeTheme}. Refresh the page to see changes across the entire app.`);
+        alert(
+          `Theme switched to ${data.activeTheme}. Refresh the page to see changes across the entire app.`
+        );
       } else {
         alert('Failed to switch theme: ' + data.error);
       }
@@ -284,11 +286,7 @@ export default function DesignSystemPage() {
               </span>
             </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={cancelPreview}
-              >
+              <Button size="sm" variant="outline" onClick={cancelPreview}>
                 Cancel
               </Button>
               <Button
@@ -363,9 +361,7 @@ export default function DesignSystemPage() {
         <Card>
           <CardHeader>
             <CardTitle>Create Custom Theme</CardTitle>
-            <CardDescription>
-              Design your own color palette for the application
-            </CardDescription>
+            <CardDescription>Design your own color palette for the application</CardDescription>
           </CardHeader>
           <CardContent>
             <CustomThemeForm
@@ -392,7 +388,15 @@ interface ThemeCardProps {
   onExport: () => void;
 }
 
-function ThemeCard({ theme, colors, isActive, onPreview, onSwitch, onDelete, onExport }: ThemeCardProps) {
+function ThemeCard({
+  theme,
+  colors,
+  isActive,
+  onPreview,
+  onSwitch,
+  onDelete,
+  onExport,
+}: ThemeCardProps) {
   return (
     <div className="border rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -441,10 +445,7 @@ function ThemeCard({ theme, colors, isActive, onPreview, onSwitch, onDelete, onE
 function ColorSwatch({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <div
-        className="w-full h-12 rounded border"
-        style={{ backgroundColor: color }}
-      />
+      <div className="w-full h-12 rounded border" style={{ backgroundColor: color }} />
       <span className="text-xs text-text-secondary">{label}</span>
     </div>
   );

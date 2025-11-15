@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { consumeTokens, getAvailableTokens, checkAndResetDailyTokens } from "@/lib/database/pocketbase-credits";
-import { createAppGenWorkflow } from "@/lib/langgraph/workflow";
-import type { AppGenState } from "@/lib/langgraph/types";
-import { customAlphabet } from "nanoid";
+import { customAlphabet } from 'nanoid';
+import { type NextRequest, NextResponse } from 'next/server';
+import {
+  checkAndResetDailyTokens,
+  consumeTokens,
+  getAvailableTokens,
+} from '@/lib/database/pocketbase-credits';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import type { AppGenState } from '@/lib/langgraph/types';
+import { createAppGenWorkflow } from '@/lib/langgraph/workflow';
 
 // PocketBase-compatible ID generator (alphanumeric only, no hyphens)
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 15);
@@ -24,13 +28,13 @@ export async function POST(req: NextRequest) {
     // Check authentication
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { description } = await req.json();
 
     if (!description) {
-      return NextResponse.json({ error: "Description is required" }, { status: 400 });
+      return NextResponse.json({ error: 'Description is required' }, { status: 400 });
     }
 
     // Estimate tokens needed
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
     const availableTokens = getAvailableTokens(updatedUser);
     if (availableTokens < estimatedTokens) {
       return NextResponse.json(
-        { error: "Insufficient tokens. Please purchase more credits.", insufficientTokens: true },
+        { error: 'Insufficient tokens. Please purchase more credits.', insufficientTokens: true },
         { status: 402 }
       );
     }
@@ -53,11 +57,11 @@ export async function POST(req: NextRequest) {
     const initialState: AppGenState = {
       userDescription: description,
       userId: user.id,
-      projectId: nanoid(),  // Exactly 15 chars, alphanumeric only (no hyphens)
+      projectId: nanoid(), // Exactly 15 chars, alphanumeric only (no hyphens)
       completedNodes: [],
       errors: [],
       artifacts: new Map(),
-      stage: 'initial'
+      stage: 'initial',
     };
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -79,20 +83,16 @@ export async function POST(req: NextRequest) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     // Consume tokens after successful generation
-    await consumeTokens(user.id, estimatedTokens, "/api/ai/plan");
+    await consumeTokens(user.id, estimatedTokens, '/api/ai/plan');
 
     // Return same format as before (BACKWARD COMPATIBLE)
     return NextResponse.json({
       plan: result.plan,
-      context: result.context
+      context: result.context,
     });
-
   } catch (error: any) {
-    console.error("Error in plan generation:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('Error in plan generation:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -130,13 +130,13 @@ async function legacyPlanHandler(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { description, projectId } = await req.json();
 
     if (!description) {
-      return NextResponse.json({ error: "Description is required" }, { status: 400 });
+      return NextResponse.json({ error: 'Description is required' }, { status: 400 });
     }
 
     const estimatedTokens = Math.ceil(description.length / 2);
@@ -145,7 +145,7 @@ async function legacyPlanHandler(req: NextRequest) {
 
     if (availableTokens < estimatedTokens) {
       return NextResponse.json(
-        { error: "Insufficient tokens. Please purchase more credits.", insufficientTokens: true },
+        { error: 'Insufficient tokens. Please purchase more credits.', insufficientTokens: true },
         { status: 402 }
       );
     }
@@ -177,15 +177,15 @@ Return ONLY valid JSON, no explanations.`;
       context = JSON.parse(jsonMatch ? jsonMatch[0] : analysisResult);
     } catch (e) {
       context = {
-        appType: "other",
-        complexity: "moderate",
-        designStyle: "modern",
+        appType: 'other',
+        complexity: 'moderate',
+        designStyle: 'modern',
         primaryPurpose: description,
         keyFeatures: [],
-        targetAudience: "general users",
-        visualTone: "light",
-        animationLevel: "moderate",
-        imageContext: ["professional", "modern"]
+        targetAudience: 'general users',
+        visualTone: 'light',
+        animationLevel: 'moderate',
+        imageContext: ['professional', 'modern'],
       };
     }
 
@@ -207,12 +207,12 @@ Return ONLY valid JSON, no explanations.`;
     //   );
     // }
 
-    const optionalContext = ""; // backgroundContext ? formatContextForAI(backgroundContext) : "";
+    const optionalContext = ''; // backgroundContext ? formatContextForAI(backgroundContext) : "";
 
     // MEMORY INTEGRATION: Retrieve conversation context if projectId exists
     let conversationContext = '';
     if (projectId) {
-      conversationContext = await getConversationContext(projectId) || '';
+      conversationContext = (await getConversationContext(projectId)) || '';
     }
 
     const planPrompt = `You are an expert product manager creating a focused, precise plan.
@@ -235,13 +235,13 @@ Create a concise plan (max 250 words) with:
 [2 sentences about what this app does]
 
 **Core Features** (only what's needed)
-${context.complexity === "simple" ? "- 2-3 essential features" : context.complexity === "moderate" ? "- 4-6 main features" : "- 6-8 comprehensive features"}
+${context.complexity === 'simple' ? '- 2-3 essential features' : context.complexity === 'moderate' ? '- 4-6 main features' : '- 6-8 comprehensive features'}
 
 **Design Direction**
 - Style: ${context.designStyle}
 - Visual tone: ${context.visualTone}
-- Animations: ${context.animationLevel === "none" ? "No animations, clean and fast" : context.animationLevel === "subtle" ? "Minimal transitions only" : context.animationLevel === "moderate" ? "Smooth transitions and hover effects" : "Rich animations and interactions"}
-- Images: ${context.imageContext.join(", ")} theme
+- Animations: ${context.animationLevel === 'none' ? 'No animations, clean and fast' : context.animationLevel === 'subtle' ? 'Minimal transitions only' : context.animationLevel === 'moderate' ? 'Smooth transitions and hover effects' : 'Rich animations and interactions'}
+- Images: ${context.imageContext.join(', ')} theme
 
 **User Experience**
 [2-3 key UX points for this specific app]
@@ -252,7 +252,7 @@ ${context.complexity === "simple" ? "- 2-3 essential features" : context.complex
 Keep it focused and actionable. No fluff, no unnecessary features.`;
 
     const plan = await generateWithFallback(planPrompt);
-    await consumeTokens(user.id, estimatedTokens, "/api/ai/plan");
+    await consumeTokens(user.id, estimatedTokens, '/api/ai/plan');
 
     // MEMORY INTEGRATION: Disabled - using conversation-memory in LangGraph nodes
     // (Legacy code - not used when USE_LANGGRAPH=true)
@@ -263,13 +263,10 @@ Keep it focused and actionable. No fluff, no unnecessary features.`;
     return NextResponse.json({
       plan,
       context,
-      projectId: finalProjectId
+      projectId: finalProjectId,
     });
   } catch (error: any) {
-    console.error("Error in plan generation:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('Error in plan generation:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

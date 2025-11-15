@@ -248,11 +248,16 @@ Return ONLY a valid JSON object (no markdown, no code blocks):
 
 function getStyleVariantGuidelines(variant: string): string {
   const guidelines: Record<string, string> = {
-    minimal: '- Clean lines, maximum white space\n   - Monochromatic or limited color palette\n   - Subtle shadows\n   - Simple typography',
-    modern: '- Bold typography\n   - Vibrant gradients\n   - Smooth animations\n   - Contemporary spacing',
-    glassmorphism: '- Frosted glass effect (backdrop-blur)\n   - Semi-transparent backgrounds\n   - Light borders\n   - Layered depth',
-    brutalist: '- Bold, raw aesthetics\n   - High contrast\n   - Unconventional layouts\n   - Strong typography',
-    gradient: '- Rich gradient backgrounds\n   - Smooth color transitions\n   - Vibrant colors\n   - Modern aesthetics',
+    minimal:
+      '- Clean lines, maximum white space\n   - Monochromatic or limited color palette\n   - Subtle shadows\n   - Simple typography',
+    modern:
+      '- Bold typography\n   - Vibrant gradients\n   - Smooth animations\n   - Contemporary spacing',
+    glassmorphism:
+      '- Frosted glass effect (backdrop-blur)\n   - Semi-transparent backgrounds\n   - Light borders\n   - Layered depth',
+    brutalist:
+      '- Bold, raw aesthetics\n   - High contrast\n   - Unconventional layouts\n   - Strong typography',
+    gradient:
+      '- Rich gradient backgrounds\n   - Smooth color transitions\n   - Vibrant colors\n   - Modern aesthetics',
     dark: '- Dark backgrounds (#0f172a, #1e293b)\n   - High contrast text\n   - Subtle glows\n   - Modern dark UI patterns',
   };
 
@@ -278,9 +283,12 @@ function getIndustryGuidelines(industry: string): string {
 
 function getComplexityGuidelines(level: string): string {
   const guidelines: Record<string, string> = {
-    simple: '- 1-3 main elements\n   - Straightforward layout\n   - Minimal interactions\n   - Quick to implement',
-    medium: '- 4-8 elements\n   - Moderate layout complexity\n   - Some interactive features\n   - Balanced functionality',
-    complex: '- 9+ elements\n   - Advanced layout techniques\n   - Rich interactions\n   - Full-featured component',
+    simple:
+      '- 1-3 main elements\n   - Straightforward layout\n   - Minimal interactions\n   - Quick to implement',
+    medium:
+      '- 4-8 elements\n   - Moderate layout complexity\n   - Some interactive features\n   - Balanced functionality',
+    complex:
+      '- 9+ elements\n   - Advanced layout techniques\n   - Rich interactions\n   - Full-featured component',
   };
 
   return guidelines[level] || guidelines.medium;

@@ -17,9 +17,9 @@ export function escapeFilterValue(value: string): string {
 
   // Escape quotes and backslashes
   return value
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/"/g, '\\"')     // Escape double quotes
-    .replace(/'/g, "\\'");    // Escape single quotes
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/"/g, '\\"') // Escape double quotes
+    .replace(/'/g, "\\'"); // Escape single quotes
 }
 
 /**
@@ -30,7 +30,11 @@ export function escapeFilterValue(value: string): string {
  * @param value - The value to compare
  * @returns Safe filter string
  */
-export function createSafeFilter(field: string, operator: string, value: string | number | boolean): string {
+export function createSafeFilter(
+  field: string,
+  operator: string,
+  value: string | number | boolean
+): string {
   // Validate field name (alphanumeric and underscore only)
   if (!/^[a-zA-Z0-9_]+$/.test(field)) {
     throw new Error(`Invalid field name: ${field}`);
@@ -110,8 +114,8 @@ export class RateLimiter {
   private requests: Map<string, number[]> = new Map();
 
   constructor(
-    private windowMs: number = 60000,  // 1 minute default
-    private maxRequests: number = 10    // 10 requests default
+    private windowMs: number = 60000, // 1 minute default
+    private maxRequests: number = 10 // 10 requests default
   ) {}
 
   /**
@@ -128,7 +132,7 @@ export class RateLimiter {
     let requests = this.requests.get(identifier) || [];
 
     // Filter out old requests outside the window
-    requests = requests.filter(timestamp => timestamp > windowStart);
+    requests = requests.filter((timestamp) => timestamp > windowStart);
 
     // Check if limit exceeded
     if (requests.length >= this.maxRequests) {
@@ -157,7 +161,7 @@ export class RateLimiter {
     const windowStart = now - this.windowMs;
 
     for (const [identifier, requests] of this.requests.entries()) {
-      const activeRequests = requests.filter(timestamp => timestamp > windowStart);
+      const activeRequests = requests.filter((timestamp) => timestamp > windowStart);
 
       if (activeRequests.length === 0) {
         this.requests.delete(identifier);
@@ -175,19 +179,22 @@ export class RateLimiter {
  * @param isDevelopment - Whether running in development mode
  * @returns Safe error message
  */
-export function sanitizeError(error: any, isDevelopment: boolean = process.env.NODE_ENV === 'development'): string {
+export function sanitizeError(
+  error: any,
+  isDevelopment: boolean = process.env.NODE_ENV === 'development'
+): string {
   if (isDevelopment) {
     return error.message || 'An error occurred';
   }
 
   // Production: return generic messages based on error type
   const safeMessages: Record<string, string> = {
-    'SQLITE_CONSTRAINT': 'Database constraint violation',
+    SQLITE_CONSTRAINT: 'Database constraint violation',
     'UNIQUE constraint failed': 'Record already exists',
     'FOREIGN KEY constraint failed': 'Invalid reference',
     'NOT NULL constraint failed': 'Required field missing',
-    'Unauthorized': 'Authentication required',
-    'Forbidden': 'Insufficient permissions',
+    Unauthorized: 'Authentication required',
+    Forbidden: 'Insufficient permissions',
     'Not Found': 'Resource not found',
   };
 
@@ -225,7 +232,7 @@ export function validateUrl(url: string, allowedDomains?: string[]): boolean {
 
     // Check domain whitelist if provided
     if (allowedDomains && allowedDomains.length > 0) {
-      return allowedDomains.some(domain => parsed.hostname.endsWith(domain));
+      return allowedDomains.some((domain) => parsed.hostname.endsWith(domain));
     }
 
     return true;

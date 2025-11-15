@@ -3,9 +3,9 @@
  * Admin endpoint for generating new examples
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { generateExample, generateCategoryExamples } from '@/lib/examples/example-generator';
-import { pb, type ExampleCategory } from '@/lib/database/pocketbase';
+import { type NextRequest, NextResponse } from 'next/server';
+import { type ExampleCategory, pb } from '@/lib/database/pocketbase';
+import { generateCategoryExamples, generateExample } from '@/lib/examples/example-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,10 +21,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!categorySlug) {
-      return NextResponse.json(
-        { error: 'categorySlug is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'categorySlug is required' }, { status: 400 });
     }
 
     // Get category
@@ -33,10 +30,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (categories.length === 0) {
-      return NextResponse.json(
-        { error: `Category not found: ${categorySlug}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Category not found: ${categorySlug}` }, { status: 404 });
     }
 
     const category = categories[0];
@@ -93,7 +87,9 @@ export async function POST(request: NextRequest) {
         category.description,
         count,
         (current, total, example) => {
-          console.log(`Progress: ${current}/${total} - Quality: ${example.qualityScores?.qualityScore}`);
+          console.log(
+            `Progress: ${current}/${total} - Quality: ${example.qualityScores?.qualityScore}`
+          );
         }
       );
 

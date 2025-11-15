@@ -18,13 +18,29 @@
 
 import type { BuildValidationResult } from './build-validator';
 import type { CodeValidationResult } from './code-validator';
+import type {
+  FileToValidate,
+  ValidationOptions as GeneratedCodeValidationOptions,
+  ValidationResult as GeneratedCodeValidationResult,
+} from './types';
 import type { ValidationResult as UIValidationResult } from './ui-validator';
-import type { ValidationResult as GeneratedCodeValidationResult, ValidationOptions as GeneratedCodeValidationOptions, FileToValidate } from './types';
 
-export { validateBuild, quickLint, fullValidation as fullBuildValidation } from './build-validator';
-export { validateCode as validateCodeQuality, quickCodeCheck, fullCodeValidation } from './code-validator';
-export { validateGeneratedUI, applyAutoFixes, hasQualityIssues, getValidationSummary } from './ui-validator';
-export type { GeneratedCodeValidationResult as FileValidationResult, GeneratedCodeValidationOptions as FileValidationOptions };
+export { fullValidation as fullBuildValidation, quickLint, validateBuild } from './build-validator';
+export {
+  fullCodeValidation,
+  quickCodeCheck,
+  validateCode as validateCodeQuality,
+} from './code-validator';
+export {
+  applyAutoFixes,
+  getValidationSummary,
+  hasQualityIssues,
+  validateGeneratedUI,
+} from './ui-validator';
+export type {
+  GeneratedCodeValidationResult as FileValidationResult,
+  GeneratedCodeValidationOptions as FileValidationOptions,
+};
 
 export interface ValidationResult {
   valid: boolean;
@@ -57,9 +73,7 @@ export interface ValidationOptions {
 /**
  * Run all validators
  */
-export async function validateAll(
-  options: ValidationOptions = {}
-): Promise<ValidationResult> {
+export async function validateAll(options: ValidationOptions = {}): Promise<ValidationResult> {
   const {
     runBuild = true,
     runCode = true,
@@ -68,7 +82,7 @@ export async function validateAll(
     checkTypes = true,
     runTests = false,
     checkCoverage = false,
-    browsers = ['chromium']
+    browsers = ['chromium'],
   } = options;
 
   const startTime = Date.now();
@@ -84,7 +98,7 @@ export async function validateAll(
 
   let buildResult: BuildValidationResult | null = null;
   let codeResult: CodeValidationResult | null = null;
-  let uiResult: UIValidationResult | null = null;
+  const uiResult: UIValidationResult | null = null;
 
   // Run build validation
   if (runBuild) {
@@ -141,8 +155,8 @@ export async function validateAll(
       lintErrors,
       testFailures,
       e2eFailures,
-      visualDiffs
-    }
+      visualDiffs,
+    },
   };
 }
 
@@ -156,14 +170,16 @@ export async function quickValidation(autoFix = false): Promise<ValidationResult
     runUI: false,
     autoFix,
     checkTypes: false,
-    runTests: false
+    runTests: false,
   });
 }
 
 /**
  * Full validation (everything: build + code + tests + coverage)
  */
-export async function fullValidation(options: Partial<ValidationOptions> = {}): Promise<ValidationResult> {
+export async function fullValidation(
+  options: Partial<ValidationOptions> = {}
+): Promise<ValidationResult> {
   return validateAll({
     runBuild: true,
     runCode: true,
@@ -172,7 +188,7 @@ export async function fullValidation(options: Partial<ValidationOptions> = {}): 
     checkTypes: true,
     runTests: true,
     checkCoverage: true,
-    ...options
+    ...options,
   });
 }
 
@@ -188,7 +204,7 @@ export async function ciValidation(): Promise<ValidationResult> {
     checkTypes: true,
     runTests: true,
     checkCoverage: true,
-    browsers: ['chromium', 'firefox', 'webkit']
+    browsers: ['chromium', 'firefox', 'webkit'],
   });
 }
 
@@ -204,12 +220,12 @@ export async function validateCode(
   console.log('[ValidateCode] Starting validation of generated files...');
 
   // Import validators
-  const { validateBackendCompatibility } = await import('./backend-compatibility');
+  const { validateBackendCompatibility } = await import('@/lib/validation/backend-compatibility');
   const { validateRoutes } = await import('./structure-validator');
   const { validateDeploymentReadiness } = await import('./deployment-readiness');
 
   let allErrors: any[] = [];
-  let allWarnings: any[] = [];
+  const allWarnings: any[] = [];
   const fixed: string[] = [];
 
   // Run validators that work with file arrays
@@ -233,27 +249,29 @@ export async function validateCode(
     const { autoFixErrors } = await import('./auto-fixer');
 
     // Filter out non-autofixable errors
-    const autofixableErrors = allErrors.filter(e => e.autoFixable);
+    const autofixableErrors = allErrors.filter((e) => e.autoFixable);
     if (autofixableErrors.length > 0) {
       const fixResult = autoFixErrors(files, autofixableErrors);
       files = fixResult.files;
       fixed.push(...fixResult.fixed);
 
       // Remove fixed errors from the error list
-      allErrors = allErrors.filter(e => !fixed.includes(e.rule) || e.rule === undefined);
+      allErrors = allErrors.filter((e) => !fixed.includes(e.rule) || e.rule === undefined);
       console.log(`[ValidateCode] Auto-fixed ${fixed.length} issue(s)`);
     }
   }
 
   // Separate errors and warnings
-  const errors = allErrors.filter(e => e.severity === 'error');
-  const warnings = allErrors.filter(e => e.severity === 'warning');
+  const errors = allErrors.filter((e) => e.severity === 'error');
+  const warnings = allErrors.filter((e) => e.severity === 'warning');
 
   const valid = errors.length === 0;
   const duration = Date.now() - startTime;
 
   console.log(`[ValidateCode] Validation complete in ${duration}ms`);
-  console.log(`[ValidateCode] Errors: ${errors.length}, Warnings: ${warnings.length}, Fixed: ${fixed.length}`);
+  console.log(
+    `[ValidateCode] Errors: ${errors.length}, Warnings: ${warnings.length}, Fixed: ${fixed.length}`
+  );
 
   return {
     valid,
@@ -261,7 +279,7 @@ export async function validateCode(
     report: {
       errors,
       warnings,
-      fixed
-    }
+      fixed,
+    },
   };
 }

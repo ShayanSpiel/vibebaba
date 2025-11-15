@@ -79,7 +79,7 @@ module.exports = nextConfig;
 function generateTsConfig() {
   return JSON.stringify({
     compilerOptions: {
-      target: 'es5',
+      target: 'ES2020',
       lib: ['dom', 'dom.iterable', 'esnext'],
       allowJs: true,
       skipLibCheck: true,
@@ -92,6 +92,7 @@ function generateTsConfig() {
       isolatedModules: true,
       jsx: 'preserve',
       incremental: true,
+      downlevelIteration: true,
       plugins: [
         {
           name: 'next'

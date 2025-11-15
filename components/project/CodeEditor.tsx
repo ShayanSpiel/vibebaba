@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
 
 interface CodeEditorProps {
   code: string;
@@ -65,7 +65,7 @@ export default function CodeEditor({ code, onSave, onClose }: CodeEditorProps) {
           style={{
             tabSize: 2,
             fontFamily: "'Courier New', Courier, monospace",
-            lineHeight: "1.6"
+            lineHeight: '1.6',
           }}
           spellCheck={false}
         />
@@ -74,7 +74,9 @@ export default function CodeEditor({ code, onSave, onClose }: CodeEditorProps) {
       {/* Status Bar */}
       <div className="px-4 py-2 bg-background-raised border-t border-light flex items-center justify-between text-xs text-text-tertiary">
         <span>HTML • UTF-8</span>
-        <span>{editedCode.split('\n').length} lines • {editedCode.length} characters</span>
+        <span>
+          {editedCode.split('\n').length} lines • {editedCode.length} characters
+        </span>
       </div>
     </div>
   );

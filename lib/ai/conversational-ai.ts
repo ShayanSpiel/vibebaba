@@ -12,19 +12,19 @@ export interface LiveProgressMessage {
 // Acknowledgments - AI confirms it understood the request
 export function getAcknowledgment(userRequest: string): LiveProgressMessage {
   const acknowledgments = [
-    { content: "Got it! Let me work on that...", emoji: "✓" },
-    { content: "Perfect! On it now...", emoji: "⚡" },
-    { content: "Love it! Making that happen...", emoji: "🚀" },
-    { content: "You got it! Starting now...", emoji: "💪" },
-    { content: "Awesome! Building that for you...", emoji: "🔨" },
-    { content: "Great idea! Let's do this...", emoji: "💡" },
+    { content: 'Got it! Let me work on that...', emoji: '✓' },
+    { content: 'Perfect! On it now...', emoji: '⚡' },
+    { content: 'Love it! Making that happen...', emoji: '🚀' },
+    { content: 'You got it! Starting now...', emoji: '💪' },
+    { content: 'Awesome! Building that for you...', emoji: '🔨' },
+    { content: "Great idea! Let's do this...", emoji: '💡' },
   ];
 
   const selected = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
   return {
     type: 'acknowledgment',
     content: selected.content,
-    emoji: selected.emoji
+    emoji: selected.emoji,
   };
 }
 
@@ -32,34 +32,34 @@ export function getAcknowledgment(userRequest: string): LiveProgressMessage {
 export function getProgressMessage(action: string): LiveProgressMessage {
   const progressMessages: Record<string, LiveProgressMessage[]> = {
     analyzing: [
-      { type: 'progress', content: "Analyzing your request..." },
-      { type: 'progress', content: "Understanding what you need...", emoji: "🧠" },
-      { type: 'progress', content: "Breaking down the requirements...", emoji: "🔍" },
+      { type: 'progress', content: 'Analyzing your request...' },
+      { type: 'progress', content: 'Understanding what you need...', emoji: '🧠' },
+      { type: 'progress', content: 'Breaking down the requirements...', emoji: '🔍' },
     ],
     designing: [
-      { type: 'progress', content: "Designing the UI components...", emoji: "🎨" },
-      { type: 'progress', content: "Choosing the perfect layout...", emoji: "📐" },
-      { type: 'progress', content: "Crafting the user experience...", emoji: "✨" },
+      { type: 'progress', content: 'Designing the UI components...', emoji: '🎨' },
+      { type: 'progress', content: 'Choosing the perfect layout...', emoji: '📐' },
+      { type: 'progress', content: 'Crafting the user experience...', emoji: '✨' },
     ],
     coding: [
-      { type: 'progress', content: "Writing the code...", emoji: "💻" },
-      { type: 'progress', content: "Building the components...", emoji: "🔧" },
-      { type: 'progress', content: "Adding the functionality...", emoji: "⚙️" },
+      { type: 'progress', content: 'Writing the code...', emoji: '💻' },
+      { type: 'progress', content: 'Building the components...', emoji: '🔧' },
+      { type: 'progress', content: 'Adding the functionality...', emoji: '⚙️' },
     ],
     database: [
-      { type: 'progress', content: "Setting up the database...", emoji: "🗄️" },
-      { type: 'progress', content: "Creating the data structure...", emoji: "📊" },
-      { type: 'progress', content: "Configuring the backend...", emoji: "⚡" },
+      { type: 'progress', content: 'Setting up the database...', emoji: '🗄️' },
+      { type: 'progress', content: 'Creating the data structure...', emoji: '📊' },
+      { type: 'progress', content: 'Configuring the backend...', emoji: '⚡' },
     ],
     testing: [
-      { type: 'progress', content: "Testing the code...", emoji: "🧪" },
-      { type: 'progress', content: "Validating everything works...", emoji: "✓" },
-      { type: 'progress', content: "Polishing the details...", emoji: "💎" },
+      { type: 'progress', content: 'Testing the code...', emoji: '🧪' },
+      { type: 'progress', content: 'Validating everything works...', emoji: '✓' },
+      { type: 'progress', content: 'Polishing the details...', emoji: '💎' },
     ],
     updating: [
-      { type: 'progress', content: "Updating the code...", emoji: "🔄" },
-      { type: 'progress', content: "Making the changes...", emoji: "✏️" },
-      { type: 'progress', content: "Applying your feedback...", emoji: "💡" },
+      { type: 'progress', content: 'Updating the code...', emoji: '🔄' },
+      { type: 'progress', content: 'Making the changes...', emoji: '✏️' },
+      { type: 'progress', content: 'Applying your feedback...', emoji: '💡' },
     ],
   };
 
@@ -70,17 +70,17 @@ export function getProgressMessage(action: string): LiveProgressMessage {
 // Completion messages
 export function getCompletionMessage(task: string): LiveProgressMessage {
   const completions = [
-    { content: `Done! ${task} is ready ✓`, emoji: "🎉" },
-    { content: `All set! ${task} complete ✓`, emoji: "✨" },
-    { content: `Finished! ${task} is live ✓`, emoji: "🚀" },
-    { content: `Complete! ${task} looking good ✓`, emoji: "💯" },
+    { content: `Done! ${task} is ready ✓`, emoji: '🎉' },
+    { content: `All set! ${task} complete ✓`, emoji: '✨' },
+    { content: `Finished! ${task} is live ✓`, emoji: '🚀' },
+    { content: `Complete! ${task} looking good ✓`, emoji: '💯' },
   ];
 
   const selected = completions[Math.floor(Math.random() * completions.length)];
   return {
     type: 'completion',
     content: selected.content,
-    emoji: selected.emoji
+    emoji: selected.emoji,
   };
 }
 
@@ -109,12 +109,12 @@ export function generateConversationalResponse(
 // Quick update responses (for small changes)
 export function getQuickUpdateResponse(): string {
   const quickResponses = [
-    "On it! ⚡",
-    "Making that change now... 🔧",
-    "Updating... ✏️",
-    "Tweaking that for you... 🎯",
-    "Consider it done! ✓",
-    "Already on it... 🚀",
+    'On it! ⚡',
+    'Making that change now... 🔧',
+    'Updating... ✏️',
+    'Tweaking that for you... 🎯',
+    'Consider it done! ✓',
+    'Already on it... 🚀',
   ];
 
   return quickResponses[Math.floor(Math.random() * quickResponses.length)];

@@ -13,26 +13,31 @@
 // Load environment
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
 config({ path: resolve(process.cwd(), '.env.local') });
 
 import { generateWithFallback } from '@/lib/ai/ai';
-import { getLangSmithClient } from './client';
-import { runAutomatedExperiment, builtInEvaluators, type ExperimentConfig } from './auto-experiment';
+import {
+  builtInEvaluators,
+  type ExperimentConfig,
+  runAutomatedExperiment,
+} from './auto-experiment';
 import { promoteWinner } from './auto-promotion';
+import { getLangSmithClient } from './client';
 
 /**
  * Mutation types for prompt evolution
  */
 export type PromptMutation =
-  | 'shorter'           // Make 30-50% shorter
-  | 'longer'            // Make 30-50% longer
-  | 'more-constraints'  // Add more rules/requirements
-  | 'less-constraints'  // Remove constraints for flexibility
-  | 'more-examples'     // Add more examples
-  | 'simpler'          // Simplify language
-  | 'technical'        // Make more technical/precise
-  | 'structured'       // Add more structure (sections, bullets)
-  | 'conversational';  // Make more natural/friendly
+  | 'shorter' // Make 30-50% shorter
+  | 'longer' // Make 30-50% longer
+  | 'more-constraints' // Add more rules/requirements
+  | 'less-constraints' // Remove constraints for flexibility
+  | 'more-examples' // Add more examples
+  | 'simpler' // Simplify language
+  | 'technical' // Make more technical/precise
+  | 'structured' // Add more structure (sections, bullets)
+  | 'conversational'; // Make more natural/friendly
 
 /**
  * Evolution configuration
@@ -42,9 +47,9 @@ export interface EvolutionConfig {
   datasetName: string;
   basePrompt: string;
   runWorkflow: (inputs: any, promptText: string) => Promise<any>;
-  generations: number;          // How many evolution cycles
-  populationSize: number;       // Variants per generation
-  survivalRate: number;         // % of variants that survive (0.3 = top 30%)
+  generations: number; // How many evolution cycles
+  populationSize: number; // Variants per generation
+  survivalRate: number; // % of variants that survive (0.3 = top 30%)
   mutationsPerSurvivor: number; // New variants from each survivor
 }
 
@@ -56,7 +61,6 @@ async function mutatePrompt(
   mutation: PromptMutation,
   generation: number
 ): Promise<string> {
-
   const mutationPrompts: Record<PromptMutation, string> = {
     shorter: `Make this prompt 30-50% SHORTER while keeping core functionality:
 
@@ -207,7 +211,6 @@ function cleanPrompt(prompt: string): string {
  * Run evolution cycle
  */
 export async function evolvePrompts(config: EvolutionConfig): Promise<void> {
-
   console.log(`\n${'━'.repeat(60)}`);
   console.log(`🧬 Evolving Prompts for ${config.nodeName}`);
   console.log('━'.repeat(60));
@@ -215,9 +218,7 @@ export async function evolvePrompts(config: EvolutionConfig): Promise<void> {
   console.log(`Population: ${config.populationSize} per generation`);
   console.log(`Survival rate: ${(config.survivalRate * 100).toFixed(0)}%`);
 
-  let currentGeneration = [
-    { name: 'base', prompt: config.basePrompt, score: 0, generation: 0 }
-  ];
+  let currentGeneration = [{ name: 'base', prompt: config.basePrompt, score: 0, generation: 0 }];
 
   const allMutations: PromptMutation[] = [
     'shorter',
@@ -237,7 +238,12 @@ export async function evolvePrompts(config: EvolutionConfig): Promise<void> {
     console.log('─'.repeat(60));
 
     // Generate new population from survivors
-    const newPopulation: Array<{ name: string; prompt: string; score: number; generation: number }> = [];
+    const newPopulation: Array<{
+      name: string;
+      prompt: string;
+      score: number;
+      generation: number;
+    }> = [];
 
     for (const survivor of currentGeneration) {
       // Keep survivor
@@ -265,7 +271,7 @@ export async function evolvePrompts(config: EvolutionConfig): Promise<void> {
     const experimentConfig: ExperimentConfig = {
       name: `${config.nodeName}-evolution-gen${gen}`,
       datasetName: config.datasetName,
-      variants: newPopulation.map(p => ({
+      variants: newPopulation.map((p) => ({
         name: p.name,
         promptName: `evolution-temp-${p.name}`, // Temporary, won't upload
       })),
@@ -305,8 +311,9 @@ export async function evolvePrompts(config: EvolutionConfig): Promise<void> {
         }
 
         variant.score = totalScore / testCount;
-        console.log(`      Score: ${variant.score.toFixed(2)} (${successCount}/${testCount} passed)`);
-
+        console.log(
+          `      Score: ${variant.score.toFixed(2)} (${successCount}/${testCount} passed)`
+        );
       } catch (error: any) {
         variant.score = 0;
         console.log(`      Failed: ${error.message}`);
@@ -348,7 +355,11 @@ export async function evolvePrompts(config: EvolutionConfig): Promise<void> {
 /**
  * Upload prompt to Hub
  */
-async function uploadPromptToHub(nodeName: string, variantName: string, prompt: string): Promise<void> {
+async function uploadPromptToHub(
+  nodeName: string,
+  variantName: string,
+  prompt: string
+): Promise<void> {
   const client = getLangSmithClient();
 
   try {
@@ -412,7 +423,6 @@ if (require.main === module) {
         survivalRate: 0.3,
         mutationsPerSurvivor: 2,
       });
-
     } catch (error: any) {
       console.error('\n💥 Evolution failed:', error.message);
       console.error(error.stack);

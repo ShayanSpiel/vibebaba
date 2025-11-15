@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { pb } from '@/lib/database/pocketbase';
 
 export async function GET(req: NextRequest) {

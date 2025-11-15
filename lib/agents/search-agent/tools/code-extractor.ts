@@ -4,19 +4,26 @@
  * Extract code files from GitHub repositories
  */
 
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { z } from "zod";
-import { getMCPManager } from "@/lib/mcp/client";
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { getMCPManager } from '@/lib/mcp/client';
 
 export function createCodeExtractorTool() {
   return new DynamicStructuredTool({
-    name: "code_extractor",
-    description: "Extract code files from GitHub repository. Best for: downloading components, utils, configs from repos. Provide either specific file paths OR features to find relevant files.",
+    name: 'code_extractor',
+    description:
+      'Extract code files from GitHub repository. Best for: downloading components, utils, configs from repos. Provide either specific file paths OR features to find relevant files.',
     schema: z.object({
       repo: z.string().describe("GitHub repo in format 'owner/repo'"),
-      paths: z.array(z.string()).optional().describe("Specific file paths to extract (e.g., ['src/components/Auth.tsx'])"),
-      features: z.array(z.string()).optional().describe("Features to find if paths not provided (e.g., ['auth', 'dashboard'])"),
-      maxFiles: z.number().default(5).describe("Maximum number of files to extract (default: 5)"),
+      paths: z
+        .array(z.string())
+        .optional()
+        .describe("Specific file paths to extract (e.g., ['src/components/Auth.tsx'])"),
+      features: z
+        .array(z.string())
+        .optional()
+        .describe("Features to find if paths not provided (e.g., ['auth', 'dashboard'])"),
+      maxFiles: z.number().default(5).describe('Maximum number of files to extract (default: 5)'),
     }),
     func: async ({ repo, paths, features, maxFiles }) => {
       try {
@@ -26,8 +33,8 @@ export function createCodeExtractorTool() {
         if (!client) {
           return JSON.stringify({
             success: false,
-            error: "GitHub MCP not available",
-            message: "Cannot extract code from GitHub"
+            error: 'GitHub MCP not available',
+            message: 'Cannot extract code from GitHub',
           });
         }
 
@@ -41,8 +48,8 @@ export function createCodeExtractorTool() {
         if (filePaths.length === 0) {
           return JSON.stringify({
             success: false,
-            error: "No files specified or found",
-            message: "Please provide either 'paths' or 'features' to extract code"
+            error: 'No files specified or found',
+            message: "Please provide either 'paths' or 'features' to extract code",
           });
         }
 
@@ -59,14 +66,16 @@ export function createCodeExtractorTool() {
             });
 
             if (result && result.content) {
-              const content = Array.isArray(result.content) ? result.content[0]?.text : result.content;
+              const content = Array.isArray(result.content)
+                ? result.content[0]?.text
+                : result.content;
               const fileData = typeof content === 'string' ? JSON.parse(content) : content;
 
               extractedCode.push({
                 path,
                 content: fileData.content || fileData,
                 language: getLanguageFromPath(path),
-                size: fileData.size || (fileData.content?.length || 0),
+                size: fileData.size || fileData.content?.length || 0,
                 repo,
               });
             }
@@ -86,7 +95,7 @@ export function createCodeExtractorTool() {
         return JSON.stringify({
           success: false,
           error: error.message || 'Code extraction failed',
-          message: "Failed to extract code from GitHub repository"
+          message: 'Failed to extract code from GitHub repository',
         });
       }
     },
@@ -140,21 +149,21 @@ async function findRelevantFiles(
 function getLanguageFromPath(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase();
   const langMap: Record<string, string> = {
-    'ts': 'typescript',
-    'tsx': 'typescript',
-    'js': 'javascript',
-    'jsx': 'javascript',
-    'py': 'python',
-    'go': 'go',
-    'rs': 'rust',
-    'java': 'java',
-    'rb': 'ruby',
-    'php': 'php',
-    'css': 'css',
-    'scss': 'scss',
-    'html': 'html',
-    'json': 'json',
-    'md': 'markdown',
+    ts: 'typescript',
+    tsx: 'typescript',
+    js: 'javascript',
+    jsx: 'javascript',
+    py: 'python',
+    go: 'go',
+    rs: 'rust',
+    java: 'java',
+    rb: 'ruby',
+    php: 'php',
+    css: 'css',
+    scss: 'scss',
+    html: 'html',
+    json: 'json',
+    md: 'markdown',
   };
 
   return langMap[ext || ''] || 'unknown';

@@ -8,9 +8,17 @@
  * 4. End-to-end workflow integration
  */
 
-import { loadMemoryContext, storeProjectContext, formatMemoryContextForPrompt } from '../lib/langgraph/memory-loader';
-import { unifiedSearch, formatUnifiedSearchForAI, getSearchCacheStats } from '../lib/mcp/unified-search';
+import {
+  formatMemoryContextForPrompt,
+  loadMemoryContext,
+  storeProjectContext,
+} from '../lib/langgraph/memory-loader';
 import { getAllCacheStats, startCleanupJob } from '../lib/mcp/cache';
+import {
+  formatUnifiedSearchForAI,
+  getSearchCacheStats,
+  unifiedSearch,
+} from '../lib/mcp/unified-search';
 import { getMemoryService } from '../lib/services/memory-service';
 
 async function runTests() {
@@ -77,7 +85,7 @@ async function runTests() {
       designDecisions: ['Use React', 'Dark mode'],
       componentChoices: ['Button', 'Modal'],
       technicalStack: ['Next.js', 'TypeScript'],
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     const ctx = await memoryService.getProjectContext(testProjectId);
@@ -104,12 +112,12 @@ async function runTests() {
       userPreferences: {
         designStyle: 'minimalist',
         prefersDarkMode: true,
-        colorScheme: 'blue'
+        colorScheme: 'blue',
       },
       projectContext: {
         description: 'Test app',
-        plan: 'Build feature X'
-      }
+        plan: 'Build feature X',
+      },
     });
 
     if (formatted.includes('USER PREFERENCES') && formatted.includes('minimalist')) {
@@ -130,11 +138,12 @@ async function runTests() {
   // Test 5: Unified Search (No Cache)
   console.log('TEST 5: Unified Search (First Call - No Cache)');
   try {
-    const result = await unifiedSearch(
-      'Build a ChatGPT clone',
-      'app',
-      { useCache: true, minStars: 20, maxResults: 3, timeout: 5000 }
-    );
+    const result = await unifiedSearch('Build a ChatGPT clone', 'app', {
+      useCache: true,
+      minStars: 20,
+      maxResults: 3,
+      timeout: 5000,
+    });
 
     if (result.success) {
       console.log('✅ PASS: Unified search executed successfully');
@@ -159,11 +168,12 @@ async function runTests() {
   // Test 6: Unified Search (With Cache)
   console.log('TEST 6: Unified Search (Second Call - Should Hit Cache)');
   try {
-    const result = await unifiedSearch(
-      'Build a ChatGPT clone',
-      'app',
-      { useCache: true, minStars: 20, maxResults: 3, timeout: 5000 }
-    );
+    const result = await unifiedSearch('Build a ChatGPT clone', 'app', {
+      useCache: true,
+      minStars: 20,
+      maxResults: 3,
+      timeout: 5000,
+    });
 
     if (result.success && result.cached) {
       console.log('✅ PASS: Cache hit successful');
@@ -187,11 +197,12 @@ async function runTests() {
   // Test 7: Search Result Formatting for AI
   console.log('TEST 7: Search Result Formatting for AI');
   try {
-    const result = await unifiedSearch(
-      'Build a dashboard',
-      'dashboard',
-      { useCache: true, minStars: 20, maxResults: 2, timeout: 5000 }
-    );
+    const result = await unifiedSearch('Build a dashboard', 'dashboard', {
+      useCache: true,
+      minStars: 20,
+      maxResults: 2,
+      timeout: 5000,
+    });
 
     const formatted = formatUnifiedSearchForAI(result, 'Build a dashboard');
 
@@ -220,9 +231,15 @@ async function runTests() {
     const stats = getAllCacheStats();
 
     console.log('✅ PASS: Cache statistics retrieved');
-    console.log(`   Search cache: ${stats.search.size}/${stats.search.maxSize} entries, ${stats.search.hitRate} hit rate`);
-    console.log(`   Memory cache: ${stats.memory.size}/${stats.memory.maxSize} entries, ${stats.memory.hitRate} hit rate`);
-    console.log(`   Query cache: ${stats.queryOptimizer.size}/${stats.queryOptimizer.maxSize} entries, ${stats.queryOptimizer.hitRate} hit rate`);
+    console.log(
+      `   Search cache: ${stats.search.size}/${stats.search.maxSize} entries, ${stats.search.hitRate} hit rate`
+    );
+    console.log(
+      `   Memory cache: ${stats.memory.size}/${stats.memory.maxSize} entries, ${stats.memory.hitRate} hit rate`
+    );
+    console.log(
+      `   Query cache: ${stats.queryOptimizer.size}/${stats.queryOptimizer.maxSize} entries, ${stats.queryOptimizer.hitRate} hit rate`
+    );
     passedTests++;
   } catch (error: any) {
     console.log('❌ FAIL: Cache statistics failed');
@@ -258,7 +275,9 @@ async function runTests() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`✅ Passed: ${passedTests}`);
   console.log(`❌ Failed: ${failedTests}`);
-  console.log(`📈 Success Rate: ${((passedTests / (passedTests + failedTests)) * 100).toFixed(1)}%`);
+  console.log(
+    `📈 Success Rate: ${((passedTests / (passedTests + failedTests)) * 100).toFixed(1)}%`
+  );
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   if (failedTests === 0) {

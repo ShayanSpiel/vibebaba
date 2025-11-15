@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { logAdminAction, requireAdmin } from '@/lib/auth/admin-middleware';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
@@ -10,10 +10,7 @@ export async function POST(req: NextRequest) {
       const { userId, tokens, action } = await req.json();
 
       if (!userId || !tokens || !action) {
-        return NextResponse.json(
-          { error: 'Missing required fields' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
       }
 
       if (action !== 'add' && action !== 'remove') {
@@ -34,12 +31,12 @@ export async function POST(req: NextRequest) {
 
       if (action === 'add') {
         await pb.collection('users').update(userId, {
-          totalTokens: currentTotalTokens + tokens
+          totalTokens: currentTotalTokens + tokens,
         });
       } else {
         // Remove tokens (increase usedTokens)
         await pb.collection('users').update(userId, {
-          usedTokens: currentUsedTokens + tokens
+          usedTokens: currentUsedTokens + tokens,
         });
       }
 
@@ -58,10 +55,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (error: any) {
       console.error('Error adjusting credits:', error);
-      return NextResponse.json(
-        { error: 'Failed to adjust credits' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to adjust credits' }, { status: 500 });
     }
   });
 }

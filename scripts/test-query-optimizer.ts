@@ -13,12 +13,13 @@ console.log('='.repeat(80));
 console.log('\n📅 Test Case 1: Calendar Checklist App');
 console.log('-'.repeat(80));
 
-const description1 = 'A checklist building app with ability to attach tasks to checklists, with a big calendar view';
+const description1 =
+  'A checklist building app with ability to attach tasks to checklists, with a big calendar view';
 
 const githubQuery1 = optimizeGitHubQuery(description1, 'app', {
   minStars: 20,
   language: 'typescript',
-  includeTopics: true
+  includeTopics: true,
 });
 
 console.log('GitHub Query:');
@@ -28,7 +29,7 @@ console.log(`  Explanation: ${githubQuery1.explanation}`);
 
 const webQuery1 = optimizeWebQuery(description1, 'app', {
   includeYear: true,
-  focusOn: 'general'
+  focusOn: 'general',
 });
 
 console.log('\nWeb Query:');
@@ -45,7 +46,7 @@ const description2 = 'A simple todo list app with categories and due dates';
 const githubQuery2 = optimizeGitHubQuery(description2, 'app', {
   minStars: 20,
   language: 'typescript',
-  includeTopics: true
+  includeTopics: true,
 });
 
 console.log('GitHub Query:');
@@ -54,7 +55,7 @@ console.log(`  Strategy: ${githubQuery2.strategy}`);
 
 const webQuery2 = optimizeWebQuery(description2, 'app', {
   includeYear: true,
-  focusOn: 'code'
+  focusOn: 'code',
 });
 
 console.log('\nWeb Query:');
@@ -70,7 +71,7 @@ const description3 = 'An admin dashboard with charts, graphs, and real-time anal
 const githubQuery3 = optimizeGitHubQuery(description3, 'dashboard', {
   minStars: 20,
   language: 'typescript',
-  includeTopics: true
+  includeTopics: true,
 });
 
 console.log('GitHub Query:');
@@ -79,7 +80,7 @@ console.log(`  Strategy: ${githubQuery3.strategy}`);
 
 const webQuery3 = optimizeWebQuery(description3, 'dashboard', {
   includeYear: true,
-  focusOn: 'design'
+  focusOn: 'design',
 });
 
 console.log('\nWeb Query:');
@@ -95,7 +96,7 @@ const description4 = 'A real-time chat app with message history and user profile
 const githubQuery4 = optimizeGitHubQuery(description4, 'chat', {
   minStars: 20,
   language: 'typescript',
-  includeTopics: true
+  includeTopics: true,
 });
 
 console.log('GitHub Query:');
@@ -104,7 +105,7 @@ console.log(`  Strategy: ${githubQuery4.strategy}`);
 
 const webQuery4 = optimizeWebQuery(description4, 'chat', {
   includeYear: true,
-  focusOn: 'architecture'
+  focusOn: 'architecture',
 });
 
 console.log('\nWeb Query:');

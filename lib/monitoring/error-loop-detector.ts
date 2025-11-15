@@ -224,9 +224,7 @@ ${this.isLoopDetected(error) ? '⚠️  Error loop detected - max attempts reach
    */
   private filterRecentAttempts(attempts: ErrorAttempt[]): ErrorAttempt[] {
     const now = Date.now();
-    return attempts.filter(
-      (attempt) => now - attempt.timestamp < this.timeWindow
-    );
+    return attempts.filter((attempt) => now - attempt.timestamp < this.timeWindow);
   }
 
   /**

@@ -4,9 +4,15 @@
 The FIRST preview message after PM node planning was NOT showing the list of Phase 1 features that would be built.
 
 ## Root Cause
-The PM node was generating a plan using AI, but the plan didn't include the explicit list of Phase 1 features. The plan was added to conversation memory (which shows in chat), but without the features list.
+The PM node was generating a plan with Phase 1 features and adding it to conversation memory, BUT it was NOT emitting a chat event to display in the UI.
 
-**File:** `lib/langgraph/nodes/pm/index.ts:584-592`
+**File:** `lib/langgraph/nodes/pm/index.ts:625-639`
+
+**The Real Issue:**
+- `addAssistantMessage()` = Saves to conversation memory (database) ✅
+- `emitChatMessage()` = Displays in chat UI ❌ **MISSING!**
+
+The message was being saved but never shown to the user because no UI event was emitted.
 
 ## What Was Happening
 
@@ -46,20 +52,30 @@ Phase 2 features (9) will be added later.
 
 ## Fix Applied
 
-**File:** `lib/langgraph/nodes/pm/index.ts:584-592`
+**File:** `lib/langgraph/nodes/pm/index.ts:625-639`
 
-Added Phase 1 features list AFTER AI plan generation, BEFORE adding to conversation memory:
+### Step 1: Import emitChatMessage
+```typescript
+import { emitNodeStart, emitNodeComplete, emitNodeError, emitProgress, emitChatMessage } from '../../utils/logging/events';
+```
 
+### Step 2: Fixed variable naming conflict and added chat emission
 ```typescript
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ADD PHASE 1 FEATURES LIST TO PLAN MESSAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const phase1FeaturesList = phase1Features.map(f => `✅ ${f.name}`).join('\n');
-const planWithFeatures = `${plan}\n\n---\n\n**🚀 Phase 1 Features (Building Now):**\n\n${phase1FeaturesList}\n\n*Phase 2 features (${phase2Features.length}) will be added later.*`;
+const phase1FeaturesListFormatted = phase1Features.map(f => `✅ ${f.name}`).join('\n');
+const planWithFeatures = `${plan}\n\n---\n\n**🚀 Phase 1 Features (Building Now):**\n\n${phase1FeaturesListFormatted}\n\n*Phase 2 features (${phase2Features.length}) will be added later.*`;
 
-// Track in conversation memory
+// Track in conversation memory (database storage)
 addAssistantMessage(state.projectId, planWithFeatures, 'pm');
 console.log('[PM] 💬 Tracked response in conversation memory with Phase 1 features list');
+
+// ✅ EMIT CHAT MESSAGE: Display plan with features list in UI
+emitChatMessage(state.projectId, planWithFeatures, {
+  type: 'success'
+});
+console.log('[PM] 💬 Emitted chat message with Phase 1 features list to UI');
 ```
 
 ## How It Works Now
@@ -173,10 +189,53 @@ The app is ready - you can preview it now! ✨
 
 ## Files Modified
 
-- `lib/langgraph/nodes/pm/index.ts:584-592` - Added Phase 1 features list to plan message
+- `lib/langgraph/nodes/pm/index.ts:24` - Added `emitChatMessage` import
+- `lib/langgraph/nodes/pm/index.ts:625-639` - Fixed variable naming and added `emitChatMessage()` call to display plan in UI
 - `lib/langgraph/nodes/devops/index.ts:156-178` - Added features list to deployment message (previous fix)
+
+## Key Takeaways
+
+**TWO DIFFERENT SYSTEMS:**
+1. **Conversation Memory** (`addAssistantMessage`) - Stores message in database for conversation history
+2. **Chat UI Events** (`emitChatMessage`) - Displays message in real-time chat interface
+
+**Both are needed:**
+- Without `addAssistantMessage`: Message not saved for future reference
+- Without `emitChatMessage`: Message never shows in UI ← **THIS WAS THE BUG**
+
+**Other nodes use `emitNodeComplete` with `summary` field** which automatically emits to UI. PM node needs explicit `emitChatMessage` because it wants to show the plan BEFORE completion.
 
 ---
 
 **Date:** 2025-11-14
-**Status:** Implemented and ready for testing
+**Status:** ✅ FIXED - Migrated to Unified Messaging System
+
+## Update: Part of Larger Messaging System Migration
+
+This fix was the catalyst for discovering a **systemic messaging problem** across the entire codebase:
+
+### Other Nodes with Same Bug (Now Fixed):
+1. ✅ **Backend Node** - Was memory-only, never showed "Backend Generated" messages
+2. ✅ **QA Node** - Was memory-only, never showed "Validation Complete" messages
+
+### Solution: Unified Message Manager
+Instead of patchwork fixes, we implemented a **comprehensive messaging system**:
+
+**New System:**
+```typescript
+// lib/messaging/message-manager.ts
+await messageManager.sendEvent(projectId, {
+  type: 'plan-ready',
+  plan,
+  phase1Features: phase1Features.map(f => f.name),
+  phase2Count: phase2Features.length
+}, 'pm');
+```
+
+**Benefits:**
+- ✅ Type-safe (compiler catches errors)
+- ✅ Automatically persists AND displays (can't forget)
+- ✅ Consistent formatting across all nodes
+- ✅ Single source of truth for messages
+
+**See Full Details:** `MESSAGING_SYSTEM_MIGRATION_PROGRESS.md`

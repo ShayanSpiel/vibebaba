@@ -13,18 +13,22 @@ workflowEvents.setMaxListeners(100);
 /**
  * Emit when a node starts executing with thinking process
  */
-export function emitNodeStart(nodeName: string, state: AppGenState, thinkingProcess?: {
-  userInput: string;
-  interpretation: string;
-  plan: string;
-}) {
+export function emitNodeStart(
+  nodeName: string,
+  state: AppGenState,
+  thinkingProcess?: {
+    userInput: string;
+    interpretation: string;
+    plan: string;
+  }
+) {
   const event = {
     type: 'node:start',
     nodeName,
     projectId: state.projectId,
     stage: state.stage,
     timestamp: new Date().toISOString(),
-    thinkingProcess
+    thinkingProcess,
   };
 
   workflowEvents.emit('node:start', event);
@@ -34,12 +38,17 @@ export function emitNodeStart(nodeName: string, state: AppGenState, thinkingProc
 /**
  * Emit when a node completes successfully with detailed task information
  */
-export function emitNodeComplete(nodeName: string, state: AppGenState, duration: number, taskDetails?: {
-  taskDescription: string;
-  success: boolean;
-  output?: any;
-  summary: string;
-}) {
+export function emitNodeComplete(
+  nodeName: string,
+  state: AppGenState,
+  duration: number,
+  taskDetails?: {
+    taskDescription: string;
+    success: boolean;
+    output?: any;
+    summary: string;
+  }
+) {
   const event = {
     type: 'node:complete',
     nodeName,
@@ -47,7 +56,7 @@ export function emitNodeComplete(nodeName: string, state: AppGenState, duration:
     stage: state.stage,
     duration,
     timestamp: new Date().toISOString(),
-    taskDetails
+    taskDetails,
   };
 
   workflowEvents.emit('node:complete', event);
@@ -64,9 +73,9 @@ export function emitNodeError(nodeName: string, error: Error, state: AppGenState
     projectId: state.projectId,
     error: {
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   workflowEvents.emit('node:error', event);
@@ -80,7 +89,7 @@ export function emitWorkflowStart(projectId: string, description: string) {
   workflowEvents.emit('workflow:start', {
     projectId,
     description,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
   // Console log removed - event streaming handles this
 }
@@ -90,9 +99,14 @@ export function emitWorkflowComplete(state: AppGenState, totalDuration: number) 
   const hasFiles = (state.files?.length || 0) > 0;
   const hasDeployUrl = !!state.deployUrl;
   const hasCriticalErrors = (state.errors || []).some(
-    err => err.node === 'devops' || err.node === 'qa' || err.node === 'frontend' || err.node === 'backend'
+    (err) =>
+      err.node === 'devops' ||
+      err.node === 'qa' ||
+      err.node === 'frontend' ||
+      err.node === 'backend'
   );
-  const validationFailed = !state.validationResult?.valid && (state.validationResult?.report?.errors || []).length > 0;
+  const validationFailed =
+    !state.validationResult?.valid && (state.validationResult?.report?.errors || []).length > 0;
 
   // SUCCESS CRITERIA:
   // - Has generated files
@@ -118,9 +132,10 @@ export function emitWorkflowComplete(state: AppGenState, totalDuration: number) 
   });
 
   // Extract added features/components from changes
-  const addedFeatures: string[] = state.editingSession?.changesApplied
-    ?.filter((change: any) => change.type === 'feature' || change.type === 'component')
-    ?.map((change: any) => change.description) || [];
+  const addedFeatures: string[] =
+    state.editingSession?.changesApplied
+      ?.filter((change: any) => change.type === 'feature' || change.type === 'component')
+      ?.map((change: any) => change.description) || [];
 
   workflowEvents.emit('workflow:complete', {
     projectId: state.projectId,
@@ -138,11 +153,21 @@ export function emitWorkflowComplete(state: AppGenState, totalDuration: number) 
     fileChanges: {
       edited: editedFiles,
       removed: removedFiles,
-      added: addedFiles
+      added: addedFiles,
     },
     addedFeatures,
     lastCheckpointId: state.lastCheckpointId, // For revert functionality
-    isEditWorkflow: !!state.editingSession // Distinguish edit vs initial generation
+    isEditWorkflow: !!state.editingSession, // Distinguish edit vs initial generation
+    // Add data needed for feature planning display
+    allRequestedFeatures: state.allRequestedFeatures || [],
+    metadata: {
+      totalLines: state.files?.reduce((total, file) => {
+        const lines = file.content?.split('\n').length || 0;
+        return total + lines;
+      }, 0) || 0,
+      collectionsCreated: state.backendConfig?.collections?.length || 0,
+      routesCreated: state.routes?.length || 0,
+    },
   });
   // Console log removed - event streaming handles this
 }
@@ -162,7 +187,7 @@ export function emitAutoGenAttemptStart(
     attempt,
     maxAttempts,
     initialErrors,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -180,7 +205,7 @@ export function emitAutoGenAgentStart(
     projectId,
     agentRole: agent,
     message,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -201,7 +226,7 @@ export function emitAutoGenAgentComplete(
     message: 'Agent completed',
     duration,
     output,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -226,26 +251,21 @@ export function emitAutoGenErrorDiff(
     before,
     after,
     analysis,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
 /**
  * Emit progress event for long-running operations
  */
-export function emitProgress(
-  nodeName: string,
-  projectId: string,
-  message: string,
-  details?: any
-) {
+export function emitProgress(nodeName: string, projectId: string, message: string, details?: any) {
   workflowEvents.emit('progress', {
     type: 'progress',
     nodeName,
     projectId,
     message,
     details,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -266,6 +286,8 @@ export function emitChatMessage(
     type?: 'info' | 'success' | 'warning' | 'question';
     requiresResponse?: boolean;
     inputType?: 'api_key' | 'code_snippet' | 'env_var' | 'url' | 'clarification';
+    bubbleType?: string; // Explicit bubble type for UI
+    metadata?: any; // Additional metadata from MessageManager
   }
 ) {
   workflowEvents.emit('chat:message', {
@@ -273,7 +295,7 @@ export function emitChatMessage(
     projectId,
     message,
     metadata,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -285,7 +307,7 @@ export function emitFilePlanningStart(projectId: string, nodeName: string) {
     type: 'file:planning:start',
     projectId,
     nodeName,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -302,8 +324,8 @@ export function emitFilePlanningComplete(
     projectId,
     nodeName,
     totalFiles: files.length,
-    files: files.map(f => f.path),
-    timestamp: new Date().toISOString()
+    files: files.map((f) => f.path),
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -324,7 +346,7 @@ export function emitFileCreating(
     fileName,
     fileNumber,
     totalFiles,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -347,7 +369,7 @@ export function emitFileCreated(
     fileNumber,
     totalFiles,
     fileSize,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -371,7 +393,7 @@ workflowEvents.on('node:complete', (event) => {
     metrics.nodes.push({
       name: event.nodeName,
       duration: event.duration,
-      timestamp: event.timestamp
+      timestamp: event.timestamp,
     });
     (global as any).__workflow_metrics.set(key, metrics);
   }
@@ -386,7 +408,7 @@ workflowEvents.on('node:error', (event) => {
       nodeName: event.nodeName,
       error: event.error.message,
       stack: event.error.stack,
-      timestamp: event.timestamp
+      timestamp: event.timestamp,
     });
 
     // Keep only last 100 errors to prevent memory leak
@@ -415,7 +437,7 @@ export function emitTypeDefinitionsGenerated(
   console.log(`[TypeTracking] 📋 Types: ${typeDefinitions.length}`);
 
   for (const type of typeDefinitions) {
-    const propList = type.properties.map(p => `${p.name}: ${p.type}`).join(', ');
+    const propList = type.properties.map((p) => `${p.name}: ${p.type}`).join(', ');
     console.log(`[TypeTracking]   ${type.name} = { ${propList} }`);
   }
 
@@ -426,7 +448,7 @@ export function emitTypeDefinitionsGenerated(
     projectId,
     source,
     typeDefinitions,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -447,7 +469,7 @@ export function emitTypeDefinitionsExtracted(
   console.log(`[TypeTracking] 📋 Types extracted: ${typeDefinitions.length}`);
 
   for (const type of typeDefinitions) {
-    const propList = type.properties.map(p => `${p.name}: ${p.type}`).join(', ');
+    const propList = type.properties.map((p) => `${p.name}: ${p.type}`).join(', ');
     console.log(`[TypeTracking]   ${type.name} = { ${propList} }`);
   }
 
@@ -459,7 +481,7 @@ export function emitTypeDefinitionsExtracted(
     sourceFile,
     targetNode,
     typeDefinitions,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -483,7 +505,7 @@ export function emitTypeValidationStart(
     projectId,
     filePath,
     typeDefinitions,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -522,7 +544,7 @@ export function emitTypeValidationComplete(
     filePath,
     issues,
     errors,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -552,6 +574,6 @@ export function emitTypeMismatchDetected(
     expectedType,
     actualAccess,
     availableProperties,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }

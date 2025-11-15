@@ -1,8 +1,8 @@
 // app/api/memory/project-settings/route.ts
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import { pb } from '@/lib/database/pocketbase';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 
 /**
  * Store project settings in LangChain memory
@@ -33,9 +33,10 @@ export async function POST(req: NextRequest) {
     // Store project settings in memory collection
     try {
       // ✅ OPTIMIZED: Check if settings already exist using getFirstListItem
-      const existing = await pb.collection('project_settings_memory').getFirstListItem(
-        `projectId = "${projectId}"`
-      ).catch(() => null);
+      const existing = await pb
+        .collection('project_settings_memory')
+        .getFirstListItem(`projectId = "${projectId}"`)
+        .catch(() => null);
 
       const data = {
         projectId,
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
         initialPrompt: prompt || '',
         stylingConfig: stylingConfig ? JSON.stringify(stylingConfig) : '{}',
         timestamp: timestamp || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
 
       if (existing) {
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Project settings stored successfully'
+        message: 'Project settings stored successfully',
       });
     } catch (error: any) {
       console.error('[Memory] Failed to store project settings:', error);
@@ -70,10 +71,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('[Memory] Project settings API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -101,9 +99,10 @@ export async function GET(req: NextRequest) {
 
       // ✅ OPTIMIZED: Use getFirstListItem instead of getFullList for single record lookup
       // This is much faster as it stops after finding the first match
-      const record = await pb.collection('project_settings_memory').getFirstListItem(
-        `projectId = "${projectId}" && userId = "${user.id}"`
-      ).catch(() => null);  // Return null if not found instead of throwing
+      const record = await pb
+        .collection('project_settings_memory')
+        .getFirstListItem(`projectId = "${projectId}" && userId = "${user.id}"`)
+        .catch(() => null); // Return null if not found instead of throwing
 
       console.log('[Memory] 📦 Found:', record ? '1 record' : 'no records');
 
@@ -113,7 +112,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           success: true,
           data: null,
-          message: 'No settings found for this project'
+          message: 'No settings found for this project',
         });
       }
 
@@ -127,7 +126,10 @@ export async function GET(req: NextRequest) {
         } else if (typeof record.stylingConfig === 'object') {
           parsedStylingConfig = record.stylingConfig || {};
         }
-        console.log('[Memory] ✅ stylingConfig parsed successfully, keys:', Object.keys(parsedStylingConfig));
+        console.log(
+          '[Memory] ✅ stylingConfig parsed successfully, keys:',
+          Object.keys(parsedStylingConfig)
+        );
       } catch (parseError: any) {
         console.error('[Memory] ❌ Failed to parse stylingConfig:', parseError.message);
         console.error('[Memory] Raw stylingConfig type:', typeof record.stylingConfig);
@@ -143,8 +145,8 @@ export async function GET(req: NextRequest) {
           initialPrompt: record.initialPrompt,
           stylingConfig: parsedStylingConfig,
           timestamp: record.timestamp,
-          updatedAt: record.updatedAt
-        }
+          updatedAt: record.updatedAt,
+        },
       });
     } catch (error: any) {
       console.error('[Memory] ❌ Failed to retrieve project settings:', error);
@@ -158,9 +160,6 @@ export async function GET(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('[Memory] Project settings API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

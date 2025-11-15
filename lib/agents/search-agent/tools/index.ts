@@ -5,14 +5,14 @@
  */
 
 import type { SearchAgentConfig } from '../types';
-import { createExaSearchTool } from './exa-search';
-import { createDuckDuckGoSearchTool } from './duckduckgo-search';
-import { createBraveSearchTool } from './brave-search';
-import { createGitHubSearchTool } from './github-search';
-import { createCodeExtractorTool } from './code-extractor';
 import { createBrandScraperTool } from './brand-scraper';
+import { createBraveSearchTool } from './brave-search';
 import { createCloneAnalyzerTool } from './clone-analyzer';
+import { createCodeExtractorTool } from './code-extractor';
 import { createContentScraperTool } from './content-scraper';
+import { createDuckDuckGoSearchTool } from './duckduckgo-search';
+import { createExaSearchTool } from './exa-search';
+import { createGitHubSearchTool } from './github-search';
 
 /**
  * Create tool registry based on configuration
@@ -82,17 +82,19 @@ export function createToolRegistry(config: SearchAgentConfig) {
  * Get tool descriptions for prompt
  */
 export function getToolDescriptions(tools: any[]): string {
-  let description = "You have access to the following tools:\n\n";
+  let description = 'You have access to the following tools:\n\n';
 
   for (const tool of tools) {
     description += `- **${tool.name}**: ${tool.description}\n`;
   }
 
-  description += "\nTOOL USAGE STRATEGY:\n";
-  description += "1. For web search: Try exa_search first, then duckduckgo_search, finally brave_search\n";
-  description += "2. For code: Use github_search to find repos, then code_extractor to get files\n";
-  description += "3. For brands: Use brand_scraper for guidelines, clone_analyzer for website analysis\n";
-  description += "4. For content: Use content_scraper to extract copy and tone\n";
+  description += '\nTOOL USAGE STRATEGY:\n';
+  description +=
+    '1. For web search: Try exa_search first, then duckduckgo_search, finally brave_search\n';
+  description += '2. For code: Use github_search to find repos, then code_extractor to get files\n';
+  description +=
+    '3. For brands: Use brand_scraper for guidelines, clone_analyzer for website analysis\n';
+  description += '4. For content: Use content_scraper to extract copy and tone\n';
 
   return description;
 }

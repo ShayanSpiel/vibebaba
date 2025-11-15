@@ -36,7 +36,9 @@ export default function Page() {
 
 console.log('Test 2: Card components');
 const result2 = addShadcnImports(test2);
-console.log(result2.includes('import { Card, CardHeader, CardTitle, CardContent }') ? '✅ PASS' : '❌ FAIL');
+console.log(
+  result2.includes('import { Card, CardHeader, CardTitle, CardContent }') ? '✅ PASS' : '❌ FAIL'
+);
 console.log(result2);
 console.log('\n---\n');
 

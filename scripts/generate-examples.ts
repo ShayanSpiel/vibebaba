@@ -10,10 +10,10 @@ import path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 import PocketBase from 'pocketbase';
+import { COMPLEXITY_LEVELS, INDUSTRY_CONTEXTS, STYLE_VARIANTS } from '../lib/example-categories';
 import { generateExample } from '../lib/example-generator';
+import type { DesignExample, ExampleCategory } from '../lib/pocketbase';
 import { validateExampleQuality } from '../lib/quality-validator';
-import { STYLE_VARIANTS, INDUSTRY_CONTEXTS, COMPLEXITY_LEVELS } from '../lib/example-categories';
-import type { ExampleCategory, DesignExample } from '../lib/pocketbase';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL || '';
@@ -106,7 +106,9 @@ async function generateExamplesForCategory(
         console.log(`    Design Trends: ${scores.designTrendScore}/100`);
 
         if (scores.qualityScore < minQualityScore) {
-          console.log(`  ⚠️  Score too low (${scores.qualityScore}/${minQualityScore}), retrying...`);
+          console.log(
+            `  ⚠️  Score too low (${scores.qualityScore}/${minQualityScore}), retrying...`
+          );
 
           if (scores.issues.length > 0) {
             console.log(`  Issues: ${scores.issues.join(', ')}`);
@@ -152,7 +154,7 @@ async function generateExamplesForCategory(
           failed++;
         } else {
           // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
     }
@@ -160,7 +162,7 @@ async function generateExamplesForCategory(
     // Rate limiting delay between examples
     if (i < needed - 1) {
       console.log(`  Waiting 2s before next example...`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
@@ -214,7 +216,9 @@ async function generateExamples(options: GenerationOptions = {}) {
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
 
-      console.log(`\n[${ i + 1}/${categories.length}] Processing: ${category.name} (Priority: ${category.priority})`);
+      console.log(
+        `\n[${i + 1}/${categories.length}] Processing: ${category.name} (Priority: ${category.priority})`
+      );
 
       await generateExamplesForCategory(
         category,
@@ -226,7 +230,7 @@ async function generateExamples(options: GenerationOptions = {}) {
       // Delay between categories
       if (i < categories.length - 1) {
         console.log('Waiting 5s before next category...\n');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
 

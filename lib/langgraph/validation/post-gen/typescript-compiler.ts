@@ -105,7 +105,7 @@ export function compileTypeScript(
   ];
 
   // Filter to only errors from our generated files (not node_modules)
-  const relevantDiagnostics = allDiagnostics.filter(diagnostic => {
+  const relevantDiagnostics = allDiagnostics.filter((diagnostic) => {
     if (!diagnostic.file) return false;
     return files.has(diagnostic.file.fileName);
   });
@@ -114,9 +114,7 @@ export function compileTypeScript(
   for (const diagnostic of relevantDiagnostics) {
     if (!diagnostic.file) continue;
 
-    const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
-      diagnostic.start!
-    );
+    const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!);
 
     const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
 
@@ -153,5 +151,5 @@ export function validateSingleFile(
 
   const result = compileTypeScript(files);
   // Only return errors for the target file, not other files
-  return result.errors.filter(err => err.file === filePath);
+  return result.errors.filter((err) => err.file === filePath);
 }

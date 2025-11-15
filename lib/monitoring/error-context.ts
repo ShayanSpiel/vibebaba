@@ -6,8 +6,8 @@
  * Inspired by Bolt.new's context-aware error handling.
  */
 
-import { FileTracker, FileChange } from '../files/file-tracker';
-import { ErrorLoopDetector, ErrorAttempt } from './error-loop-detector';
+import type { FileChange, FileTracker } from '../files/file-tracker';
+import type { ErrorAttempt, ErrorLoopDetector } from './error-loop-detector';
 
 export interface ErrorContext {
   error: string;
@@ -191,9 +191,7 @@ function extractKeywords(error: string): string[] {
     .filter(
       (word) =>
         word.length > 3 &&
-        !['error', 'undefined', 'cannot', 'failed', 'the', 'and', 'for'].includes(
-          word
-        )
+        !['error', 'undefined', 'cannot', 'failed', 'the', 'and', 'for'].includes(word)
     );
 
   keywords.push(...commonTerms);
@@ -216,9 +214,7 @@ export function isErrorLoopSuggested(context: ErrorContext): boolean {
   return context.previousAttempts.length >= 3;
 }
 
-export function getRecommendedAction(
-  context: ErrorContext
-): 'retry' | 'manual' | 'skip' {
+export function getRecommendedAction(context: ErrorContext): 'retry' | 'manual' | 'skip' {
   if (isErrorLoopSuggested(context)) {
     return 'manual';
   }

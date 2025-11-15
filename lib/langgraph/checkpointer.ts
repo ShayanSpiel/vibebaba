@@ -11,7 +11,7 @@ export class PocketBaseCheckpointer {
       // Convert Map to object for JSON serialization
       const serializedState = {
         ...state,
-        artifacts: state.artifacts ? Object.fromEntries(state.artifacts) : {}
+        artifacts: state.artifacts ? Object.fromEntries(state.artifacts) : {},
       };
 
       await pb.collection('workflow_checkpoints').create({
@@ -20,7 +20,7 @@ export class PocketBaseCheckpointer {
         timestamp: new Date().toISOString(),
         stage: state.stage,
         completedNodes: state.completedNodes,
-        lastNode: state.completedNodes[state.completedNodes.length - 1] || null
+        lastNode: state.completedNodes[state.completedNodes.length - 1] || null,
       });
 
       console.log(`[Checkpointer] Saved checkpoint for ${projectId} at stage ${state.stage}`);
@@ -34,9 +34,10 @@ export class PocketBaseCheckpointer {
    */
   async loadCheckpoint(projectId: string): Promise<AppGenState | null> {
     try {
-      const checkpoint = await pb.collection('workflow_checkpoints')
+      const checkpoint = await pb
+        .collection('workflow_checkpoints')
         .getFirstListItem(`projectId="${projectId}"`, {
-          sort: '-timestamp'
+          sort: '-timestamp',
         });
 
       const state = JSON.parse(checkpoint.state);
@@ -57,7 +58,8 @@ export class PocketBaseCheckpointer {
    */
   async deleteCheckpoints(projectId: string): Promise<void> {
     try {
-      const checkpoints = await pb.collection('workflow_checkpoints')
+      const checkpoints = await pb
+        .collection('workflow_checkpoints')
         .getFullList({ filter: `projectId="${projectId}"` });
 
       for (const checkpoint of checkpoints) {
@@ -75,19 +77,18 @@ export class PocketBaseCheckpointer {
    */
   async listCheckpoints(projectId: string): Promise<any[]> {
     try {
-      const checkpoints = await pb.collection('workflow_checkpoints')
-        .getFullList({
-          filter: `projectId="${projectId}"`,
-          sort: '-timestamp'
-        });
+      const checkpoints = await pb.collection('workflow_checkpoints').getFullList({
+        filter: `projectId="${projectId}"`,
+        sort: '-timestamp',
+      });
 
-      return checkpoints.map(cp => ({
+      return checkpoints.map((cp) => ({
         id: cp.id,
         projectId: cp.projectId,
         stage: cp.stage,
         lastNode: cp.lastNode,
         completedNodes: cp.completedNodes,
-        timestamp: cp.timestamp
+        timestamp: cp.timestamp,
       }));
     } catch (error) {
       console.error('[Checkpointer] Failed to list checkpoints:', error);

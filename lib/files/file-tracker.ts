@@ -177,10 +177,7 @@ export class FileTracker {
     mostModified: { path: string; changes: number } | null;
   } {
     const totalFiles = Object.keys(this.currentState).length;
-    const totalSize = Object.values(this.currentState).reduce(
-      (sum, file) => sum + file.size,
-      0
-    );
+    const totalSize = Object.values(this.currentState).reduce((sum, file) => sum + file.size, 0);
 
     let totalChanges = 0;
     let mostModified: { path: string; changes: number } | null = null;

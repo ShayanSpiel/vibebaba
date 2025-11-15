@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 interface SkeletonProps {
   className?: string;
@@ -8,7 +8,7 @@ interface SkeletonProps {
 }
 
 // Base skeleton with shimmer animation
-export function Skeleton({ className = "", variant = "default" }: SkeletonProps) {
+export function Skeleton({ className = '', variant = 'default' }: SkeletonProps) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -18,12 +18,12 @@ export function Skeleton({ className = "", variant = "default" }: SkeletonProps)
       <motion.div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
         animate={{
-          x: ['-100%', '100%']
+          x: ['-100%', '100%'],
         }}
         transition={{
           duration: 1.5,
           repeat: Infinity,
-          ease: "linear"
+          ease: 'linear',
         }}
       />
     </motion.div>
@@ -184,6 +184,12 @@ export function PageSkeleton() {
 }
 
 // Compact skeleton for small UI elements
-export function CompactSkeleton({ width = "w-full", height = "h-4" }: { width?: string; height?: string }) {
+export function CompactSkeleton({
+  width = 'w-full',
+  height = 'h-4',
+}: {
+  width?: string;
+  height?: string;
+}) {
   return <Skeleton className={`${width} ${height}`} />;
 }

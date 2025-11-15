@@ -10,8 +10,8 @@ import { resolve } from 'path';
 
 config({ path: resolve(process.cwd(), '.env.local') });
 
-import { getLangSmithClient } from './client';
 import { validateLangSmithSetup } from './ab-test-config';
+import { getLangSmithClient } from './client';
 
 async function validateSetup() {
   console.log('🔍 Validating LangSmith Setup...\n');
@@ -67,7 +67,7 @@ async function validateSetup() {
     console.log('   ✅ A/B test configuration valid');
   } else {
     console.log('   ⚠️  A/B test configuration issues:');
-    validation.errors.forEach(error => {
+    validation.errors.forEach((error) => {
       console.log(`      - ${error}`);
     });
     // Not a blocker if A/B testing is disabled
@@ -89,7 +89,7 @@ async function validateSetup() {
       console.log('      Run: npm run langsmith:setup-dataset setup');
     } else {
       console.log(`   ✅ Found ${datasets.length} dataset(s):`);
-      datasets.forEach(ds => {
+      datasets.forEach((ds) => {
         console.log(`      - ${ds.name} (${ds.example_count || 0} examples)`);
       });
     }
@@ -138,7 +138,7 @@ async function validateSetup() {
 }
 
 // Run validation
-validateSetup().catch(error => {
+validateSetup().catch((error) => {
   console.error('\n💥 Validation crashed:', error);
   process.exit(1);
 });

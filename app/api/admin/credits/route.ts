@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { requireAdmin } from '@/lib/auth/admin-middleware';
 import { loadUserCreditsPage } from '@/lib/credits/batch-operations';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
@@ -28,14 +28,11 @@ export async function GET(req: NextRequest) {
         users: result.users,
         page: result.page,
         totalPages: result.totalPages,
-        total: result.total
+        total: result.total,
       });
     } catch (error: any) {
       console.error('Error loading credit data:', error);
-      return NextResponse.json(
-        { error: 'Failed to load credit data' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to load credit data' }, { status: 500 });
     }
   });
 }

@@ -34,8 +34,8 @@ async function fixSchema() {
           options: {
             min: 1,
             max: 100,
-            pattern: ''
-          }
+            pattern: '',
+          },
         };
       }
       return field;
@@ -43,7 +43,7 @@ async function fixSchema() {
 
     // Update the collection
     await pb.collections.update(collection.id, {
-      schema: updatedSchema
+      schema: updatedSchema,
     });
 
     console.log('[Fix] ✅ Schema updated successfully!');
@@ -55,7 +55,6 @@ async function fixSchema() {
     console.log('[Fix] ✅ Verification:');
     console.log('[Fix]   - userId type:', userIdField.type);
     console.log('[Fix]   - userId options:', userIdField.options);
-
   } catch (error: any) {
     console.error('[Fix] ❌ Error:', error.message);
     if (error.data) {

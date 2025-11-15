@@ -13,7 +13,7 @@
  * All system prompts can be translated and will adapt to the user's locale.
  */
 
-type Locale = "en" | "fa" | "ar";
+type Locale = 'en' | 'fa' | 'ar';
 
 interface PromptTranslations {
   en: string;
@@ -24,10 +24,7 @@ interface PromptTranslations {
 /**
  * Get localized prompt template
  */
-export function getLocalizedPrompt(
-  promptKey: keyof typeof PROMPTS,
-  locale: Locale = "en"
-): string {
+export function getLocalizedPrompt(promptKey: keyof typeof PROMPTS, locale: Locale = 'en'): string {
   return PROMPTS[promptKey][locale];
 }
 
@@ -36,14 +33,14 @@ export function getLocalizedPrompt(
  */
 export function buildPrompt(
   promptKey: keyof typeof PROMPTS,
-  locale: Locale = "en",
+  locale: Locale = 'en',
   values: Record<string, string> = {}
 ): string {
   let prompt = getLocalizedPrompt(promptKey, locale);
 
   // Replace placeholders like {appDescription} with actual values
   Object.entries(values).forEach(([key, value]) => {
-    prompt = prompt.replace(new RegExp(`{${key}}`, "g"), value);
+    prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), value);
   });
 
   return prompt;
@@ -336,11 +333,12 @@ Generate the complete backend code now:`,
  * Helper function to get locale from request or context
  */
 export function getLocaleFromHeaders(headers: Headers): Locale {
-  const locale = headers.get("x-locale") || headers.get("accept-language")?.split(",")[0]?.split("-")[0];
+  const locale =
+    headers.get('x-locale') || headers.get('accept-language')?.split(',')[0]?.split('-')[0];
 
-  if (locale === "fa" || locale === "ar") {
+  if (locale === 'fa' || locale === 'ar') {
     return locale;
   }
 
-  return "en";
+  return 'en';
 }

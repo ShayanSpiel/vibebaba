@@ -10,6 +10,7 @@ const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090'
 
 // Temporarily set pb for gap detector
 import * as pocketbaseModule from '../lib/pocketbase';
+
 (pocketbaseModule as any).pb = new PocketBase(PB_URL);
 
 interface Options {

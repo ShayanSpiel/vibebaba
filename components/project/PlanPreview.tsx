@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Pencil, X, Check } from "lucide-react";
-import Markdown from "@/components/Markdown";
+import { Check, Pencil, X } from 'lucide-react';
+import { useState } from 'react';
+import Markdown from '@/components/Markdown';
 
 interface PlanPreviewProps {
   plan: string;
@@ -61,14 +61,15 @@ export default function PlanPreview({ plan, context, onPlanUpdate }: PlanPreview
   const colors = extractColors();
 
   // Build color swatches array only if we have actual color data
-  const colorSwatches = colors && Object.keys(colors).length > 0
-    ? [
-        colors.primary && { name: "Primary", value: colors.primary },
-        colors.secondary && { name: "Secondary", value: colors.secondary },
-        colors.accent && { name: "Accent", value: colors.accent },
-        colors.background && { name: "Background", value: colors.background },
-      ].filter(Boolean)
-    : null;
+  const colorSwatches =
+    colors && Object.keys(colors).length > 0
+      ? [
+          colors.primary && { name: 'Primary', value: colors.primary },
+          colors.secondary && { name: 'Secondary', value: colors.secondary },
+          colors.accent && { name: 'Accent', value: colors.accent },
+          colors.background && { name: 'Background', value: colors.background },
+        ].filter(Boolean)
+      : null;
 
   return (
     <div className="h-full flex items-start justify-center overflow-auto bg-background-base py-8 px-4">
@@ -76,11 +77,11 @@ export default function PlanPreview({ plan, context, onPlanUpdate }: PlanPreview
         {/* Header with Edit Button */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-text-primary mb-2">
-              📋 Project Plan
-            </h2>
+            <h2 className="text-3xl font-bold text-text-primary mb-2">📋 Project Plan</h2>
             <p className="text-text-secondary">
-              {isEditing ? "Edit your application blueprint" : "Review your application blueprint below"}
+              {isEditing
+                ? 'Edit your application blueprint'
+                : 'Review your application blueprint below'}
             </p>
           </div>
 
@@ -129,9 +130,7 @@ export default function PlanPreview({ plan, context, onPlanUpdate }: PlanPreview
                     style={{ backgroundColor: swatch.value }}
                     title={swatch.value}
                   />
-                  <span className="text-xs font-medium text-text-secondary">
-                    {swatch.name}
-                  </span>
+                  <span className="text-xs font-medium text-text-secondary">{swatch.name}</span>
                 </div>
               ))}
 
@@ -139,7 +138,8 @@ export default function PlanPreview({ plan, context, onPlanUpdate }: PlanPreview
               {context?.designStyle && (
                 <div className="ml-auto">
                   <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-                    {context.designStyle.charAt(0).toUpperCase() + context.designStyle.slice(1)} Style
+                    {context.designStyle.charAt(0).toUpperCase() + context.designStyle.slice(1)}{' '}
+                    Style
                   </span>
                 </div>
               )}
@@ -155,7 +155,10 @@ export default function PlanPreview({ plan, context, onPlanUpdate }: PlanPreview
               {context.appType && (
                 <div>
                   <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-                    {context.appType.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    {context.appType
+                      .split('-')
+                      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ')}
                   </span>
                 </div>
               )}
@@ -164,7 +167,8 @@ export default function PlanPreview({ plan, context, onPlanUpdate }: PlanPreview
               {context.designStyle && (
                 <div>
                   <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-                    {context.designStyle.charAt(0).toUpperCase() + context.designStyle.slice(1)} Style
+                    {context.designStyle.charAt(0).toUpperCase() + context.designStyle.slice(1)}{' '}
+                    Style
                   </span>
                 </div>
               )}

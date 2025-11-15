@@ -3,9 +3,9 @@
  * Run with: npx tsx scripts/setup-workflow-collections.ts
  */
 
-import PocketBase from 'pocketbase';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import PocketBase from 'pocketbase';
 
 // Load environment variables
 config({ path: resolve(process.cwd(), '.env.local') });
@@ -42,7 +42,12 @@ async function setupCollections() {
           { name: 'user_id', type: 'text', required: true },
           { name: 'workflow_id', type: 'text', required: true },
           { name: 'node_name', type: 'text', required: true },
-          { name: 'status', type: 'select', required: true, options: { values: ['success', 'error', 'warning', 'timeout'] } },
+          {
+            name: 'status',
+            type: 'select',
+            required: true,
+            options: { values: ['success', 'error', 'warning', 'timeout'] },
+          },
           { name: 'error_type', type: 'text', required: false },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'error_stack', type: 'text', required: false, options: { max: 10000 } },
@@ -59,10 +64,25 @@ async function setupCollections() {
         schema: [
           { name: 'project_id', type: 'text', required: true },
           { name: 'user_id', type: 'text', required: true },
-          { name: 'operation_type', type: 'select', required: true, options: { values: ['create', 'rename', 'modify', 'delete'] } },
+          {
+            name: 'operation_type',
+            type: 'select',
+            required: true,
+            options: { values: ['create', 'rename', 'modify', 'delete'] },
+          },
           { name: 'file_path', type: 'text', required: false, options: { max: 500 } },
-          { name: 'change_scope', type: 'select', required: false, options: { values: ['minimal', 'moderate', 'major'] } },
-          { name: 'status', type: 'select', required: true, options: { values: ['success', 'error', 'warning'] } },
+          {
+            name: 'change_scope',
+            type: 'select',
+            required: false,
+            options: { values: ['minimal', 'moderate', 'major'] },
+          },
+          {
+            name: 'status',
+            type: 'select',
+            required: true,
+            options: { values: ['success', 'error', 'warning'] },
+          },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'user_request', type: 'text', required: false, options: { max: 5000 } },
           { name: 'checkpoint_id', type: 'text', required: false },
@@ -76,7 +96,12 @@ async function setupCollections() {
           { name: 'project_id', type: 'text', required: true },
           { name: 'user_id', type: 'text', required: true },
           { name: 'deployment_url', type: 'text', required: false, options: { max: 500 } },
-          { name: 'build_status', type: 'select', required: true, options: { values: ['pending', 'building', 'success', 'failed'] } },
+          {
+            name: 'build_status',
+            type: 'select',
+            required: true,
+            options: { values: ['pending', 'building', 'success', 'failed'] },
+          },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'build_output', type: 'text', required: false, options: { max: 50000 } },
           { name: 'dependencies_installed', type: 'number', required: false },
@@ -91,7 +116,12 @@ async function setupCollections() {
           { name: 'project_id', type: 'text', required: true },
           { name: 'user_id', type: 'text', required: true },
           { name: 'file_path', type: 'text', required: false, options: { max: 500 } },
-          { name: 'severity', type: 'select', required: true, options: { values: ['error', 'warning', 'info'] } },
+          {
+            name: 'severity',
+            type: 'select',
+            required: true,
+            options: { values: ['error', 'warning', 'info'] },
+          },
           { name: 'error_type', type: 'text', required: false },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'line_number', type: 'number', required: false },
@@ -105,7 +135,12 @@ async function setupCollections() {
           { name: 'userId', type: 'text', required: false },
           { name: 'userRequest', type: 'text', required: false },
           { name: 'filesSnapshot', type: 'json', required: true, options: { maxSize: 2000000 } }, // 2MB max for file snapshots
-          { name: 'previousFilesSnapshot', type: 'json', required: false, options: { maxSize: 2000000 } },
+          {
+            name: 'previousFilesSnapshot',
+            type: 'json',
+            required: false,
+            options: { maxSize: 2000000 },
+          },
           { name: 'changeScope', type: 'text', required: false },
           { name: 'description', type: 'text', required: false },
           // PocketBase auto-creates 'id', 'created', and 'updated' fields
@@ -148,8 +183,9 @@ async function setupCollections() {
     }
 
     console.log('\n🎉 Workflow logging collections setup complete!');
-    console.log('\n📊 You can now view the admin workflow health dashboard at /admin/workflow-health\n');
-
+    console.log(
+      '\n📊 You can now view the admin workflow health dashboard at /admin/workflow-health\n'
+    );
   } catch (error: any) {
     console.error('❌ Setup failed:', error.message);
     process.exit(1);

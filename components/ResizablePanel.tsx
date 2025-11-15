@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect, ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 interface ResizablePanelProps {
   leftPanel: ReactNode;
@@ -38,7 +38,7 @@ export default function ResizablePanel({
       const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
 
       // Enforce min/max constraints
-      if (newLeftWidth >= minLeftWidth && newLeftWidth <= (100 - minRightWidth)) {
+      if (newLeftWidth >= minLeftWidth && newLeftWidth <= 100 - minRightWidth) {
         setLeftWidth(newLeftWidth);
         localStorage.setItem('resizable-panel-width', newLeftWidth.toString());
       }
@@ -63,12 +63,12 @@ export default function ResizablePanel({
   };
 
   return (
-    <div ref={containerRef} className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
+    <div
+      ref={containerRef}
+      className="h-screen flex flex-col md:flex-row bg-background overflow-hidden"
+    >
       {/* Left Panel */}
-      <div
-        className="flex-shrink-0 overflow-hidden"
-        style={{ width: `${leftWidth}%` }}
-      >
+      <div className="flex-shrink-0 overflow-hidden" style={{ width: `${leftWidth}%` }}>
         {leftPanel}
       </div>
 
@@ -86,14 +86,10 @@ export default function ResizablePanel({
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 overflow-hidden">
-        {rightPanel}
-      </div>
+      <div className="flex-1 overflow-hidden">{rightPanel}</div>
 
       {/* Overlay during drag to prevent iframe interference */}
-      {isDragging && (
-        <div className="fixed inset-0 z-50 cursor-col-resize" />
-      )}
+      {isDragging && <div className="fixed inset-0 z-50 cursor-col-resize" />}
     </div>
   );
 }

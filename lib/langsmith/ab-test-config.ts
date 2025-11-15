@@ -73,10 +73,7 @@ export function validateLangSmithSetup(): {
 
   // Check A/B test config
   if (PM_PLANNING_AB_TEST.enabled) {
-    const totalWeight = PM_PLANNING_AB_TEST.variants.reduce(
-      (sum, v) => sum + v.weight,
-      0
-    );
+    const totalWeight = PM_PLANNING_AB_TEST.variants.reduce((sum, v) => sum + v.weight, 0);
 
     if (Math.abs(totalWeight - 100) > 0.01) {
       errors.push(`Variant weights sum to ${totalWeight}, should be 100`);

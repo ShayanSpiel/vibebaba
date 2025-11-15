@@ -190,16 +190,10 @@ export function getPackage(packageId: string): PricingPackage | null {
 
 export function getAllPackages(): PricingPackage[] {
   const config = getPricingConfig();
-  return Object.values(config.packages).sort(
-    (a, b) => a.displayOrder - b.displayOrder
-  );
+  return Object.values(config.packages).sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
-export function convertCurrency(
-  amount: number,
-  from: 'USD' | 'IRT',
-  to: 'USD' | 'IRT'
-): number {
+export function convertCurrency(amount: number, from: 'USD' | 'IRT', to: 'USD' | 'IRT'): number {
   if (from === to) return amount;
 
   const config = getPricingConfig();
@@ -229,10 +223,7 @@ export function formatPrice(amount: number, currency: 'USD' | 'IRT'): string {
   }
 }
 
-export function getCustomCreditPrice(
-  tokens: number,
-  currency: 'USD' | 'IRT'
-): number {
+export function getCustomCreditPrice(tokens: number, currency: 'USD' | 'IRT'): number {
   const config = getPricingConfig();
   const pricePerUnit = config.customCredits.pricePerUnit[currency];
   const unitSize = config.customCredits.unitSize;

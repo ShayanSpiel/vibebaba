@@ -59,9 +59,9 @@ export const COMPONENT_LIBRARY: DesignComponent[] = [
 ];
 
 export function getComponentsByCategory(category: string): DesignComponent[] {
-  return COMPONENT_LIBRARY.filter(comp => comp.category === category);
+  return COMPONENT_LIBRARY.filter((comp) => comp.category === category);
 }
 
 export function getComponentById(id: string): DesignComponent | undefined {
-  return COMPONENT_LIBRARY.find(comp => comp.id === id);
+  return COMPONENT_LIBRARY.find((comp) => comp.id === id);
 }

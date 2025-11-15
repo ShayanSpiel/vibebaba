@@ -7,21 +7,26 @@
  *
  * WORKFLOW:
  * 0. Input Detector → Checks if user input is needed (API keys, URLs, etc.)
- * 1. Context Analyzer → Understands what needs to change
+ * 1. Tech Lead → Understands what needs to change
  * 2. Editor Agent → Makes targeted, intelligent changes
  * 3. QA + AutoGen → Validates and fixes errors
  * 4. VFS Persistence → Saves changes to localStorage
  */
 
-import type { AppGenState } from '../types';
-import { inputDetectorNode } from '../nodes/input-detector';
-import { contextAnalyzerNode } from '../nodes/context-analyzer';
-import { editorNode } from '../nodes/editor';
-import { qaNode } from '../nodes/qa';
-import { emitNodeStart, emitNodeComplete, emitWorkflowStart, emitWorkflowComplete } from '../utils/logging/events';
-import { createVirtualFileSystem, logFileOperation } from '@/lib/files/file-operations';
-import { validateFileOperation, filterOperations } from '@/lib/files/file-operation-guards';
 import type { FileOperation } from '@/lib/files/file-operation-guards';
+import { filterOperations, validateFileOperation } from '@/lib/files/file-operation-guards';
+import { createVirtualFileSystem, logFileOperation } from '@/lib/files/file-operations';
+import { techLeadNode } from '../nodes/tech-lead';
+import { editorNode } from '../nodes/editor';
+import { inputDetectorNode } from '../nodes/input-detector';
+import { qaNode } from '../nodes/qa';
+import type { AppGenState } from '../types';
+import {
+  emitNodeComplete,
+  emitNodeStart,
+  emitWorkflowComplete,
+  emitWorkflowStart,
+} from '../utils/logging/events';
 
 export interface EditingRequest {
   files: Array<{ path: string; content: string }>;
@@ -82,28 +87,28 @@ async function persistToVFS(
     const fileOps: FileOperation[] = [];
 
     // Filter out backend infrastructure files (same as devops-node)
-    const userFiles = editedFiles.filter(file => !file.path.startsWith('api/'));
+    const userFiles = editedFiles.filter((file) => !file.path.startsWith('api/'));
 
     // Handle additions and modifications
     for (const file of userFiles) {
-      const change = fileChanges.find(fc => fc.path === file.path);
+      const change = fileChanges.find((fc) => fc.path === file.path);
       const operationType = change?.changeType === 'added' ? 'create' : 'create'; // VFS uses 'create' for both
 
       fileOps.push({
         type: operationType,
         path: file.path,
         content: file.content,
-        reason: change ? `File ${change.changeType}` : 'File updated'
+        reason: change ? `File ${change.changeType}` : 'File updated',
       });
     }
 
     // Handle deletions
-    const deletedFiles = fileChanges.filter(fc => fc.changeType === 'deleted');
+    const deletedFiles = fileChanges.filter((fc) => fc.changeType === 'deleted');
     for (const deleted of deletedFiles) {
       fileOps.push({
         type: 'delete',
         path: deleted.path,
-        reason: 'File deleted by user request'
+        reason: 'File deleted by user request',
       });
     }
 
@@ -112,7 +117,7 @@ async function persistToVFS(
 
     if (rejected.length > 0) {
       console.warn('[VFS] ⚠️ Some operations blocked by security:');
-      rejected.forEach(r => console.warn(`  ${r.operation.path}: ${r.reason}`));
+      rejected.forEach((r) => console.warn(`  ${r.operation.path}: ${r.reason}`));
     }
 
     // Execute allowed operations
@@ -126,7 +131,7 @@ async function persistToVFS(
         const result = await vfs.writeFile({
           filePath: op.path,
           content: op.content || '',
-          encoding: 'utf-8'
+          encoding: 'utf-8',
         });
         logFileOperation(op, result.success, result.error);
         operations.push({ ...op, result });
@@ -135,7 +140,6 @@ async function persistToVFS(
 
     console.log(`[VFS] ✅ Persisted ${operations.length} file operation(s) to localStorage`);
     return { success: true, operations };
-
   } catch (error: any) {
     console.error('[VFS] ❌ Failed to persist files:', error);
     return { success: false, operations };
@@ -177,8 +181,8 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
       conversationHistory: (request.conversationHistory || []).slice(-10), // Last 10 messages only
       changeScope: 'unknown', // Will be determined by context analyzer
       preservedSections: new Map(), // Sections to never touch
-      filesToModify: [] // Will be determined by context analyzer
-    }
+      filesToModify: [], // Will be determined by context analyzer
+    },
   };
 
   emitWorkflowStart(state.projectId, `Editing: ${request.userRequest}`);
@@ -210,8 +214,8 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
           model: 'gemini-2.0-flash',
           provider: 'google',
           nodesExecuted: ['input-detector'],
-          totalDuration
-        }
+          totalDuration,
+        },
       };
     }
 
@@ -221,11 +225,14 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
     // STEP 1: CONTEXT ANALYZER
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     console.log('[LangGraph Editing] 🔍 Step 1/5: Context Analysis');
-    const contextResult = await contextAnalyzerNode(state);
+    const contextResult = await techLeadNode(state);
     state = { ...state, ...contextResult };
     console.log('[LangGraph Editing] ✅ Context analysis complete');
     console.log('[LangGraph Editing] Change scope:', state.editingSession?.changeScope);
-    console.log('[LangGraph Editing] Files to modify:', state.editingSession?.filesToModify?.length || 0);
+    console.log(
+      '[LangGraph Editing] Files to modify:',
+      state.editingSession?.filesToModify?.length || 0
+    );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // STEP 2: EDITOR AGENT
@@ -238,13 +245,18 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
 
     // Log file changes explicitly
     if (state.editingSession?.fileChanges) {
-      const added = state.editingSession.fileChanges.filter(fc => fc.changeType === 'added');
-      const modified = state.editingSession.fileChanges.filter(fc => fc.changeType === 'modified');
-      const deleted = state.editingSession.fileChanges.filter(fc => fc.changeType === 'deleted');
+      const added = state.editingSession.fileChanges.filter((fc) => fc.changeType === 'added');
+      const modified = state.editingSession.fileChanges.filter(
+        (fc) => fc.changeType === 'modified'
+      );
+      const deleted = state.editingSession.fileChanges.filter((fc) => fc.changeType === 'deleted');
 
-      if (added.length > 0) console.log('[LangGraph Editing] ➕ Added:', added.map(f => f.path).join(', '));
-      if (modified.length > 0) console.log('[LangGraph Editing] ✏️ Modified:', modified.map(f => f.path).join(', '));
-      if (deleted.length > 0) console.log('[LangGraph Editing] 🗑️ Deleted:', deleted.map(f => f.path).join(', '));
+      if (added.length > 0)
+        console.log('[LangGraph Editing] ➕ Added:', added.map((f) => f.path).join(', '));
+      if (modified.length > 0)
+        console.log('[LangGraph Editing] ✏️ Modified:', modified.map((f) => f.path).join(', '));
+      if (deleted.length > 0)
+        console.log('[LangGraph Editing] 🗑️ Deleted:', deleted.map((f) => f.path).join(', '));
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -278,7 +290,7 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
     // BUILD RESULT
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     const totalDuration = Date.now() - workflowStartTime;
-    const mainFile = state.files?.find(f => f.path === 'index.html') || state.files?.[0];
+    const mainFile = state.files?.find((f) => f.path === 'index.html') || state.files?.[0];
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('[LangGraph Editing] ✅ EDITING WORKFLOW COMPLETE');
@@ -291,11 +303,17 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
     // 🔍 DEBUG: Verify files being returned
     console.log('[LangGraph Editing] 🔍 RETURNING TO API:');
     console.log('[LangGraph Editing]   - Files count:', state.files?.length || 0);
-    console.log('[LangGraph Editing]   - File paths:', state.files?.map(f => f.path).join(', '));
+    console.log('[LangGraph Editing]   - File paths:', state.files?.map((f) => f.path).join(', '));
     if (state.files && state.files.length > 0) {
       console.log('[LangGraph Editing]   - First file path:', state.files[0].path);
-      console.log('[LangGraph Editing]   - First file content length:', state.files[0].content?.length || 0);
-      console.log('[LangGraph Editing]   - First file content preview:', state.files[0].content?.substring(0, 150));
+      console.log(
+        '[LangGraph Editing]   - First file content length:',
+        state.files[0].content?.length || 0
+      );
+      console.log(
+        '[LangGraph Editing]   - First file content preview:',
+        state.files[0].content?.substring(0, 150)
+      );
     }
 
     emitWorkflowComplete(state, totalDuration);
@@ -314,15 +332,17 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
         model: state.artifacts?.get('editorMetadata')?.model || 'unknown',
         provider: state.artifacts?.get('editorMetadata')?.provider || 'unknown',
         nodesExecuted: state.completedNodes,
-        totalDuration
-      }
+        totalDuration,
+      },
     };
 
     console.log('[LangGraph Editing] 🔍 RESULT OBJECT FILES:', result.files.length, 'files');
     console.log('[LangGraph Editing] 🔍 RESULT CHECKPOINT ID:', result.lastCheckpointId);
-    console.log('[LangGraph Editing] 🔍 RESULT EDITOR MESSAGE:', result.editorMessage ? result.editorMessage.substring(0, 100) + '...' : 'MISSING!');
+    console.log(
+      '[LangGraph Editing] 🔍 RESULT EDITOR MESSAGE:',
+      result.editorMessage ? result.editorMessage.substring(0, 100) + '...' : 'MISSING!'
+    );
     return result;
-
   } catch (error: any) {
     console.error('[LangGraph Editing] ❌ Workflow failed:', error);
 
@@ -331,9 +351,10 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
     // Determine what succeeded before failure
     const partialFiles = state.files && state.files.length > 0 ? state.files : request.files;
     const partialChanges = state.editingSession?.changesApplied || [];
-    const failedAtNode = state.completedNodes.length > 0
-      ? state.completedNodes[state.completedNodes.length - 1]
-      : 'initialization';
+    const failedAtNode =
+      state.completedNodes.length > 0
+        ? state.completedNodes[state.completedNodes.length - 1]
+        : 'initialization';
 
     console.error('[LangGraph Editing] 💔 Partial recovery:');
     console.error(`  Failed at: ${failedAtNode}`);
@@ -354,8 +375,8 @@ export async function editingWorkflow(request: EditingRequest): Promise<EditingR
         model: state.artifacts?.get('editorMetadata')?.model || 'error',
         provider: state.artifacts?.get('editorMetadata')?.provider || 'error',
         nodesExecuted: state.completedNodes,
-        totalDuration
-      }
+        totalDuration,
+      },
     };
   }
 }
@@ -386,9 +407,9 @@ export async function quickEditWorkflow(request: EditingRequest): Promise<Editin
       userRequest: request.userRequest,
       conversationHistory: (request.conversationHistory || []).slice(-10), // Last 10 messages only
       changeScope: 'minor', // Assume minor change
-      filesToModify: request.files.map(f => f.path), // Modify all
+      filesToModify: request.files.map((f) => f.path), // Modify all
       preservedSections: new Map(),
-    }
+    },
   };
 
   const startTime = Date.now();
@@ -402,7 +423,7 @@ export async function quickEditWorkflow(request: EditingRequest): Promise<Editin
     const qaResult = await qaNode(state);
     state = { ...state, ...qaResult };
 
-    const mainFile = state.files?.find(f => f.path === 'index.html') || state.files?.[0];
+    const mainFile = state.files?.find((f) => f.path === 'index.html') || state.files?.[0];
     const totalDuration = Date.now() - startTime;
 
     return {
@@ -417,10 +438,9 @@ export async function quickEditWorkflow(request: EditingRequest): Promise<Editin
         model: state.artifacts?.get('editorMetadata')?.model || 'unknown',
         provider: state.artifacts?.get('editorMetadata')?.provider || 'unknown',
         nodesExecuted: state.completedNodes,
-        totalDuration
-      }
+        totalDuration,
+      },
     };
-
   } catch (error: any) {
     console.error('[LangGraph Editing] ❌ Quick edit failed:', error);
 
@@ -435,8 +455,8 @@ export async function quickEditWorkflow(request: EditingRequest): Promise<Editin
         model: state.artifacts?.get('editorMetadata')?.model || 'error',
         provider: state.artifacts?.get('editorMetadata')?.provider || 'error',
         nodesExecuted: state.completedNodes,
-        totalDuration: Date.now() - startTime
-      }
+        totalDuration: Date.now() - startTime,
+      },
     };
   }
 }

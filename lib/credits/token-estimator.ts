@@ -35,9 +35,7 @@ export class TokenEstimator {
   /**
    * Estimate tokens for a conversation (chat format)
    */
-  estimateConversationTokens(
-    messages: Array<{ role: string; content: string }>
-  ): number {
+  estimateConversationTokens(messages: Array<{ role: string; content: string }>): number {
     let total = 0;
 
     for (const message of messages) {
@@ -56,27 +54,19 @@ export class TokenEstimator {
       case 'pm':
         // PM node: requirements analysis
         return (
-          this.estimatePromptTokens(
-            context.requirements || '',
-            'Product Manager System Prompt'
-          ) + 2000
+          this.estimatePromptTokens(context.requirements || '', 'Product Manager System Prompt') +
+          2000
         ); // Expected completion
 
       case 'ux':
         // UX node: design planning
-        return (
-          this.estimatePromptTokens(
-            context.plan || '',
-            'UX Designer System Prompt'
-          ) + 3000
-        );
+        return this.estimatePromptTokens(context.plan || '', 'UX Designer System Prompt') + 3000;
 
-      case 'frontend':
+      case 'frontend': {
         // Frontend: code generation (largest)
-        const designTokens = this.countTokens(
-          JSON.stringify(context.design || {})
-        );
+        const designTokens = this.countTokens(JSON.stringify(context.design || {}));
         return designTokens + 8000;
+      }
 
       case 'backend':
         // Backend: API + schema
@@ -87,10 +77,11 @@ export class TokenEstimator {
           ) + 6000
         );
 
-      case 'editor':
+      case 'editor': {
         // Editor: code modifications
         const codeTokens = this.countTokens(context.code || '');
         return codeTokens + 4000;
+      }
 
       case 'chat':
         // Simple chat message
@@ -108,9 +99,7 @@ export class TokenEstimator {
   /**
    * Estimate total cost for a complete workflow
    */
-  estimateWorkflowCost(workflow: {
-    nodes: Array<{ name: string; context: any }>;
-  }): {
+  estimateWorkflowCost(workflow: { nodes: Array<{ name: string; context: any }> }): {
     total: number;
     breakdown: Record<string, number>;
   } {
@@ -144,8 +133,7 @@ export class TokenEstimator {
     const outputTokens = tokens * 0.3;
 
     const inputCost = (inputTokens / 1000000) * modelPricing.inputCostPerMillion;
-    const outputCost =
-      (outputTokens / 1000000) * modelPricing.outputCostPerMillion;
+    const outputCost = (outputTokens / 1000000) * modelPricing.outputCostPerMillion;
 
     return inputCost + outputCost;
   }

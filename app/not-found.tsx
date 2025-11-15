@@ -1,118 +1,118 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Footer } from "@/components/Footer";
-import { useLanguage } from "@/lib/language-context";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Footer } from '@/components/Footer';
+import { useLanguage } from '@/lib/language-context';
 
 // Startup role-based funny messages
 const startupMessages = [
   {
-    role: "CEO",
-    message: "Our CEO pivoted this page into the void.",
+    role: 'CEO',
+    message: 'Our CEO pivoted this page into the void.',
     subtitle: "It's not a bug, it's a strategic repositioning.",
-    emoji: "👔",
-    action: "Schedule a standup to find it"
+    emoji: '👔',
+    action: 'Schedule a standup to find it',
   },
   {
-    role: "CTO",
-    message: "The CTO refactored this page out of existence.",
+    role: 'CTO',
+    message: 'The CTO refactored this page out of existence.',
     subtitle: "Don't worry, it's in the backlog for v2.0.",
-    emoji: "💻",
-    action: "Check the staging environment"
+    emoji: '💻',
+    action: 'Check the staging environment',
   },
   {
-    role: "CFO",
-    message: "The CFO cut this page to reduce burn rate.",
+    role: 'CFO',
+    message: 'The CFO cut this page to reduce burn rate.',
     subtitle: "We're being capital efficient here.",
-    emoji: "💰",
-    action: "Return to cap table"
+    emoji: '💰',
+    action: 'Return to cap table',
   },
   {
-    role: "Product Manager",
+    role: 'Product Manager',
     message: "Product decided this page doesn't align with our roadmap.",
-    subtitle: "Actually, it was never in the PRD.",
-    emoji: "📊",
-    action: "Check the user stories"
+    subtitle: 'Actually, it was never in the PRD.',
+    emoji: '📊',
+    action: 'Check the user stories',
   },
   {
-    role: "Designer",
-    message: "Our designer is still iterating on this page.",
+    role: 'Designer',
+    message: 'Our designer is still iterating on this page.',
     subtitle: "It's in Figma, but the spacing is off by 2px.",
-    emoji: "🎨",
-    action: "View the wireframes"
+    emoji: '🎨',
+    action: 'View the wireframes',
   },
   {
-    role: "Frontend Dev",
+    role: 'Frontend Dev',
     message: "Frontend dev said 'Works on my machine' 🤷",
-    subtitle: "Have you tried clearing your cache?",
-    emoji: "⚛️",
-    action: "Inspect element (good luck)"
+    subtitle: 'Have you tried clearing your cache?',
+    emoji: '⚛️',
+    action: 'Inspect element (good luck)',
   },
   {
-    role: "Backend Dev",
+    role: 'Backend Dev',
     message: "Backend returned a 404. That's all we know.",
     subtitle: "Check the logs... oh wait, we don't log 404s.",
-    emoji: "🔧",
-    action: "Query the database"
+    emoji: '🔧',
+    action: 'Query the database',
   },
   {
-    role: "DevOps",
-    message: "DevOps deployed this page to production.",
+    role: 'DevOps',
+    message: 'DevOps deployed this page to production.',
     subtitle: "Just kidding, it's still in the CI/CD pipeline.",
-    emoji: "🚀",
-    action: "Rollback to stable"
+    emoji: '🚀',
+    action: 'Rollback to stable',
   },
   {
-    role: "Intern",
-    message: "The intern accidentally deleted this page.",
-    subtitle: "They meant to git push, but ran git push --force instead.",
-    emoji: "🎓",
-    action: "Restore from backup"
+    role: 'Intern',
+    message: 'The intern accidentally deleted this page.',
+    subtitle: 'They meant to git push, but ran git push --force instead.',
+    emoji: '🎓',
+    action: 'Restore from backup',
   },
   {
-    role: "Marketing",
-    message: "Marketing is crafting the perfect messaging for this page.",
+    role: 'Marketing',
+    message: 'Marketing is crafting the perfect messaging for this page.',
     subtitle: "Did we mention we're growth hacking?",
-    emoji: "📈",
-    action: "Subscribe to newsletter"
+    emoji: '📈',
+    action: 'Subscribe to newsletter',
   },
   {
-    role: "Sales",
-    message: "Sales promised this page would be here by EOD.",
+    role: 'Sales',
+    message: 'Sales promised this page would be here by EOD.',
     subtitle: "They're still in discovery calls.",
-    emoji: "🤝",
-    action: "Book a demo anyway"
+    emoji: '🤝',
+    action: 'Book a demo anyway',
   },
   {
-    role: "Investor",
-    message: "Our investors are asking for metrics on this page.",
+    role: 'Investor',
+    message: 'Our investors are asking for metrics on this page.',
     subtitle: "Somehow we're still pre-revenue.",
-    emoji: "💼",
-    action: "See the pitch deck"
+    emoji: '💼',
+    action: 'See the pitch deck',
   },
   {
-    role: "Founder",
+    role: 'Founder',
     message: "The founder is hustling 24/7, but this page isn't here.",
     subtitle: "We're disrupting the 404 space.",
-    emoji: "🦄",
-    action: "Join the revolution"
+    emoji: '🦄',
+    action: 'Join the revolution',
   },
   {
-    role: "Scrum Master",
-    message: "This page is blocked by dependencies.",
+    role: 'Scrum Master',
+    message: 'This page is blocked by dependencies.',
     subtitle: "Let's circle back in the next sprint.",
-    emoji: "📋",
-    action: "Add to sprint backlog"
+    emoji: '📋',
+    action: 'Add to sprint backlog',
   },
   {
-    role: "QA Engineer",
-    message: "QA filed a bug report, but nobody read it.",
+    role: 'QA Engineer',
+    message: 'QA filed a bug report, but nobody read it.',
     subtitle: "Status: Won't Fix (Works As Intended)",
-    emoji: "🐛",
-    action: "Re-test in production"
-  }
+    emoji: '🐛',
+    action: 'Re-test in production',
+  },
 ];
 
 export default function NotFound() {
@@ -187,7 +187,6 @@ export default function NotFound() {
       {/* Main 404 Content */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
         <div className="max-w-4xl w-full text-center space-y-8">
-
           {/* Giant 404 with SVG illustration */}
           <div className="relative">
             <div
@@ -228,7 +227,9 @@ export default function NotFound() {
           </div>
 
           {/* Message */}
-          <div className={`space-y-4 transition-all duration-200 ${isGlitching ? 'opacity-0 blur-sm' : 'opacity-100'}`}>
+          <div
+            className={`space-y-4 transition-all duration-200 ${isGlitching ? 'opacity-0 blur-sm' : 'opacity-100'}`}
+          >
             <h1 className="text-3xl md:text-5xl font-bold text-text-primary leading-tight">
               {currentMessage.message}
             </h1>
@@ -287,7 +288,6 @@ export default function NotFound() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
 

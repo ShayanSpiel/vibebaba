@@ -1,8 +1,8 @@
 'use client';
 
 import { Bell, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { usePocketBaseAuth } from '@/components/auth/PocketBaseAuthProvider';
+import { Button } from '@/components/ui/button';
 
 export function AdminHeader() {
   const { user, logout } = usePocketBaseAuth();

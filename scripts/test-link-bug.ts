@@ -38,8 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </body>
     </html>
   )
-}`
-    }
+}`,
+    },
   ];
 
   try {
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     const result = await validateCode(testFiles, {
       autoFix: false,
       strict: false,
-      isMultiPage: false
+      isMultiPage: false,
     });
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ErrorSummaryCard } from './components/ErrorSummaryCard';
-import { NodeErrorsTable } from './components/NodeErrorsTable';
-import { ErrorTrendChart } from './components/ErrorTrendChart';
-import { CategoryFilter } from './components/CategoryFilter';
-import { LogViewer } from './components/LogViewer';
 import { Activity } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CategoryFilter } from './components/CategoryFilter';
+import { ErrorSummaryCard } from './components/ErrorSummaryCard';
+import { ErrorTrendChart } from './components/ErrorTrendChart';
+import { LogViewer } from './components/LogViewer';
+import { NodeErrorsTable } from './components/NodeErrorsTable';
 
 interface WorkflowHealthData {
   summary: {
@@ -49,7 +49,9 @@ export default function WorkflowHealthPage() {
   async function fetchHealthData() {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/workflow-health?category=all&timeframe=${timeframe}`);
+      const response = await fetch(
+        `/api/admin/workflow-health?category=all&timeframe=${timeframe}`
+      );
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setHealthData(data);
@@ -119,8 +121,8 @@ export default function WorkflowHealthPage() {
             healthData.category_stats.app_generation.errors === 0
               ? 'healthy'
               : healthData.category_stats.app_generation.errors < 5
-              ? 'degraded'
-              : 'critical'
+                ? 'degraded'
+                : 'critical'
           }
         />
 
@@ -140,8 +142,8 @@ export default function WorkflowHealthPage() {
             healthData.category_stats.validation.errors === 0
               ? 'healthy'
               : healthData.category_stats.validation.errors < 10
-              ? 'degraded'
-              : 'critical'
+                ? 'degraded'
+                : 'critical'
           }
         />
 
@@ -151,7 +153,8 @@ export default function WorkflowHealthPage() {
           totalWarnings={healthData.category_stats.editor.warnings}
           successRate={
             healthData.category_stats.editor.total > 0
-              ? ((healthData.category_stats.editor.total - healthData.category_stats.editor.errors) /
+              ? ((healthData.category_stats.editor.total -
+                  healthData.category_stats.editor.errors) /
                   healthData.category_stats.editor.total) *
                 100
               : 100
@@ -160,8 +163,8 @@ export default function WorkflowHealthPage() {
             healthData.category_stats.editor.errors === 0
               ? 'healthy'
               : healthData.category_stats.editor.errors < 5
-              ? 'degraded'
-              : 'critical'
+                ? 'degraded'
+                : 'critical'
           }
         />
 
@@ -181,8 +184,8 @@ export default function WorkflowHealthPage() {
             healthData.category_stats.deployment.errors === 0
               ? 'healthy'
               : healthData.category_stats.deployment.errors < 3
-              ? 'degraded'
-              : 'critical'
+                ? 'degraded'
+                : 'critical'
           }
         />
       </div>
@@ -227,7 +230,10 @@ export default function WorkflowHealthPage() {
             ) : (
               <div className="space-y-3">
                 {healthData.most_common_errors.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-background-sunken rounded">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 bg-background-sunken rounded"
+                  >
                     <span className="text-sm text-text-primary font-mono">{item.error}</span>
                     <span className="text-sm font-bold text-error">{item.count}x</span>
                   </div>
@@ -245,11 +251,15 @@ export default function WorkflowHealthPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border-subtle">
-                    <th className="text-left py-3 px-4 text-text-secondary text-sm font-bold">Node</th>
+                    <th className="text-left py-3 px-4 text-text-secondary text-sm font-bold">
+                      Node
+                    </th>
                     <th className="text-right py-3 px-4 text-text-secondary text-sm font-bold">
                       Executions
                     </th>
-                    <th className="text-right py-3 px-4 text-text-secondary text-sm font-bold">Errors</th>
+                    <th className="text-right py-3 px-4 text-text-secondary text-sm font-bold">
+                      Errors
+                    </th>
                     <th className="text-right py-3 px-4 text-text-secondary text-sm font-bold">
                       Warnings
                     </th>
@@ -263,11 +273,16 @@ export default function WorkflowHealthPage() {
                 </thead>
                 <tbody>
                   {healthData.node_breakdown.map((node) => (
-                    <tr key={node.node_name} className="border-b border-border-subtle hover:bg-background-sunken">
+                    <tr
+                      key={node.node_name}
+                      className="border-b border-border-subtle hover:bg-background-sunken"
+                    >
                       <td className="py-3 px-4 font-mono text-text-primary">{node.node_name}</td>
                       <td className="py-3 px-4 text-right text-text-primary">{node.executions}</td>
                       <td className="py-3 px-4 text-right text-error font-bold">{node.errors}</td>
-                      <td className="py-3 px-4 text-right text-warning font-bold">{node.warnings}</td>
+                      <td className="py-3 px-4 text-right text-warning font-bold">
+                        {node.warnings}
+                      </td>
                       <td className="py-3 px-4 text-right text-success font-bold">
                         {node.success_rate.toFixed(1)}%
                       </td>

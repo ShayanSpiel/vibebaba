@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { DesignInspiration } from '@/lib/langgraph/types';
+import type { DesignInspiration } from '@/lib/langgraph/types';
 
 /**
  * Design Inspiration Service
@@ -55,7 +55,6 @@ export async function analyzeDesignInspiration(params: {
 
     console.warn('[Design Inspiration] ⚠️  Low quality analysis, skipping');
     return null;
-
   } catch (error) {
     console.error('[Design Inspiration] ❌ Analysis failed:', error);
     return null; // Non-blocking
@@ -87,9 +86,9 @@ async function analyzeWithGemini(
       {
         inlineData: {
           data: base64Image,
-          mimeType: mimeType
-        }
-      }
+          mimeType: mimeType,
+        },
+      },
     ]);
 
     const response = result.response.text();
@@ -103,7 +102,6 @@ async function analyzeWithGemini(
     }
 
     return parsed;
-
   } catch (error) {
     console.error('[Gemini Vision] Error:', error);
     return null;
@@ -131,7 +129,7 @@ async function analyzeWithPixtral(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'pixtral-12b-2409',
@@ -141,18 +139,18 @@ async function analyzeWithPixtral(
             content: [
               {
                 type: 'text',
-                text: prompt
+                text: prompt,
               },
               {
                 type: 'image_url',
-                image_url: `data:${mimeType};base64,${base64Image}`
-              }
-            ]
-          }
+                image_url: `data:${mimeType};base64,${base64Image}`,
+              },
+            ],
+          },
         ],
         temperature: 0.3,
-        max_tokens: 2000
-      })
+        max_tokens: 2000,
+      }),
     });
 
     if (!response.ok) {
@@ -171,7 +169,6 @@ async function analyzeWithPixtral(
     }
 
     return parsed;
-
   } catch (error) {
     console.error('[Pixtral] Error:', error);
     return null;
@@ -252,11 +249,14 @@ Return ONLY valid JSON in this exact format:
 /**
  * Parse AI response into DesignInspiration object
  */
-function parseDesignTokens(response: string, source: 'screenshot' | 'brand' | 'url'): DesignInspiration | null {
+function parseDesignTokens(
+  response: string,
+  source: 'screenshot' | 'brand' | 'url'
+): DesignInspiration | null {
   try {
     // Extract JSON from markdown code blocks if present
-    const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) ||
-                     response.match(/(\{[\s\S]*?\})/);
+    const jsonMatch =
+      response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || response.match(/(\{[\s\S]*?\})/);
 
     if (!jsonMatch) {
       throw new Error('No JSON found in response');
@@ -271,21 +271,20 @@ function parseDesignTokens(response: string, source: 'screenshot' | 'brand' | 'u
         secondary: '#10B981',
         accent: '#F59E0B',
         background: '#FFFFFF',
-        surface: '#F3F4F6'
+        surface: '#F3F4F6',
       },
       typography: parsed.typography || {
         headingFont: 'Inter',
         bodyFont: 'Inter',
-        scale: ['14px', '16px', '20px', '24px', '32px', '48px']
+        scale: ['14px', '16px', '20px', '24px', '32px', '48px'],
       },
       patterns: parsed.patterns || [],
       spacing: parsed.spacing || [8, 16, 24, 32],
       borderRadius: parsed.borderRadius || '8px',
       components: parsed.components || [],
       suggestions: parsed.suggestions || '',
-      quality: parsed.quality || 0
+      quality: parsed.quality || 0,
     };
-
   } catch (error) {
     console.error('[Parse] Failed to parse design tokens:', error);
     console.error('[Parse] Response:', response.substring(0, 500));
@@ -331,10 +330,26 @@ function validateColorPalette(colors: any): any {
  */
 export function detectBrandInDescription(description: string): string | null {
   const SUPPORTED_BRANDS = [
-    'stripe', 'linear', 'notion', 'figma', 'vercel',
-    'slack', 'discord', 'spotify', 'netflix', 'airbnb',
-    'openai', 'anthropic', 'midjourney', 'twitter', 'github',
-    'google', 'facebook', 'apple', 'microsoft', 'amazon'
+    'stripe',
+    'linear',
+    'notion',
+    'figma',
+    'vercel',
+    'slack',
+    'discord',
+    'spotify',
+    'netflix',
+    'airbnb',
+    'openai',
+    'anthropic',
+    'midjourney',
+    'twitter',
+    'github',
+    'google',
+    'facebook',
+    'apple',
+    'microsoft',
+    'amazon',
   ];
 
   const lowerDesc = description.toLowerCase();

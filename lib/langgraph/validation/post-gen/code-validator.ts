@@ -46,12 +46,12 @@ async function runESLint(options: CodeValidatorOptions): Promise<{
   try {
     const command = fix ? 'npx eslint --fix .' : 'npx eslint .';
     const { stdout, stderr } = await execAsync(command, {
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: 10 * 1024 * 1024,
     });
 
     return {
       success: true,
-      errors: []
+      errors: [],
     };
   } catch (error: any) {
     const output = error.stdout || error.stderr || error.message;
@@ -59,7 +59,7 @@ async function runESLint(options: CodeValidatorOptions): Promise<{
 
     return {
       success: false,
-      errors
+      errors,
     };
   }
 }
@@ -77,13 +77,13 @@ async function runTests(options: CodeValidatorOptions): Promise<{
   try {
     const command = checkCoverage ? 'npx vitest run --coverage' : 'npx vitest run';
     const { stdout, stderr } = await execAsync(command, {
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: 10 * 1024 * 1024,
     });
 
     return {
       success: true,
       failures: [],
-      coverage: checkCoverage ? parseCoverage(stdout) : undefined
+      coverage: checkCoverage ? parseCoverage(stdout) : undefined,
     };
   } catch (error: any) {
     const output = error.stdout || error.stderr || error.message;
@@ -92,7 +92,7 @@ async function runTests(options: CodeValidatorOptions): Promise<{
     return {
       success: false,
       failures,
-      coverage: undefined
+      coverage: undefined,
     };
   }
 }
@@ -134,14 +134,16 @@ function parseTestFailures(output: string): string[] {
  */
 function parseCoverage(output: string): any {
   // Extract coverage percentages from Vitest output
-  const coverageMatch = output.match(/All files\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)/);
+  const coverageMatch = output.match(
+    /All files\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)/
+  );
 
   if (coverageMatch) {
     return {
       statements: parseFloat(coverageMatch[1]),
       branches: parseFloat(coverageMatch[2]),
       functions: parseFloat(coverageMatch[3]),
-      lines: parseFloat(coverageMatch[4])
+      lines: parseFloat(coverageMatch[4]),
     };
   }
 
@@ -161,11 +163,13 @@ export async function validateCode(
 
   const lintErrors: string[] = [];
   const testFailures: string[] = [];
-  let coverage: any = undefined;
+  let coverage: any;
 
   // SKIP ESLint during app generation (Frontend already validates TypeScript)
   // ESLint can hang on large projects and is redundant with TypeScript validation
-  console.log('[CodeValidator] ⏭️  Skipping ESLint (TypeScript already validated in Frontend Node)...');
+  console.log(
+    '[CodeValidator] ⏭️  Skipping ESLint (TypeScript already validated in Frontend Node)...'
+  );
 
   // Uncomment below to enable ESLint (not recommended during app generation):
   // const eslintResult = await runESLint(options);
@@ -189,7 +193,9 @@ export async function validateCode(
       coverage = testResult.coverage;
 
       if (coverage) {
-        console.log(`[CodeValidator] 📊 Coverage: ${coverage.lines}% lines, ${coverage.statements}% statements`);
+        console.log(
+          `[CodeValidator] 📊 Coverage: ${coverage.lines}% lines, ${coverage.statements}% statements`
+        );
       }
     }
   }
@@ -204,7 +210,7 @@ export async function validateCode(
     lintErrors,
     testFailures,
     coverage,
-    duration
+    duration,
   };
 }
 

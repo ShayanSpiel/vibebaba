@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface LogEntry {
   id: string;
@@ -86,8 +86,8 @@ export function LogViewer({ logs, title = 'Logs' }: LogViewerProps) {
                           log.status === 'error' || log.status === 'failed'
                             ? 'destructive'
                             : log.status === 'warning'
-                            ? 'secondary'
-                            : 'default'
+                              ? 'secondary'
+                              : 'default'
                         }
                       >
                         {log.status}
@@ -120,7 +120,9 @@ export function LogViewer({ logs, title = 'Logs' }: LogViewerProps) {
                       <div className="mt-4 space-y-3 pt-3 border-t border-border-subtle">
                         {log.error_message && (
                           <div>
-                            <p className="text-xs font-bold text-text-secondary mb-1">Error Message:</p>
+                            <p className="text-xs font-bold text-text-secondary mb-1">
+                              Error Message:
+                            </p>
                             <p className="text-sm text-text-primary font-mono bg-background-sunken p-3 rounded">
                               {log.error_message}
                             </p>
@@ -129,7 +131,9 @@ export function LogViewer({ logs, title = 'Logs' }: LogViewerProps) {
 
                         {log.error_stack && (
                           <div>
-                            <p className="text-xs font-bold text-text-secondary mb-1">Stack Trace:</p>
+                            <p className="text-xs font-bold text-text-secondary mb-1">
+                              Stack Trace:
+                            </p>
                             <pre className="text-xs text-text-primary font-mono bg-background-sunken p-3 rounded overflow-x-auto max-h-64 overflow-y-auto">
                               {log.error_stack}
                             </pre>

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { pb, ensureAuth } from '@/lib/database/pocketbase';
+import { type NextRequest, NextResponse } from 'next/server';
+import { ensureAuth, pb } from '@/lib/database/pocketbase';
 
 // Helper to get localStorage key (server-side can't access it, but we use PocketBase)
 const getFilePath = (collection: string) => `database/${collection}.json`;
@@ -116,7 +116,10 @@ export async function POST(
           content: content,
           size: content.length,
         });
-        console.log(`[DB API] ✅ Updated ${collection} with new record - PocketBase ID:`, updated.id);
+        console.log(
+          `[DB API] ✅ Updated ${collection} with new record - PocketBase ID:`,
+          updated.id
+        );
         console.log(`[DB API] 📡 PocketBase should broadcast this change via WebSocket`);
       } else {
         // Create new file
@@ -127,7 +130,10 @@ export async function POST(
           encoding: 'utf-8',
           size: content.length,
         });
-        console.log(`[DB API] ✅ Created ${collection} with first record - PocketBase ID:`, created.id);
+        console.log(
+          `[DB API] ✅ Created ${collection} with first record - PocketBase ID:`,
+          created.id
+        );
         console.log(`[DB API] 📡 PocketBase should broadcast this change via WebSocket`);
       }
 

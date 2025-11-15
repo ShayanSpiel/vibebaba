@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { pb, User, getCurrentUser, logout as pbLogout } from '@/lib/database/pocketbase';
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { getCurrentUser, pb, logout as pbLogout, type User } from '@/lib/database/pocketbase';
 
 interface AuthContextType {
   user: User | null;
@@ -47,7 +47,7 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
       const isSecure = window.location.protocol === 'https:';
       document.cookie = `pb_auth=${JSON.stringify({
         token: pb.authStore.token,
-        model: pb.authStore.model
+        model: pb.authStore.model,
       })}; path=/; max-age=2592000; SameSite=Lax; ${isSecure ? 'Secure;' : ''}`;
     }
 
@@ -60,7 +60,7 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
         const isSecure = window.location.protocol === 'https:';
         document.cookie = `pb_auth=${JSON.stringify({
           token,
-          model
+          model,
         })}; path=/; max-age=2592000; SameSite=Lax; ${isSecure ? 'Secure;' : ''}`;
       } else {
         document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;';
@@ -81,7 +81,7 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
       const isSecure = window.location.protocol === 'https:';
       document.cookie = `pb_auth=${JSON.stringify({
         token: pb.authStore.token,
-        model: pb.authStore.model
+        model: pb.authStore.model,
       })}; path=/; max-age=2592000; SameSite=Lax; ${isSecure ? 'Secure;' : ''}`;
     } catch (error: any) {
       console.error('Login error:', error);
@@ -100,7 +100,7 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
         totalTokens: 0,
         usedTokens: 0,
         dailyTokens: 5000, // Give 5K tokens on signup
-        lastDailyReset: new Date().toISOString()
+        lastDailyReset: new Date().toISOString(),
       });
 
       // Auto-login after signup
@@ -121,8 +121,8 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
           totalTokens: 0,
           usedTokens: 0,
           dailyTokens: 5000, // Give 5K tokens on signup
-          lastDailyReset: new Date().toISOString()
-        }
+          lastDailyReset: new Date().toISOString(),
+        },
       });
 
       console.log('✅ Google OAuth successful:', authData);
@@ -134,14 +134,17 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
       const isSecure = window.location.protocol === 'https:';
       document.cookie = `pb_auth=${JSON.stringify({
         token: pb.authStore.token,
-        model: pb.authStore.model
+        model: pb.authStore.model,
       })}; path=/; max-age=2592000; SameSite=Lax; ${isSecure ? 'Secure;' : ''}`;
 
       // Store in localStorage as well
-      localStorage.setItem('pocketbase_auth', JSON.stringify({
-        token: pb.authStore.token,
-        model: pb.authStore.model
-      }));
+      localStorage.setItem(
+        'pocketbase_auth',
+        JSON.stringify({
+          token: pb.authStore.token,
+          model: pb.authStore.model,
+        })
+      );
     } catch (error: any) {
       console.error('❌ Google OAuth error:', error);
       throw new Error(error.message || 'Google sign-in failed');
@@ -168,7 +171,9 @@ export function PocketBaseAuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogle, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, signup, loginWithGoogle, logout, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -189,11 +194,11 @@ export function useAuth() {
   return {
     session: {
       data: user ? { user } : null,
-      isLoading: loading
+      isLoading: loading,
     },
     user,
     loading,
     signIn: login,
-    signOut: logout
+    signOut: logout,
   };
 }

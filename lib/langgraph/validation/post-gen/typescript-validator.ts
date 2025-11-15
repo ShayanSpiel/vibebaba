@@ -43,7 +43,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
             column: line.indexOf(params),
             file: filePath,
             severity: 'error',
-            rule: 'no-implicit-any'
+            rule: 'no-implicit-any',
           });
         } else {
           errors.push({
@@ -53,7 +53,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
             column: line.indexOf(params),
             file: filePath,
             severity: 'warning',
-            rule: 'explicit-types'
+            rule: 'explicit-types',
           });
         }
       }
@@ -71,11 +71,11 @@ export function validateTypeScript(content: string, filePath: string): Validatio
       if (params && !params.includes(':')) {
         // Detect common event handler patterns
         const eventHandlers = {
-          'Change': /change/i.test(funcName),
-          'Click': /click/i.test(funcName),
-          'Submit': /submit/i.test(funcName),
-          'Input': /input/i.test(funcName),
-          'Mouse': /mouse|hover/i.test(funcName),
+          Change: /change/i.test(funcName),
+          Click: /click/i.test(funcName),
+          Submit: /submit/i.test(funcName),
+          Input: /input/i.test(funcName),
+          Mouse: /mouse|hover/i.test(funcName),
         };
 
         let suggestedType = 'any';
@@ -99,7 +99,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
           column: line.indexOf(params),
           file: filePath,
           severity: 'error',
-          rule: 'no-implicit-any'
+          rule: 'no-implicit-any',
         });
       }
     }
@@ -112,11 +112,14 @@ export function validateTypeScript(content: string, filePath: string): Validatio
       const initialValue = stateMatch[1];
 
       // Only warn for non-primitive initial values
-      if (!['true', 'false', 'null', 'undefined'].includes(initialValue.trim()) &&
-          !initialValue.match(/^['"`]/) && // not a string literal
-          !initialValue.match(/^\d/) && // not a number
-          !initialValue.match(/^\[/) && // not an array literal
-          !initialValue.match(/^\{/)) { // not an object literal
+      if (
+        !['true', 'false', 'null', 'undefined'].includes(initialValue.trim()) &&
+        !initialValue.match(/^['"`]/) && // not a string literal
+        !initialValue.match(/^\d/) && // not a number
+        !initialValue.match(/^\[/) && // not an array literal
+        !initialValue.match(/^\{/)
+      ) {
+        // not an object literal
 
         errors.push({
           type: 'typescript',
@@ -125,13 +128,14 @@ export function validateTypeScript(content: string, filePath: string): Validatio
           column: line.indexOf('useState'),
           file: filePath,
           severity: 'warning',
-          rule: 'explicit-state-types'
+          rule: 'explicit-state-types',
         });
       }
     }
 
     // Pattern 4: Missing 'use client' directive for client components
-    const hasUseClientDirective = content.includes("'use client'") || content.includes('"use client"');
+    const hasUseClientDirective =
+      content.includes("'use client'") || content.includes('"use client"');
 
     // 🔧 FIX: Exclude API routes from 'use client' check (they are server-side)
     const isApiRoute = filePath.includes('/api/') || filePath.endsWith('/route.ts');
@@ -147,12 +151,13 @@ export function validateTypeScript(content: string, filePath: string): Validatio
       if (usesClientFeatures) {
         errors.push({
           type: 'typescript',
-          message: "Component uses client-side features but missing 'use client' directive at the top of the file",
+          message:
+            "Component uses client-side features but missing 'use client' directive at the top of the file",
           line: 1,
           column: 0,
           file: filePath,
           severity: 'error',
-          rule: 'use-client-directive'
+          rule: 'use-client-directive',
         });
       }
     }
@@ -162,7 +167,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
   // FIXED: Now handles multiline JSX tags (e.g., <button\n  className="..."\n>)
   // ⚠️ TEMPORARILY DISABLED FOR TESTING - Remove false && to re-enable
   if (false && (filePath.endsWith('.tsx') || filePath.endsWith('.jsx'))) {
-    const tagStack: Array<{tag: string, line: number}> = [];
+    const tagStack: Array<{ tag: string; line: number }> = [];
 
     // Helper: Get line number from character position
     const getLineNumber = (pos: number): number => {
@@ -171,11 +176,11 @@ export function validateTypeScript(content: string, filePath: string): Validatio
 
     // Remove comments and strings to avoid false matches
     let cleanedContent = content;
-    cleanedContent = cleanedContent.replace(/\/\/.*$/gm, '');  // Single-line comments
-    cleanedContent = cleanedContent.replace(/\/\*[\s\S]*?\*\//g, '');  // Multi-line comments
-    cleanedContent = cleanedContent.replace(/"(?:[^"\\]|\\.)*"/g, '""');  // Double-quoted strings
-    cleanedContent = cleanedContent.replace(/'(?:[^'\\]|\\.)*'/g, "''");  // Single-quoted strings
-    cleanedContent = cleanedContent.replace(/`(?:[^`\\]|\\[\s\S])*`/g, '``');  // Template literals
+    cleanedContent = cleanedContent.replace(/\/\/.*$/gm, ''); // Single-line comments
+    cleanedContent = cleanedContent.replace(/\/\*[\s\S]*?\*\//g, ''); // Multi-line comments
+    cleanedContent = cleanedContent.replace(/"(?:[^"\\]|\\.)*"/g, '""'); // Double-quoted strings
+    cleanedContent = cleanedContent.replace(/'(?:[^'\\]|\\.)*'/g, "''"); // Single-quoted strings
+    cleanedContent = cleanedContent.replace(/`(?:[^`\\]|\\[\s\S])*`/g, '``'); // Template literals
 
     // CRITICAL FIX: Remove JSX expressions {...} to avoid false matches with < > operators
     // This handles cases like: <button disabled={count > 5}>, {items.map((item) => <div>)}
@@ -186,7 +191,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
     const openTagRegex = /<(\w+)(?:\s[^>]*)?>/gs;
     let match;
 
-    const allTags: Array<{type: 'open' | 'close', tag: string, line: number, pos: number}> = [];
+    const allTags: Array<{ type: 'open' | 'close'; tag: string; line: number; pos: number }> = [];
 
     // Find all opening tags
     while ((match = openTagRegex.exec(cleanedContent)) !== null) {
@@ -197,8 +202,8 @@ export function validateTypeScript(content: string, filePath: string): Validatio
       // Skip TypeScript generic types (e.g., useState<string>, Promise<void>)
       const beforeTag = cleanedContent.substring(Math.max(0, position - 30), position);
       const isTypeAnnotation =
-        /:\s*$/.test(beforeTag) ||  // After : (type annotation)
-        /<\s*$/.test(beforeTag) ||  // After < (generic type)
+        /:\s*$/.test(beforeTag) || // After : (type annotation)
+        /<\s*$/.test(beforeTag) || // After < (generic type)
         /\bPromise\s*$/.test(beforeTag) ||
         /\bArray\s*$/.test(beforeTag) ||
         /\bRecord\s*$/.test(beforeTag) ||
@@ -226,14 +231,15 @@ export function validateTypeScript(content: string, filePath: string): Validatio
       // NOTE: Only treat lowercase HTML tags as self-closing, NOT React components (Link, Button, etc.)
       const isSelfClosing =
         fullMatch.trim().endsWith('/>') ||
-        (tagName === tagName.toLowerCase() && ['img', 'br', 'hr', 'input', 'meta', 'link'].includes(tagName));
+        (tagName === tagName.toLowerCase() &&
+          ['img', 'br', 'hr', 'input', 'meta', 'link'].includes(tagName));
 
       if (!isSelfClosing) {
         allTags.push({
           type: 'open',
           tag: tagName,
           line: getLineNumber(position),
-          pos: position
+          pos: position,
         });
       }
     }
@@ -248,7 +254,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
         type: 'close',
         tag: tagName,
         line: getLineNumber(position),
-        pos: position
+        pos: position,
       });
     }
 
@@ -269,7 +275,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
             column: 0,
             file: filePath,
             severity: 'error',
-            rule: 'jsx-tag-mismatch'
+            rule: 'jsx-tag-mismatch',
           });
           continue;
         }
@@ -283,7 +289,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
             column: 0,
             file: filePath,
             severity: 'error',
-            rule: 'jsx-tag-mismatch'
+            rule: 'jsx-tag-mismatch',
           });
         } else {
           tagStack.pop(); // Correct match, remove from stack
@@ -301,7 +307,7 @@ export function validateTypeScript(content: string, filePath: string): Validatio
         column: 0,
         file: filePath,
         severity: 'error',
-        rule: 'jsx-unclosed-tag'
+        rule: 'jsx-unclosed-tag',
       });
     }
   }
@@ -343,11 +349,13 @@ export function detectTypeMismatches(
 
   console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`[TypeMismatchDetector] 🔍 Analyzing ${filePath}`);
-  console.log(`[TypeMismatchDetector] 📋 Available types: ${typeDefinitions.map(t => t.name).join(', ')}`);
+  console.log(
+    `[TypeMismatchDetector] 📋 Available types: ${typeDefinitions.map((t) => t.name).join(', ')}`
+  );
 
   // Log all available properties for each type
   for (const type of typeDefinitions) {
-    const propList = type.properties.map(p => `${p.name}: ${p.type}`).join(', ');
+    const propList = type.properties.map((p) => `${p.name}: ${p.type}`).join(', ');
     console.log(`[TypeMismatchDetector] 📊 ${type.name} = { ${propList} }`);
   }
 
@@ -374,8 +382,8 @@ export function detectTypeMismatches(
     //   const { data }: { data: Products[] } = ...
     const typeAnnotationPatterns = [
       /(?:const|let|var)\s+(\w+)\s*:\s*(\w+)(?:\[\])?\s*(?:=|;)/g,
-      /\((\w+)\s*:\s*(\w+)(?:\[\])?\s*\)/g,  // Function parameters
-      /\.map\(\s*\((\w+)\s*:\s*(\w+)(?:\[\])?\s*\)/g,  // Map callbacks
+      /\((\w+)\s*:\s*(\w+)(?:\[\])?\s*\)/g, // Function parameters
+      /\.map\(\s*\((\w+)\s*:\s*(\w+)(?:\[\])?\s*\)/g, // Map callbacks
     ];
 
     for (const pattern of typeAnnotationPatterns) {
@@ -387,7 +395,9 @@ export function detectTypeMismatches(
 
         if (typePropertyMap.has(cleanTypeName)) {
           variableTypes.set(varName, cleanTypeName);
-          console.log(`[TypeMismatchDetector] 📝 Line ${lineIndex + 1}: Found '${varName}: ${cleanTypeName}'`);
+          console.log(
+            `[TypeMismatchDetector] 📝 Line ${lineIndex + 1}: Found '${varName}: ${cleanTypeName}'`
+          );
         }
       }
     }
@@ -410,7 +420,9 @@ export function detectTypeMismatches(
           const column = propertyMatch.index;
           const code = line.trim();
 
-          console.log(`[TypeMismatchDetector] ⚠️  Line ${lineIndex + 1}: Property '${propertyName}' not found on '${typeName}'`);
+          console.log(
+            `[TypeMismatchDetector] ⚠️  Line ${lineIndex + 1}: Property '${propertyName}' not found on '${typeName}'`
+          );
           console.log(`[TypeMismatchDetector]     Code: ${code}`);
           console.log(`[TypeMismatchDetector]     Available: ${availableProperties.join(', ')}`);
 
@@ -421,7 +433,7 @@ export function detectTypeMismatches(
             column,
             file: filePath,
             severity: 'error',
-            rule: 'type-property-mismatch'
+            rule: 'type-property-mismatch',
           });
         }
       }
@@ -443,8 +455,12 @@ export function detectTypeMismatches(
 
         // If the field type is 'string', warn about accessing properties on it
         if (fieldType === 'string') {
-          console.log(`[TypeMismatchDetector] ⚠️  Line ${lineIndex + 1}: Suspicious chain: ${fullMatch}`);
-          console.log(`[TypeMismatchDetector]     '${field}' is type 'string', cannot access '.${property}'`);
+          console.log(
+            `[TypeMismatchDetector] ⚠️  Line ${lineIndex + 1}: Suspicious chain: ${fullMatch}`
+          );
+          console.log(
+            `[TypeMismatchDetector]     '${field}' is type 'string', cannot access '.${property}'`
+          );
 
           errors.push({
             type: 'typescript',
@@ -453,7 +469,7 @@ export function detectTypeMismatches(
             column: chainMatch.index,
             file: filePath,
             severity: 'error',
-            rule: 'string-property-access'
+            rule: 'string-property-access',
           });
         }
       }

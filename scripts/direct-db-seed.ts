@@ -4,8 +4,8 @@
  */
 
 import Database from 'better-sqlite3';
-import { EXAMPLE_CATEGORIES } from '../lib/example-categories';
 import { randomBytes } from 'crypto';
+import { EXAMPLE_CATEGORIES } from '../lib/example-categories';
 
 const DB_PATH = process.env.POCKETBASE_DB_PATH || './deployment-server/pb_data/data.db';
 
@@ -23,7 +23,9 @@ async function seedDirectly() {
     console.log('✅ Connected to database\n');
 
     // Get collection ID
-    const collection = db.prepare('SELECT id FROM _collections WHERE name = ?').get('example_categories') as any;
+    const collection = db
+      .prepare('SELECT id FROM _collections WHERE name = ?')
+      .get('example_categories') as any;
 
     if (!collection) {
       console.error('❌ Collection "example_categories" not found!');
@@ -92,7 +94,6 @@ async function seedDirectly() {
     console.log('═'.repeat(60) + '\n');
 
     console.log('✅ SUCCESS! Refresh PocketBase Admin to see the categories.\n');
-
   } catch (error: any) {
     console.error('\n❌ FAILED:', error.message);
     console.error('\nMake sure:');

@@ -58,20 +58,20 @@ function featureNeedsBackend(feature: Feature): boolean {
     // Dynamic data
     /\b(catalog|listing|database|collection|dynamic|search results?)\b/,
     // State across sessions
-    /\b(cart|wishlist|saved|bookmark|profile|account|dashboard)\b/
+    /\b(cart|wishlist|saved|bookmark|profile|account|dashboard)\b/,
   ];
 
   // Check if any indicator matches
-  const needsBackend = backendIndicators.some(regex => regex.test(combined));
+  const needsBackend = backendIndicators.some((regex) => regex.test(combined));
 
   // Static content indicators (features that DON'T need backend)
   const staticIndicators = [
     /\b(about us|contact info|faq|terms|privacy|static)\b/,
     /\b(animation|theme|style|layout|design|ui only)\b/,
-    /\b(modal|dropdown|tooltip|menu|navigation)\b/
+    /\b(modal|dropdown|tooltip|menu|navigation)\b/,
   ];
 
-  const isStatic = staticIndicators.some(regex => regex.test(combined));
+  const isStatic = staticIndicators.some((regex) => regex.test(combined));
 
   return needsBackend && !isStatic;
 }
@@ -90,7 +90,10 @@ function extractLikelyCollectionNames(feature: Feature): string[] {
   // E-commerce specific patterns (high priority - check first)
   const ecommercePatterns = [
     { pattern: /catalog|inventory|listing/, collections: ['products'] },
-    { pattern: /shopping|cart|basket/, collections: ['cart', 'cart_items', 'cartItems', 'basket', 'basket_items'] },
+    {
+      pattern: /shopping|cart|basket/,
+      collections: ['cart', 'cart_items', 'cartItems', 'basket', 'basket_items'],
+    },
     { pattern: /checkout|purchase/, collections: ['orders', 'payments'] },
   ];
 
@@ -113,11 +116,11 @@ function extractLikelyCollectionNames(feature: Feature): string[] {
     /\b(lead|contact)s?\b/,
   ];
 
-  entityPatterns.forEach(pattern => {
+  entityPatterns.forEach((pattern) => {
     const match = combined.match(pattern);
     if (match) {
       // Normalize to collection name format
-      let collection = match[1];
+      const collection = match[1];
 
       // Convert basket → cart_items, cart → cart_items
       if (collection === 'cart' || collection === 'basket') {
@@ -148,9 +151,10 @@ function extractLikelyCollectionNames(feature: Feature): string[] {
  *
  * PHILOSOPHY CHANGE: We check IF backend exists, not WHAT it should be named
  */
-export function validateFeatureBackendCompleteness(
-  state: AppGenState
-): { errors: ValidationError[]; warnings: ValidationError[] } {
+export function validateFeatureBackendCompleteness(state: AppGenState): {
+  errors: ValidationError[];
+  warnings: ValidationError[];
+} {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
 
@@ -167,7 +171,7 @@ export function validateFeatureBackendCompleteness(
       severity: 'error',
       message: `${featuresNeedingBackend.length} features need backend but no backend configuration generated`,
       suggestion: 'Backend node should generate collections and API endpoints',
-      autoFixable: false
+      autoFixable: false,
     });
     return { errors, warnings };
   }
@@ -177,19 +181,23 @@ export function validateFeatureBackendCompleteness(
     return { errors, warnings }; // No backend needed, no features need it
   }
 
-  const generatedCollections = backendConfig.collections?.map((c: any) => c.name.toLowerCase()) || [];
-  const generatedEndpoints = backendConfig.apiEndpoints?.map((e: any) => e.handler.toLowerCase()) || [];
+  const generatedCollections =
+    backendConfig.collections?.map((c: any) => c.name.toLowerCase()) || [];
+  const generatedEndpoints =
+    backendConfig.apiEndpoints?.map((e: any) => e.handler.toLowerCase()) || [];
 
-  console.log(`[BackendCompatibility] Validating ${featuresNeedingBackend.length} features needing backend`);
+  console.log(
+    `[BackendCompatibility] Validating ${featuresNeedingBackend.length} features needing backend`
+  );
   console.log(`[BackendCompatibility] Generated collections: ${generatedCollections.join(', ')}`);
   console.log(`[BackendCompatibility] Generated endpoints: ${generatedEndpoints.length}`);
 
   // Validate each feature
-  featuresNeedingBackend.forEach(feature => {
+  featuresNeedingBackend.forEach((feature) => {
     const likelyCollections = extractLikelyCollectionNames(feature);
 
     // Check if AT LEAST ONE likely collection was generated
-    const hasCollection = likelyCollections.some(col =>
+    const hasCollection = likelyCollections.some((col) =>
       generatedCollections.includes(col.toLowerCase())
     );
 
@@ -200,16 +208,18 @@ export function validateFeatureBackendCompleteness(
         severity: 'error',
         message: `No collection generated for feature '${feature.name}'. Expected one of: ${likelyCollections.join(', ')}`,
         suggestion: `Backend should generate a collection for ${feature.name}`,
-        autoFixable: false
+        autoFixable: false,
       });
     } else {
       // Collection exists, now check if it has endpoints
-      const relevantEndpoints = backendConfig.apiEndpoints?.filter((ep: any) =>
-        likelyCollections.some(col =>
-          ep.collection?.toLowerCase() === col.toLowerCase() ||
-          ep.path?.toLowerCase().includes(col.toLowerCase())
-        )
-      ) || [];
+      const relevantEndpoints =
+        backendConfig.apiEndpoints?.filter((ep: any) =>
+          likelyCollections.some(
+            (col) =>
+              ep.collection?.toLowerCase() === col.toLowerCase() ||
+              ep.path?.toLowerCase().includes(col.toLowerCase())
+          )
+        ) || [];
 
       if (relevantEndpoints.length === 0) {
         warnings.push({
@@ -217,7 +227,7 @@ export function validateFeatureBackendCompleteness(
           severity: 'warning',
           message: `Collection exists for '${feature.name}' but no API endpoints generated`,
           suggestion: `Backend should generate CRUD endpoints for the collection`,
-          autoFixable: false
+          autoFixable: false,
         });
       }
     }
@@ -248,6 +258,6 @@ export function getCompletenessReport(state: AppGenState): {
     collectionsGenerated: state.backendConfig?.collections?.length || 0,
     endpointsGenerated: state.backendConfig?.apiEndpoints?.length || 0,
     errors: errors.length,
-    warnings: warnings.length
+    warnings: warnings.length,
   };
 }

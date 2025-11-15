@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 import { sanitizeError } from '@/lib/database/pocketbase-utils';
 
 const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090';
@@ -9,19 +9,13 @@ const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0
  * GET /api/files/[id]
  * Retrieve a file by ID (redirects to PocketBase file URL)
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Authenticate user
     const user = await getAuthenticatedUser(request);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -40,10 +34,7 @@ export async function GET(
 
     // Check if user owns this file
     if (record.userId !== user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden: You do not own this file' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Forbidden: You do not own this file' }, { status: 403 });
     }
 
     // Get file URL from PocketBase
@@ -51,15 +42,11 @@ export async function GET(
 
     // Redirect to the file URL
     return NextResponse.redirect(fileUrl);
-
   } catch (error: any) {
     console.error('[File GET] Error:', error);
 
     if (error.status === 404) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     return NextResponse.json(
@@ -73,19 +60,13 @@ export async function GET(
  * PATCH /api/files/[id]
  * Update file metadata (e.g., purpose)
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Authenticate user
     const user = await getAuthenticatedUser(request);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -105,10 +86,7 @@ export async function PATCH(
 
     // Check if user owns this file
     if (record.userId !== user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden: You do not own this file' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Forbidden: You do not own this file' }, { status: 403 });
     }
 
     // Validate purpose if it's being updated
@@ -137,17 +115,13 @@ export async function PATCH(
       purpose: updatedRecord.purpose,
       designAnalysis: updatedRecord.designAnalysis,
       created: updatedRecord.created,
-      updated: updatedRecord.updated
+      updated: updatedRecord.updated,
     });
-
   } catch (error: any) {
     console.error('[File PATCH] Error:', error);
 
     if (error.status === 404) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     return NextResponse.json(
@@ -170,10 +144,7 @@ export async function DELETE(
     const user = await getAuthenticatedUser(request);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -192,10 +163,7 @@ export async function DELETE(
 
     // Check if user owns this file
     if (record.userId !== user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden: You do not own this file' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Forbidden: You do not own this file' }, { status: 403 });
     }
 
     // Delete the record (this will also delete the file)
@@ -203,17 +171,13 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'File deleted successfully'
+      message: 'File deleted successfully',
     });
-
   } catch (error: any) {
     console.error('[File DELETE] Error:', error);
 
     if (error.status === 404) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     return NextResponse.json(

@@ -1,6 +1,6 @@
 // app/api/admin/credits/stats/route.ts
 // Admin API for credit system statistics and monitoring
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
@@ -99,16 +99,18 @@ export async function GET(req: NextRequest) {
         totalTokensUsed,
         totalDailyTokens,
         totalAvailable,
-        utilizationRate: totalTokensPurchased > 0
-          ? ((totalTokensUsed / totalTokensPurchased) * 100).toFixed(2) + '%'
-          : '0%',
+        utilizationRate:
+          totalTokensPurchased > 0
+            ? ((totalTokensUsed / totalTokensPurchased) * 100).toFixed(2) + '%'
+            : '0%',
       },
       revenue: {
         last30Days: {
           USD: revenueUSD,
           IRT: revenueIRT,
         },
-        transactionCount: recentTransactions.items.filter((t: any) => t.status === 'completed').length,
+        transactionCount: recentTransactions.items.filter((t: any) => t.status === 'completed')
+          .length,
       },
       usage: {
         last30Days: recentUsage.totalItems,

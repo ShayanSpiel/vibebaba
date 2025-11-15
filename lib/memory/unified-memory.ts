@@ -1,7 +1,7 @@
 // lib/memory/unified-memory.ts
 
-import { memoryRepository } from '@/lib/repositories/memory.repository';
 import { log } from '@/lib/logger';
+import { memoryRepository } from '@/lib/repositories/memory.repository';
 
 export interface ProjectMemory {
   projectId: string;

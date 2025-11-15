@@ -1,7 +1,11 @@
 // lib/langgraph/utils/logging/ai-with-logging.ts
 
-import { generateWithFallback, generateCodeWithCodestral, AIGenerationResult } from '@/lib/ai/ai';
-import { aiConversationLogger, AIConversation } from './ai-conversation-logger';
+import {
+  type AIGenerationResult,
+  generateCodeWithCodestral,
+  generateWithFallback,
+} from '@/lib/ai/ai';
+import { type AIConversation, aiConversationLogger } from './ai-conversation-logger';
 import { shouldLog } from './logging-config';
 
 /**
@@ -25,11 +29,11 @@ export async function generateWithLogging(params: {
     projectId,
     nodeName,
     callType,
-    model: useCodestral ? 'codestral-priority' : 'auto-detect',  // Will be updated after generation
+    model: useCodestral ? 'codestral-priority' : 'auto-detect', // Will be updated after generation
     provider: useCodestral ? 'mistral-priority' : 'auto-detect',
     prompt,
     estimatedTokens,
-    attempt
+    attempt,
   });
 
   try {
@@ -45,10 +49,12 @@ export async function generateWithLogging(params: {
     aiConversationLogger.completeAICall(callId, {
       response: result.text,
       tokens: actualTokens,
-      fallbacks: result.attemptsLog.filter(log => log.includes('FAILED')).map(log => {
-        const match = log.match(/FAILED: ([^\s]+)/);
-        return match ? match[1] : 'unknown';
-      })
+      fallbacks: result.attemptsLog
+        .filter((log) => log.includes('FAILED'))
+        .map((log) => {
+          const match = log.match(/FAILED: ([^\s]+)/);
+          return match ? match[1] : 'unknown';
+        }),
     });
 
     // Update the call with the actual model used

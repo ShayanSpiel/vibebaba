@@ -5,7 +5,7 @@
  * Used primarily by admin dashboard for better performance
  */
 
-import PocketBase from 'pocketbase';
+import type PocketBase from 'pocketbase';
 import { creditsCache } from '../credits-cache';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
@@ -38,19 +38,19 @@ export async function calculateCreditsForUsers(
   }
 
   // Check cache first (batch get)
-  const cacheKeys = userIds.map(id => `credits:${id}`);
+  const cacheKeys = userIds.map((id) => `credits:${id}`);
   const cached = creditsCache.getMany<UserCreditSummary>(cacheKeys);
 
   // Find which users we still need to fetch
-  const uncachedIds = userIds.filter(id => !cached.has(`credits:${id}`));
+  const uncachedIds = userIds.filter((id) => !cached.has(`credits:${id}`));
 
   if (uncachedIds.length > 0) {
     // Fetch uncached users in a single query
-    const filter = uncachedIds.map(id => `id="${id}"`).join(' || ');
+    const filter = uncachedIds.map((id) => `id="${id}"`).join(' || ');
 
     const users = await pb.collection('users').getFullList({
       filter,
-      fields: 'id,email,name,username,totalTokens,usedTokens,dailyTokens,packageId,packageExpiry'
+      fields: 'id,email,name,username,totalTokens,usedTokens,dailyTokens,packageId,packageExpiry',
     });
 
     // Process and cache the results
@@ -109,7 +109,7 @@ export async function loadUserCreditsPage(
   const result = await pb.collection('users').getList(page, limit, {
     filter,
     sort: '-created',
-    fields: 'id,email,name,username,totalTokens,usedTokens,dailyTokens,packageId,packageExpiry'
+    fields: 'id,email,name,username,totalTokens,usedTokens,dailyTokens,packageId,packageExpiry',
   });
 
   // Calculate available tokens for each user
@@ -128,7 +128,7 @@ export async function loadUserCreditsPage(
 
   // Cache the results
   const cacheEntries = new Map<string, UserCreditSummary>();
-  users.forEach(user => {
+  users.forEach((user) => {
     cacheEntries.set(`credits:${user.id}`, user);
   });
   creditsCache.setMany(cacheEntries);
@@ -137,7 +137,7 @@ export async function loadUserCreditsPage(
     users,
     page: result.page,
     totalPages: result.totalPages,
-    total: result.totalItems
+    total: result.totalItems,
   };
 }
 
@@ -155,7 +155,7 @@ export async function warmCacheForActiveUsers(pb: PocketBase, limit: number = 10
     filter: `updated >= "${sevenDaysAgo.toISOString()}"`,
     sort: '-updated',
     fields: 'id,email,name,username,totalTokens,usedTokens,dailyTokens,packageId,packageExpiry',
-    limit
+    limit,
   });
 
   console.log(`[Cache] Found ${activeUsers.length} active users`);

@@ -20,9 +20,7 @@ export function getLineNumber(content: string, index: number): number {
  * @param content - HTML content
  * @returns Array of CSS blocks with their starting line numbers
  */
-export function extractStyleBlocks(
-  content: string
-): Array<{ css: string; startLine: number }> {
+export function extractStyleBlocks(content: string): Array<{ css: string; startLine: number }> {
   const blocks: Array<{ css: string; startLine: number }> = [];
   const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
 
@@ -41,9 +39,7 @@ export function extractStyleBlocks(
  * @param content - HTML content
  * @returns Array of JavaScript blocks with their starting line numbers
  */
-export function extractScriptBlocks(
-  content: string
-): Array<{ js: string; startLine: number }> {
+export function extractScriptBlocks(content: string): Array<{ js: string; startLine: number }> {
   const blocks: Array<{ js: string; startLine: number }> = [];
   const scriptRegex = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
 
@@ -68,10 +64,7 @@ export function extractCodeBlocks(
   tagName: string
 ): Array<{ code: string; startLine: number }> {
   const blocks: Array<{ code: string; startLine: number }> = [];
-  const regex = new RegExp(
-    `<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`,
-    'gi'
-  );
+  const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
 
   let match;
   while ((match = regex.exec(content)) !== null) {
@@ -132,11 +125,7 @@ export function countChar(content: string, char: string): number {
  * @param message - Error message
  * @returns Formatted error string
  */
-export function formatValidationError(
-  file: string,
-  line: number,
-  message: string
-): string {
+export function formatValidationError(file: string, line: number, message: string): string {
   return `${file}:${line} - ${message}`;
 }
 

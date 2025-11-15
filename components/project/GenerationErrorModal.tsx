@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import { X, AlertTriangle } from "lucide-react";
+import { AlertTriangle, X } from 'lucide-react';
+import React from 'react';
 
 interface GenerationErrorModalProps {
   errorMessage?: string;
@@ -18,7 +18,7 @@ export default function GenerationErrorModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div
         className="relative w-full max-w-md mx-4 animate-slideUp"
-        style={{ animationDuration: "300ms" }}
+        style={{ animationDuration: '300ms' }}
       >
         {/* Close button */}
         {onClose && (
@@ -49,9 +49,7 @@ export default function GenerationErrorModal({
 
             {/* Title */}
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-text-primary">
-                Generation Failed
-              </h2>
+              <h2 className="text-2xl font-bold text-text-primary">Generation Failed</h2>
               <p className="text-sm text-text-secondary">
                 Something went wrong during the app generation process
               </p>
@@ -60,9 +58,7 @@ export default function GenerationErrorModal({
             {/* Error message */}
             {errorMessage && (
               <div className="bg-error/10 border border-error/20 rounded-lg p-4">
-                <p className="text-xs text-text-secondary font-mono break-words">
-                  {errorMessage}
-                </p>
+                <p className="text-xs text-text-secondary font-mono break-words">{errorMessage}</p>
               </div>
             )}
 
@@ -95,9 +91,7 @@ export default function GenerationErrorModal({
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  <span className="font-medium text-white">
-                    Regenerate App
-                  </span>
+                  <span className="font-medium text-white">Regenerate App</span>
                 </div>
               </button>
 

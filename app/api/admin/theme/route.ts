@@ -1,17 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import * as fs from 'fs/promises';
+import { type NextRequest, NextResponse } from 'next/server';
 import * as path from 'path';
 
 const THEME_CONFIG_PATH = path.join(process.cwd(), 'lib/theme/theme-config.ts');
 const CUSTOM_THEMES_PATH = path.join(process.cwd(), 'lib/theme/custom-themes.json');
 
 // Available default themes
-const DEFAULT_THEMES = [
-  'warmOrangeTheme',
-  'coolBlueTheme',
-  'purpleDreamTheme',
-  'greenNatureTheme',
-];
+const DEFAULT_THEMES = ['warmOrangeTheme', 'coolBlueTheme', 'purpleDreamTheme', 'greenNatureTheme'];
 
 /**
  * GET /api/admin/theme
@@ -149,7 +144,9 @@ export async function POST(request: NextRequest) {
         configContent = configContent.replace(customThemeRegex, themeConstant);
       } else {
         // Add new custom theme before the ACTIVE THEME SELECTOR section
-        const insertPosition = configContent.indexOf('// ============================================\n// ACTIVE THEME SELECTOR');
+        const insertPosition = configContent.indexOf(
+          '// ============================================\n// ACTIVE THEME SELECTOR'
+        );
         if (insertPosition >= 0) {
           configContent =
             configContent.slice(0, insertPosition) +
@@ -221,10 +218,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Invalid action' },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Error updating theme:', error);
     return NextResponse.json(

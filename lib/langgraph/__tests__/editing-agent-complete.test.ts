@@ -5,15 +5,18 @@
  * Run with: npm test editing-agent-complete
  */
 
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
-import { detectFileCreation, detectFileRename, detectFileType } from '../nodes/editor';
-import { intelligentFallback, getFileSample } from '../nodes/context-analyzer';
-import { editingWorkflow, quickEditWorkflow } from '../workflows/editing-workflow';
-import { createVirtualFileSystem, validateContent, normalizePath } from '@/lib/files/file-operations';
+import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 import { shouldUseQuickEdit } from '@/app/api/ai/chat/route';
+import {
+  createVirtualFileSystem,
+  normalizePath,
+  validateContent,
+} from '@/lib/files/file-operations';
+import { getFileSample, intelligentFallback } from '../nodes/tech-lead';
+import { detectFileCreation, detectFileRename, detectFileType } from '../nodes/editor';
+import { editingWorkflow, quickEditWorkflow } from '../workflows/editing-workflow';
 
 describe('Editing Agent - Complete Test Suite', () => {
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PHASE 1: CRITICAL FIXES
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -24,40 +27,40 @@ describe('Editing Agent - Complete Test Suite', () => {
         files: [
           { path: 'index.html', content: '<html>Home</html>' },
           { path: 'about.html', content: '<html>About</html>' },
-          { path: 'contact.html', content: '<html>Contact</html>' }
+          { path: 'contact.html', content: '<html>Contact</html>' },
         ],
         userRequest: 'Remove the about page',
         projectContext: {
           projectId: 'test-delete-123',
           userId: 'user-1',
           description: 'Test deletion',
-          stage: 'editing'
-        }
+          stage: 'editing',
+        },
       });
 
       expect(result.success).toBe(true);
       expect(result.files.length).toBe(2);
-      expect(result.files.find(f => f.path === 'about.html')).toBeUndefined();
-      expect(result.files.find(f => f.path === 'index.html')).toBeDefined();
-      expect(result.files.find(f => f.path === 'contact.html')).toBeDefined();
+      expect(result.files.find((f) => f.path === 'about.html')).toBeUndefined();
+      expect(result.files.find((f) => f.path === 'index.html')).toBeDefined();
+      expect(result.files.find((f) => f.path === 'contact.html')).toBeDefined();
     });
 
     test('should track deleted files in changes summary', async () => {
       const result = await editingWorkflow({
         files: [
           { path: 'index.html', content: '<html>Home</html>' },
-          { path: 'old-page.html', content: '<html>Old</html>' }
+          { path: 'old-page.html', content: '<html>Old</html>' },
         ],
         userRequest: 'Delete old-page.html',
         projectContext: {
           projectId: 'test-delete-124',
           userId: 'user-1',
           description: 'Test deletion tracking',
-          stage: 'editing'
-        }
+          stage: 'editing',
+        },
       });
 
-      expect(result.changesApplied.some(c => c.includes('Deleted'))).toBe(true);
+      expect(result.changesApplied.some((c) => c.includes('Deleted'))).toBe(true);
     });
   });
 
@@ -72,12 +75,12 @@ describe('Editing Agent - Complete Test Suite', () => {
     test('should detect CSS file creation with extension inference', () => {
       const result = detectFileCreation('Add a styles file for dark theme', []);
       expect(result.isCreation).toBe(true);
-      expect(result.expectedFiles.some(f => f.endsWith('.css'))).toBe(true);
+      expect(result.expectedFiles.some((f) => f.endsWith('.css'))).toBe(true);
     });
 
     test('should warn about existing files', () => {
       const result = detectFileCreation('Create index.html', [
-        { path: 'index.html', content: '<html>Existing</html>' }
+        { path: 'index.html', content: '<html>Existing</html>' },
       ]);
       expect(result.isCreation).toBe(true);
       expect(result.warnings.length).toBeGreaterThan(0);
@@ -90,10 +93,10 @@ describe('Editing Agent - Complete Test Suite', () => {
         'Add a new contact.html file',
         'Make a styles.css file',
         'New page called about.html',
-        'Build a dashboard page'
+        'Build a dashboard page',
       ];
 
-      patterns.forEach(pattern => {
+      patterns.forEach((pattern) => {
         const result = detectFileCreation(pattern, []);
         expect(result.isCreation).toBe(true);
         expect(result.expectedFiles.length).toBeGreaterThan(0);
@@ -111,8 +114,8 @@ describe('Editing Agent - Complete Test Suite', () => {
           projectId: 'test-error-123',
           userId: 'user-1',
           description: 'Test error recovery',
-          stage: 'editing'
-        }
+          stage: 'editing',
+        },
       });
 
       // Even if there's an error, should have files
@@ -138,7 +141,7 @@ describe('Editing Agent - Complete Test Suite', () => {
       const writeResult = await vfs.writeFile({
         filePath: 'test.html',
         content: '<html>Test Content</html>',
-        encoding: 'utf-8'
+        encoding: 'utf-8',
       });
 
       expect(writeResult.success).toBe(true);
@@ -151,7 +154,7 @@ describe('Editing Agent - Complete Test Suite', () => {
 
       await vfs.writeFile({
         filePath: 'data.html',
-        content: '<html>Persistent Data</html>'
+        content: '<html>Persistent Data</html>',
       });
 
       const readResult = await vfs.readFile('data.html');
@@ -179,7 +182,7 @@ describe('Editing Agent - Complete Test Suite', () => {
       // Should reject path traversal
       const result = await vfs.writeFile({
         filePath: '../../../etc/passwd',
-        content: 'malicious'
+        content: 'malicious',
       });
 
       expect(result.success).toBe(false);
@@ -194,7 +197,7 @@ describe('Editing Agent - Complete Test Suite', () => {
   describe('Fix 5: Intelligent Fallback', () => {
     test('should detect minor changes', () => {
       const result = intelligentFallback('Change button color to blue', [
-        { path: 'index.html', content: '<html><button>Click</button></html>' }
+        { path: 'index.html', content: '<html><button>Click</button></html>' },
       ]);
 
       expect(result.changeScope).toBe('minor');
@@ -204,7 +207,7 @@ describe('Editing Agent - Complete Test Suite', () => {
 
     test('should detect major changes', () => {
       const result = intelligentFallback('Add a new dashboard page with charts', [
-        { path: 'index.html', content: '<html>Home</html>' }
+        { path: 'index.html', content: '<html>Home</html>' },
       ]);
 
       expect(['major', 'moderate']).toContain(result.changeScope);
@@ -213,7 +216,7 @@ describe('Editing Agent - Complete Test Suite', () => {
 
     test('should preserve database code on minor changes', () => {
       const result = intelligentFallback('Change header text', [
-        { path: 'index.html', content: '<html><script>window.db = {...}</script></html>' }
+        { path: 'index.html', content: '<html><script>window.db = {...}</script></html>' },
       ]);
 
       expect(result.preserveSections.length).toBeGreaterThan(0);
@@ -222,11 +225,11 @@ describe('Editing Agent - Complete Test Suite', () => {
 
     test('should preserve navigation unless requested', () => {
       const result = intelligentFallback('Change footer color', [
-        { path: 'index.html', content: '<html><nav><a href="about.html">About</a></nav></html>' }
+        { path: 'index.html', content: '<html><nav><a href="about.html">About</a></nav></html>' },
       ]);
 
-      const navPreserved = result.preserveSections.some(ps =>
-        ps.sections.some(s => s.includes('navigation'))
+      const navPreserved = result.preserveSections.some((ps) =>
+        ps.sections.some((s) => s.includes('navigation'))
       );
       expect(navPreserved).toBe(true);
     });
@@ -237,10 +240,10 @@ describe('Editing Agent - Complete Test Suite', () => {
       const patterns = [
         'Rename contact.html to reach-us.html',
         'Change about.html to company.html',
-        'Move old-page.html to archive.html'
+        'Move old-page.html to archive.html',
       ];
 
-      patterns.forEach(pattern => {
+      patterns.forEach((pattern) => {
         const result = detectFileRename(pattern);
         expect(result.isRename).toBe(true);
         expect(result.oldPath).toBeTruthy();
@@ -267,11 +270,14 @@ describe('Editing Agent - Complete Test Suite', () => {
         'Delete the database',
         'Make this a static site',
         'Remove backend',
-        'No database needed'
+        'No database needed',
       ];
 
-      patterns.forEach(pattern => {
-        const hasRemoveIntent = /remove.*database|delete.*database|no.*database|static.*site|remove.*backend/i.test(pattern);
+      patterns.forEach((pattern) => {
+        const hasRemoveIntent =
+          /remove.*database|delete.*database|no.*database|static.*site|remove.*backend/i.test(
+            pattern
+          );
         expect(hasRemoveIntent).toBe(true);
       });
     });
@@ -281,11 +287,13 @@ describe('Editing Agent - Complete Test Suite', () => {
         'Add database',
         'Create a database',
         'Use database for storage',
-        'With database integration'
+        'With database integration',
       ];
 
-      patterns.forEach(pattern => {
-        const hasKeepIntent = /add.*database|create.*database|use.*database|with.*database/i.test(pattern);
+      patterns.forEach((pattern) => {
+        const hasKeepIntent = /add.*database|create.*database|use.*database|with.*database/i.test(
+          pattern
+        );
         expect(hasKeepIntent).toBe(true);
       });
     });
@@ -360,7 +368,7 @@ describe('Editing Agent - Complete Test Suite', () => {
     test('should limit conversation history to 10 messages', () => {
       const messages = Array.from({ length: 50 }, (_, i) => ({
         role: i % 2 === 0 ? 'user' : 'assistant',
-        content: `Message ${i}`
+        content: `Message ${i}`,
       }));
 
       const pruned = (messages || []).slice(-10);
@@ -371,14 +379,14 @@ describe('Editing Agent - Complete Test Suite', () => {
     });
 
     test('should handle empty conversation history', () => {
-      const pruned = ([] as any[] || []).slice(-10);
+      const pruned = (([] as any[]) || []).slice(-10);
       expect(pruned.length).toBe(0);
     });
 
     test('should handle short conversation history', () => {
       const messages = [
         { role: 'user', content: 'Hello' },
-        { role: 'assistant', content: 'Hi' }
+        { role: 'assistant', content: 'Hi' },
       ];
 
       const pruned = (messages || []).slice(-10);
@@ -445,7 +453,7 @@ describe('Editing Agent - Complete Test Suite', () => {
     test('should not use quick edit for multi-file projects', () => {
       const files = [
         { path: 'index.html', content: '<html>Home</html>' },
-        { path: 'about.html', content: '<html>About</html>' }
+        { path: 'about.html', content: '<html>About</html>' },
       ];
 
       expect(shouldUseQuickEdit('Change button to blue', files, 'editing')).toBe(false);
@@ -462,7 +470,8 @@ describe('Editing Agent - Complete Test Suite', () => {
 
     test('should not use quick edit for long requests', () => {
       const files = [{ path: 'index.html', content: '<html>Test</html>' }];
-      const longRequest = 'Change the button color to blue and also update the font size and spacing and margins';
+      const longRequest =
+        'Change the button color to blue and also update the font size and spacing and margins';
 
       expect(shouldUseQuickEdit(longRequest, files, 'editing')).toBe(false);
     });
@@ -485,14 +494,16 @@ describe('Editing Agent - Complete Test Suite', () => {
   describe('Integration: Full Workflow', () => {
     test('should handle complete edit workflow', async () => {
       const result = await editingWorkflow({
-        files: [{ path: 'index.html', content: '<html><body><h1>Original Title</h1></body></html>' }],
+        files: [
+          { path: 'index.html', content: '<html><body><h1>Original Title</h1></body></html>' },
+        ],
         userRequest: 'Change the title to "New Title"',
         projectContext: {
           projectId: 'test-integration-' + Date.now(),
           userId: 'user-1',
           description: 'Integration test',
-          stage: 'editing'
-        }
+          stage: 'editing',
+        },
       });
 
       expect(result.success).toBe(true);
@@ -531,7 +542,7 @@ describe('Test Summary', () => {
       'Fix 9: Smart Context Truncation',
       'Fix 10: Conversation History Pruning',
       'Fix 11: Strict Security Mode',
-      'Fix 12: Quick Edit Workflow'
+      'Fix 12: Quick Edit Workflow',
     ];
 
     expect(fixesTested.length).toBe(12);

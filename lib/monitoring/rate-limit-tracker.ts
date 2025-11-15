@@ -43,7 +43,10 @@ export class RateLimitTracker {
     if (existing) {
       // For daily limits, keep 24h cooldown; for minute limits, use exponential backoff
       if (limitType !== 'per-day') {
-        const cooldownMultiplier = Math.min(Math.pow(2, existing.rateLimitCount), this.maxCooldownMs / this.baseCooldownMs);
+        const cooldownMultiplier = Math.min(
+          2 ** existing.rateLimitCount,
+          this.maxCooldownMs / this.baseCooldownMs
+        );
         cooldownMs = this.baseCooldownMs * cooldownMultiplier;
       }
 
@@ -56,7 +59,9 @@ export class RateLimitTracker {
         limitType,
       });
 
-      console.log(`[Rate Limit] ${provider}/${model} rate limited (${limitType}). Count: ${existing.rateLimitCount + 1}, Cooldown: ${Math.ceil(cooldownMs / 1000)}s`);
+      console.log(
+        `[Rate Limit] ${provider}/${model} rate limited (${limitType}). Count: ${existing.rateLimitCount + 1}, Cooldown: ${Math.ceil(cooldownMs / 1000)}s`
+      );
     } else {
       this.rateLimits.set(key, {
         provider,
@@ -67,7 +72,9 @@ export class RateLimitTracker {
         limitType,
       });
 
-      console.log(`[Rate Limit] ${provider}/${model} rate limited (${limitType}). First occurrence, Cooldown: ${Math.ceil(cooldownMs / 1000)}s`);
+      console.log(
+        `[Rate Limit] ${provider}/${model} rate limited (${limitType}). First occurrence, Cooldown: ${Math.ceil(cooldownMs / 1000)}s`
+      );
     }
   }
 
@@ -85,7 +92,9 @@ export class RateLimitTracker {
     const now = Date.now();
     if (now < info.cooldownUntil) {
       const remainingMs = info.cooldownUntil - now;
-      console.log(`[Rate Limit] ${provider}/${model} still in cooldown. Remaining: ${Math.ceil(remainingMs / 1000)}s`);
+      console.log(
+        `[Rate Limit] ${provider}/${model} still in cooldown. Remaining: ${Math.ceil(remainingMs / 1000)}s`
+      );
       return true;
     }
 
@@ -161,8 +170,8 @@ export class RateLimitTracker {
    * Clear rate limits for a specific provider
    */
   clearProvider(provider: string): void {
-    const keys = Array.from(this.rateLimits.keys()).filter(key => key.startsWith(`${provider}:`));
-    keys.forEach(key => this.rateLimits.delete(key));
+    const keys = Array.from(this.rateLimits.keys()).filter((key) => key.startsWith(`${provider}:`));
+    keys.forEach((key) => this.rateLimits.delete(key));
     console.log(`[Rate Limit] Cleared ${keys.length} rate limits for ${provider}`);
   }
 
@@ -171,7 +180,7 @@ export class RateLimitTracker {
    */
   getRateLimitedModels(): RateLimitInfo[] {
     const now = Date.now();
-    return Array.from(this.rateLimits.values()).filter(info => now < info.cooldownUntil);
+    return Array.from(this.rateLimits.values()).filter((info) => now < info.cooldownUntil);
   }
 
   /**
@@ -180,8 +189,10 @@ export class RateLimitTracker {
   async waitForCooldown(provider: string, model: string): Promise<void> {
     const remaining = this.getCooldownRemaining(provider, model);
     if (remaining > 0) {
-      console.log(`[Rate Limit] Waiting ${Math.ceil(remaining / 1000)}s for ${provider}/${model} cooldown...`);
-      await new Promise(resolve => setTimeout(resolve, remaining));
+      console.log(
+        `[Rate Limit] Waiting ${Math.ceil(remaining / 1000)}s for ${provider}/${model} cooldown...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, remaining));
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 // Admin pages should not be indexed by search engines
 export const metadata: Metadata = {

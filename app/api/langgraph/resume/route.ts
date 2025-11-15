@@ -1,10 +1,10 @@
 // app/api/langgraph/resume/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/database/pocketbase-middleware";
-import { createAppGenWorkflow } from "@/lib/langgraph/workflow";
-import { PocketBaseCheckpointer } from "@/lib/langgraph/checkpointer";
-import { emitWorkflowStart, emitWorkflowComplete } from "@/lib/langgraph/utils/logging/events";
-import type { AppGenState } from "@/lib/langgraph/types";
+import { type NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { PocketBaseCheckpointer } from '@/lib/langgraph/checkpointer';
+import type { AppGenState } from '@/lib/langgraph/types';
+import { emitWorkflowComplete, emitWorkflowStart } from '@/lib/langgraph/utils/logging/events';
+import { createAppGenWorkflow } from '@/lib/langgraph/workflow';
 
 /**
  * Resume a workflow from a saved checkpoint
@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { projectId } = await req.json();
 
     if (!projectId) {
-      return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     // Load checkpoint
@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[LangGraph] Resuming workflow for project ${projectId}`);
-    console.log(`[LangGraph] Last completed node: ${state.completedNodes[state.completedNodes.length - 1]}`);
+    console.log(
+      `[LangGraph] Last completed node: ${state.completedNodes[state.completedNodes.length - 1]}`
+    );
     console.log(`[LangGraph] Stage: ${state.stage}`);
 
     emitWorkflowStart(projectId, `Resume from ${state.stage}`);
@@ -48,9 +50,9 @@ export async function POST(req: NextRequest) {
 
     // Create workflow and run from resume point
     const workflow = createAppGenWorkflow();
-    const result = await workflow.invoke(state as any, {
-      recursionLimit: 30
-    }) as unknown as AppGenState;
+    const result = (await workflow.invoke(state as any, {
+      recursionLimit: 30,
+    })) as unknown as AppGenState;
 
     const totalDuration = Date.now() - workflowStartTime;
     emitWorkflowComplete(result, totalDuration);
@@ -69,16 +71,12 @@ export async function POST(req: NextRequest) {
         stage: result.stage,
         artifacts: Object.fromEntries(result.artifacts || []),
         errors: result.errors,
-        duration: totalDuration
-      }
+        duration: totalDuration,
+      },
     });
-
   } catch (error: any) {
-    console.error("[LangGraph] Resume failed:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error('[LangGraph] Resume failed:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 

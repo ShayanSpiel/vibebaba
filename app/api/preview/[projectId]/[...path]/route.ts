@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from 'next/server';
 
 /**
  * Virtual file server for project previews
@@ -16,17 +16,16 @@ export async function GET(
     // Since this is a server route, we'll return a response that the client can intercept
 
     // For now, redirect to a client-side handler
-    return NextResponse.json({
-      error: "This endpoint requires client-side file fetching",
-      projectId,
-      filePath
-    }, { status: 400 });
-
-  } catch (error) {
-    console.error("Error serving preview file:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
+      {
+        error: 'This endpoint requires client-side file fetching',
+        projectId,
+        filePath,
+      },
+      { status: 400 }
     );
+  } catch (error) {
+    console.error('Error serving preview file:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

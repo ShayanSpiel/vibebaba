@@ -18,7 +18,7 @@ async function verifyAdmin() {
     console.log('Fetching users collection (no auth)...');
     const users = await pb.collection('users').getFullList({
       sort: '-created',
-      requestKey: null // Bypass request deduplication
+      requestKey: null, // Bypass request deduplication
     });
 
     console.log(`\n✅ Found ${users.length} user(s) in PocketBase:\n`);
@@ -52,7 +52,6 @@ async function verifyAdmin() {
       }
       console.log('');
     });
-
   } catch (error: any) {
     console.error('❌ Error accessing PocketBase:', error.message);
 

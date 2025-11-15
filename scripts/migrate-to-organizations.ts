@@ -45,7 +45,7 @@ async function migrate() {
         // Check if user already has organization
         const existingMembers = await pb.collection('org_members').getFullList({
           filter: `userId = "${user.id}"`,
-          expand: 'organizationId'
+          expand: 'organizationId',
         });
 
         let organization;
@@ -57,8 +57,13 @@ async function migrate() {
           skipped++;
         } else {
           // Create organization
-          const slug = `${user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
-          const orgName = (user as any).name ? `${(user as any).name}'s Organization` : `${user.email}'s Organization`;
+          const slug = `${user.email
+            .split('@')[0]
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
+          const orgName = (user as any).name
+            ? `${(user as any).name}'s Organization`
+            : `${user.email}'s Organization`;
 
           organization = await pb.collection('organizations').create({
             name: orgName,
@@ -66,7 +71,7 @@ async function migrate() {
             ownerId: user.id,
             totalCredits: (user as any).totalTokens || 0,
             usedCredits: (user as any).usedTokens || 0,
-            monthlyCredits: (user as any).dailyTokens || 0
+            monthlyCredits: (user as any).dailyTokens || 0,
           });
 
           console.log(`  ✅ Created organization: ${organization.id}`);
@@ -75,7 +80,7 @@ async function migrate() {
           await pb.collection('org_members').create({
             organizationId: organization.id,
             userId: user.id,
-            role: 'owner'
+            role: 'owner',
           });
 
           console.log(`  ✅ Added user as owner`);
@@ -84,7 +89,7 @@ async function migrate() {
 
         // Migrate user's projects to organization
         const projects = await pb.collection('projects').getFullList({
-          filter: `userId = "${user.id}"`
+          filter: `userId = "${user.id}"`,
         });
 
         console.log(`  📦 Found ${projects.length} projects`);
@@ -94,7 +99,7 @@ async function migrate() {
           // Check if project already has organizationId
           if (!(project as any).organizationId) {
             await pb.collection('projects').update(project.id, {
-              organizationId: organization.id
+              organizationId: organization.id,
             });
             projectsUpdated++;
           }
@@ -104,7 +109,6 @@ async function migrate() {
           console.log(`  ✅ Updated ${projectsUpdated} projects`);
           updated += projectsUpdated;
         }
-
       } catch (error: any) {
         console.error(`  ❌ Error migrating user ${user.email}:`, error.message);
         // Continue with next user
@@ -116,7 +120,6 @@ async function migrate() {
     console.log(`  Organizations created: ${created}`);
     console.log(`  Users skipped (already had org): ${skipped}`);
     console.log(`  Projects updated: ${updated}`);
-
   } catch (error: any) {
     console.error('\n❌ Migration failed:', error);
     process.exit(1);

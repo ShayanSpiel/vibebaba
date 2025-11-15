@@ -12,23 +12,23 @@
  * - AI-ready formatting
  */
 
+import { queryOptimizerCache, searchCache } from './cache';
 import { getMCPManager } from './client';
 import {
+  aggregateExtractedData,
+  type ExtractedContext,
+  type ExtractedRepository,
+  type ExtractedWebResult,
+  extractGitHubData,
+  extractWebData,
+} from './data-extractor';
+import { searchDuckDuckGo } from './duckduckgo';
+import {
+  type BrandName,
   detectBrands,
   optimizeGitHubQuery,
   optimizeWebQuery,
-  type BrandName
 } from './query-optimizer';
-import {
-  extractGitHubData,
-  extractWebData,
-  aggregateExtractedData,
-  type ExtractedRepository,
-  type ExtractedWebResult,
-  type ExtractedContext
-} from './data-extractor';
-import { searchDuckDuckGo } from './duckduckgo';
-import { searchCache, queryOptimizerCache } from './cache';
 
 export interface UnifiedSearchOptions {
   /** Enable caching (default: true) */
@@ -93,7 +93,7 @@ export async function unifiedSearch(
     minStars = 20,
     maxResults = 5,
     focusOn = 'general',
-    timeout = 3000
+    timeout = 3000,
   } = options;
 
   console.log('[Unified Search] Starting search...');
@@ -115,7 +115,7 @@ export async function unifiedSearch(
         success: cachedResult.success || false,
         source: cachedResult.source || 'cache',
         cached: true,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
     console.log('[Unified Search] ⚠️  Cache MISS');
@@ -131,20 +131,21 @@ export async function unifiedSearch(
     source: 'none',
     cached: false,
     executionTime: 0,
-    brandInfo: brandInfo.brands.length > 0 ? {
-      detected: brandInfo.brands,
-      primary: brandInfo.primaryBrand,
-      isClone: brandInfo.isClone
-    } : undefined
+    brandInfo:
+      brandInfo.brands.length > 0
+        ? {
+            detected: brandInfo.brands,
+            primary: brandInfo.primaryBrand,
+            isClone: brandInfo.isClone,
+          }
+        : undefined,
   };
 
   // Run searches with timeout
   try {
     await Promise.race([
       performSearches(description, appType, minStars, focusOn, brandInfo, result, maxResults),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Search timeout')), timeout)
-      )
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Search timeout')), timeout)),
     ]);
   } catch (error: any) {
     console.log(`[Unified Search] ⚠️  ${error.message}`);
@@ -167,7 +168,7 @@ export async function unifiedSearch(
   if (useCache && result.success) {
     searchCache.set(cacheKey, {
       ...result,
-      executionTime: 0 // Don't cache execution time
+      executionTime: 0, // Don't cache execution time
     });
     console.log('[Unified Search] 💾 Cached result');
   }
@@ -209,7 +210,7 @@ async function performSearches(
           githubQuery = optimizeGitHubQuery(description, appType, {
             minStars,
             language: 'typescript',
-            includeTopics: true
+            includeTopics: true,
           });
           queryOptimizerCache.set(queryCacheKey, githubQuery);
         }
@@ -220,37 +221,48 @@ async function performSearches(
         console.log(`[Unified Search] 🎯 GitHub query: ${githubQuery.query}`);
 
         let rawResult = await mcpManager.callTool('github', 'search_repositories', {
-          query: githubQuery.query
+          query: githubQuery.query,
         });
 
         // RETRY LOGIC: If 0 results, try broader query
-        if (rawResult && extractGitHubData(rawResult, { description, appType, brandName: brandInfo.primaryBrand }).length === 0) {
+        if (
+          rawResult &&
+          extractGitHubData(rawResult, { description, appType, brandName: brandInfo.primaryBrand })
+            .length === 0
+        ) {
           console.log('[Unified Search] 🔄 Got 0 results, trying broader query...');
 
           // Fallback 1: Lower star threshold
           const fallbackQuery1 = optimizeGitHubQuery(description, appType, {
             minStars: 10,
             language: 'typescript',
-            includeTopics: true
+            includeTopics: true,
           });
 
           console.log(`[Unified Search] 🎯 Fallback query 1: ${fallbackQuery1.query}`);
           rawResult = await mcpManager.callTool('github', 'search_repositories', {
-            query: fallbackQuery1.query
+            query: fallbackQuery1.query,
           });
 
           // Fallback 2: Remove language filter if still 0 results
-          if (rawResult && extractGitHubData(rawResult, { description, appType, brandName: brandInfo.primaryBrand }).length === 0) {
+          if (
+            rawResult &&
+            extractGitHubData(rawResult, {
+              description,
+              appType,
+              brandName: brandInfo.primaryBrand,
+            }).length === 0
+          ) {
             console.log('[Unified Search] 🔄 Still 0 results, trying without language filter...');
             const fallbackQuery2 = optimizeGitHubQuery(description, appType, {
               minStars: 5,
               language: '',
-              includeTopics: false
+              includeTopics: false,
             });
 
             console.log(`[Unified Search] 🎯 Fallback query 2: ${fallbackQuery2.query}`);
             rawResult = await mcpManager.callTool('github', 'search_repositories', {
-              query: fallbackQuery2.query
+              query: fallbackQuery2.query,
             });
           }
         }
@@ -259,7 +271,7 @@ async function performSearches(
           const repositories = extractGitHubData(rawResult, {
             description,
             appType,
-            brandName: brandInfo.primaryBrand
+            brandName: brandInfo.primaryBrand,
           });
 
           result.repositories = repositories.slice(0, maxResults);
@@ -282,7 +294,7 @@ async function performSearches(
         if (!webQuery) {
           webQuery = optimizeWebQuery(description, appType, {
             includeYear: true,
-            focusOn: focusOn as any
+            focusOn: focusOn as any,
           });
           queryOptimizerCache.set(queryCacheKey, webQuery);
         }
@@ -311,14 +323,16 @@ async function performSearches(
           const duckResults = await searchDuckDuckGo(simpleQuery, { maxResults: 10 });
 
           if (duckResults && duckResults.length > 0) {
-            rawWebResults = duckResults.map(r => ({
+            rawWebResults = duckResults.map((r) => ({
               title: r.title,
               description: r.body,
               snippet: r.body,
-              url: r.href
+              url: r.href,
             }));
             result.webProvider = 'duckduckgo';
-            console.log(`[Unified Search] ✅ DuckDuckGo succeeded with ${duckResults.length} results`);
+            console.log(
+              `[Unified Search] ✅ DuckDuckGo succeeded with ${duckResults.length} results`
+            );
           } else {
             console.log('[Unified Search] ⚠️  DuckDuckGo returned 0 results, trying Exa...');
           }
@@ -333,10 +347,13 @@ async function performSearches(
             const exaResult = await mcpManager.callTool('exa', 'web_search_exa', {
               query: webQuery.query,
               numResults: 10,
-              type: 'auto'
+              type: 'auto',
             });
 
-            console.log('[Unified Search] 🔍 Exa raw result:', JSON.stringify(exaResult).substring(0, 200));
+            console.log(
+              '[Unified Search] 🔍 Exa raw result:',
+              JSON.stringify(exaResult).substring(0, 200)
+            );
 
             if (exaResult && exaResult.content && Array.isArray(exaResult.content)) {
               // Extract results from MCP response format
@@ -349,10 +366,12 @@ async function performSearches(
                       title: r.title || '',
                       description: r.text || r.snippet || r.summary || '',
                       snippet: r.text || r.snippet || r.summary || '',
-                      url: r.url || ''
+                      url: r.url || '',
                     }));
                     result.webProvider = 'exa';
-                    console.log(`[Unified Search] ✅ Exa succeeded with ${rawWebResults.length} results`);
+                    console.log(
+                      `[Unified Search] ✅ Exa succeeded with ${rawWebResults.length} results`
+                    );
                   }
                 } catch (parseError) {
                   console.log('[Unified Search] ⚠️  Failed to parse Exa results:', parseError);
@@ -370,10 +389,13 @@ async function performSearches(
             console.log('[Unified Search] 🔍 Trying Brave Search...');
             const braveResult = await mcpManager.callTool('brave', 'brave_web_search', {
               query: webQuery.query,
-              count: 10
+              count: 10,
             });
 
-            console.log('[Unified Search] 🔍 Brave raw result:', JSON.stringify(braveResult).substring(0, 200));
+            console.log(
+              '[Unified Search] 🔍 Brave raw result:',
+              JSON.stringify(braveResult).substring(0, 200)
+            );
 
             if (braveResult && braveResult.content && Array.isArray(braveResult.content)) {
               const braveContent = braveResult.content[0];
@@ -387,16 +409,27 @@ async function performSearches(
                       title: r.title || '',
                       description: r.description || '',
                       snippet: r.description || '',
-                      url: r.url || ''
+                      url: r.url || '',
                     }));
                     result.webProvider = 'brave';
-                    console.log(`[Unified Search] ✅ Brave succeeded with ${rawWebResults.length} results`);
+                    console.log(
+                      `[Unified Search] ✅ Brave succeeded with ${rawWebResults.length} results`
+                    );
                   } else {
-                    console.log('[Unified Search] ⚠️  Brave result format unexpected:', Object.keys(parsed));
+                    console.log(
+                      '[Unified Search] ⚠️  Brave result format unexpected:',
+                      Object.keys(parsed)
+                    );
                   }
                 } catch (parseError: any) {
-                  console.log('[Unified Search] ⚠️  Failed to parse Brave results:', parseError.message);
-                  console.log('[Unified Search] Raw Brave text:', braveContent.text.substring(0, 300));
+                  console.log(
+                    '[Unified Search] ⚠️  Failed to parse Brave results:',
+                    parseError.message
+                  );
+                  console.log(
+                    '[Unified Search] Raw Brave text:',
+                    braveContent.text.substring(0, 300)
+                  );
                 }
               }
             }
@@ -414,7 +447,7 @@ async function performSearches(
           const webResults = extractWebData(rawWebResults, {
             description,
             appType,
-            brandName: brandInfo.primaryBrand
+            brandName: brandInfo.primaryBrand,
           });
 
           result.webResults = webResults.slice(0, maxResults);
@@ -423,7 +456,7 @@ async function performSearches(
       } catch (error: any) {
         console.warn('[Unified Search] ⚠️  Web search failed:', error.message);
       }
-    })()
+    })(),
   ]);
 
   // Aggregate data if we have results
@@ -569,6 +602,6 @@ export function clearSearchCache() {
 export function getSearchCacheStats() {
   return {
     searchCache: searchCache.getStats(),
-    queryCache: queryOptimizerCache.getStats()
+    queryCache: queryOptimizerCache.getStats(),
   };
 }

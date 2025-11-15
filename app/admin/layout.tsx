@@ -1,15 +1,11 @@
 'use client';
 
-import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -67,8 +63,8 @@ export default function AdminLayout({
           </div>
           <h1 className="text-2xl font-bold mb-2 text-text-primary">Access Denied</h1>
           <p className="text-text-secondary mb-6">
-            You do not have permission to access the admin panel.
-            Please contact an administrator if you believe this is an error.
+            You do not have permission to access the admin panel. Please contact an administrator if
+            you believe this is an error.
           </p>
           <button
             onClick={() => router.push('/')}
@@ -88,9 +84,7 @@ export default function AdminLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminHeader />
 
-        <main className="flex-1 overflow-y-auto bg-background-base">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto bg-background-base">{children}</main>
       </div>
     </div>
   );

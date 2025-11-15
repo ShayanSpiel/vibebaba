@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 interface ThinkingBubbleProps {
   isAnimating?: boolean;
@@ -9,17 +9,43 @@ interface ThinkingBubbleProps {
     interpretation?: string;
     plan?: string;
   };
+  message?: string; // Dynamic message based on node role
+  role?: string; // Node role (founder, pm, ux, frontend, backend, qa, devops, editor)
+  fadeOut?: boolean; // Trigger fade-out animation
 }
+
+// Default thinking messages by role
+const ROLE_THINKING_MESSAGES: Record<string, string> = {
+  founder: 'Analyzing your vision...',
+  pm: 'Planning features...',
+  ux: 'Designing interface...',
+  frontend: 'Building components...',
+  backend: 'Setting up backend...',
+  qa: 'Running quality checks...',
+  devops: 'Deploying your app...',
+  editor: 'Analyzing changes...',
+  'context-analyzer': 'Analyzing code context...',
+};
 
 export default function ThinkingBubble({
   isAnimating = true,
-  thinkingProcess
+  thinkingProcess,
+  message,
+  role,
+  fadeOut = false,
 }: ThinkingBubbleProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const hasThinking = thinkingProcess && (thinkingProcess.userInput || thinkingProcess.interpretation || thinkingProcess.plan);
+  const hasThinking =
+    thinkingProcess &&
+    (thinkingProcess.userInput || thinkingProcess.interpretation || thinkingProcess.plan);
+
+  // Determine display message: custom > role-based > default
+  const displayMessage = message || (role && ROLE_THINKING_MESSAGES[role]) || 'Thinking...';
 
   return (
-    <div className="flex justify-start mb-4">
+    <div
+      className={`flex justify-start mb-4 transition-opacity duration-300 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
+    >
       <div className="max-w-[90%]">
         {/* Thinking Bubble - Matching Brand Guidelines */}
         <div
@@ -41,27 +67,32 @@ export default function ThinkingBubble({
                         className="w-1 h-1 bg-white rounded-full"
                         style={{
                           animation: 'thinking-pulse 1.4s ease-in-out infinite',
-                          animationDelay: '0s'
+                          animationDelay: '0s',
                         }}
                       />
                       <div
                         className="w-1 h-1 bg-white rounded-full"
                         style={{
                           animation: 'thinking-pulse 1.4s ease-in-out infinite',
-                          animationDelay: '0.2s'
+                          animationDelay: '0.2s',
                         }}
                       />
                       <div
                         className="w-1 h-1 bg-white rounded-full"
                         style={{
                           animation: 'thinking-pulse 1.4s ease-in-out infinite',
-                          animationDelay: '0.4s'
+                          animationDelay: '0.4s',
                         }}
                       />
                     </div>
                   </div>
                 ) : (
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -72,9 +103,9 @@ export default function ThinkingBubble({
                 )}
               </div>
 
-              {/* "Thinking..." Text with expand arrow */}
+              {/* Dynamic thinking message with expand arrow */}
               <div className="flex items-center gap-2 flex-1">
-                <p className="text-sm font-medium text-text-primary">Thinking...</p>
+                <p className="text-sm font-medium text-text-primary">{displayMessage}</p>
                 {hasThinking && (
                   <svg
                     className={`w-4 h-4 text-amber-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -82,7 +113,12 @@ export default function ThinkingBubble({
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 )}
               </div>
@@ -96,21 +132,27 @@ export default function ThinkingBubble({
             {thinkingProcess.userInput && (
               <div>
                 <p className="text-xs font-semibold text-amber-400 mb-1">📝 Your Request</p>
-                <p className="text-sm text-text-secondary leading-relaxed">{thinkingProcess.userInput}</p>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {thinkingProcess.userInput}
+                </p>
               </div>
             )}
 
             {thinkingProcess.interpretation && (
               <div>
                 <p className="text-xs font-semibold text-amber-400 mb-1">💡 AI Understanding</p>
-                <p className="text-sm text-text-secondary leading-relaxed">{thinkingProcess.interpretation}</p>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {thinkingProcess.interpretation}
+                </p>
               </div>
             )}
 
             {thinkingProcess.plan && (
               <div>
                 <p className="text-xs font-semibold text-amber-400 mb-1">📋 Action Plan</p>
-                <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{thinkingProcess.plan}</p>
+                <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+                  {thinkingProcess.plan}
+                </p>
               </div>
             )}
           </div>

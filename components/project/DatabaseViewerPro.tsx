@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { pb, ensureAuth } from "@/lib/database/pocketbase";
+import { useEffect, useState } from 'react';
+import { ensureAuth, pb } from '@/lib/database/pocketbase';
 
 interface DatabaseViewerProProps {
   backendConfig: any;
@@ -12,12 +12,12 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
   // Resolve actual PocketBase project ID (might differ from URL projectId)
   const [actualProjectId, setActualProjectId] = useState<string>(projectId);
 
-  const [selectedCollection, setSelectedCollection] = useState<string>("");
+  const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [collectionData, setCollectionData] = useState<any[]>([]);
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [editingRow, setEditingRow] = useState<string | null>(null);
   const [newRowData, setNewRowData] = useState<any>({});
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [recordCounts, setRecordCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -31,7 +31,9 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
   useEffect(() => {
     const pbProjectId = localStorage.getItem(`pb_project_map_${projectId}`);
     if (pbProjectId) {
-      console.log(`[DatabaseViewer] 🔗 Resolved PocketBase ID: ${pbProjectId} (from URL ID: ${projectId})`);
+      console.log(
+        `[DatabaseViewer] 🔗 Resolved PocketBase ID: ${pbProjectId} (from URL ID: ${projectId})`
+      );
       setActualProjectId(pbProjectId);
     } else {
       console.log(`[DatabaseViewer] Using URL project ID directly: ${projectId}`);
@@ -77,33 +79,40 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     try {
       // Backend apps create actual PocketBase collections with pattern: actualProjectId_collectionName
       const fullCollectionName = `${actualProjectId}_${collectionName}`;
-      console.log(`[DatabaseViewer] 🔌 Setting up real-time subscription for: ${fullCollectionName}`);
+      console.log(
+        `[DatabaseViewer] 🔌 Setting up real-time subscription for: ${fullCollectionName}`
+      );
       console.log(`[DatabaseViewer] 🔐 Auth:`, pb.authStore.isValid ? 'Valid' : 'Invalid');
 
       // Subscribe to changes in the actual backend collection
-      pb.collection(fullCollectionName).subscribe('*', (e) => {
-        console.log('[DatabaseViewer] 🔄 Real-time update received!');
-        console.log('[DatabaseViewer] Event:', {
-          action: e.action,
-          recordId: e.record.id,
-          collection: fullCollectionName
-        });
+      pb.collection(fullCollectionName)
+        .subscribe('*', (e) => {
+          console.log('[DatabaseViewer] 🔄 Real-time update received!');
+          console.log('[DatabaseViewer] Event:', {
+            action: e.action,
+            recordId: e.record.id,
+            collection: fullCollectionName,
+          });
 
-        // Reload data when any change happens
-        console.log('[DatabaseViewer] ✅ Reloading data...');
-        loadCollectionData(collectionName);
-        updateAllRecordCounts();
-        setSyncStatus('synced');
-        setTimeout(() => setSyncStatus('idle'), 2000);
-      }).then(() => {
-        console.log(`[DatabaseViewer] ✅ Subscription active for: ${fullCollectionName}`);
-      }).catch((err: any) => {
-        console.error('[DatabaseViewer] ❌ Subscription setup failed:', err);
-      });
+          // Reload data when any change happens
+          console.log('[DatabaseViewer] ✅ Reloading data...');
+          loadCollectionData(collectionName);
+          updateAllRecordCounts();
+          setSyncStatus('synced');
+          setTimeout(() => setSyncStatus('idle'), 2000);
+        })
+        .then(() => {
+          console.log(`[DatabaseViewer] ✅ Subscription active for: ${fullCollectionName}`);
+        })
+        .catch((err: any) => {
+          console.error('[DatabaseViewer] ❌ Subscription setup failed:', err);
+        });
 
       return () => {
         console.log(`[DatabaseViewer] 🔌 Unsubscribing from: ${fullCollectionName}`);
-        pb.collection(fullCollectionName).unsubscribe('*').catch(() => {});
+        pb.collection(fullCollectionName)
+          .unsubscribe('*')
+          .catch(() => {});
       };
     } catch (error) {
       console.error('[DatabaseViewer] ❌ Failed to setup real-time subscription:', error);
@@ -130,10 +139,12 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
 
       // Query the actual backend collection
       const records = await pb.collection(fullCollectionName).getFullList({
-        sort: '-created'
+        sort: '-created',
       });
 
-      console.log(`[DatabaseViewer] ✅ Loaded ${records.length} records from ${fullCollectionName}`);
+      console.log(
+        `[DatabaseViewer] ✅ Loaded ${records.length} records from ${fullCollectionName}`
+      );
       setCollectionData(records);
 
       setSyncStatus('synced');
@@ -141,7 +152,9 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     } catch (error: any) {
       // Check if collection doesn't exist yet (expected before deployment)
       if (error.status === 404 || error.message?.includes('not found')) {
-        console.log(`[DatabaseViewer] 📭 Collection not found: ${actualProjectId}_${collectionName}`);
+        console.log(
+          `[DatabaseViewer] 📭 Collection not found: ${actualProjectId}_${collectionName}`
+        );
         console.log(`[DatabaseViewer] 💡 This is normal if the app hasn't been deployed yet`);
         setCollectionData([]);
         // Don't show error for 404 - it's expected before deployment
@@ -195,10 +208,11 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     const newRow: any = {};
 
     fieldsToUse.forEach((field: any) => {
-      if (field.name !== "id") {
-        let value = newRowData[field.name] || "";
-        if (field.type === "number") value = value ? Number(value) : 0;
-        if (field.type === "boolean" || field.type === "bool") value = value === "true" || value === true;
+      if (field.name !== 'id') {
+        let value = newRowData[field.name] || '';
+        if (field.type === 'number') value = value ? Number(value) : 0;
+        if (field.type === 'boolean' || field.type === 'bool')
+          value = value === 'true' || value === true;
         newRow[field.name] = value;
       }
     });
@@ -275,9 +289,11 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
 
       // Delete all selected records from actual backend collection
       const fullCollectionName = `${actualProjectId}_${selectedCollection}`;
-      console.log(`[DatabaseViewer] 🗑️ Bulk deleting ${selectedRows.size} records from: ${fullCollectionName}`);
+      console.log(
+        `[DatabaseViewer] 🗑️ Bulk deleting ${selectedRows.size} records from: ${fullCollectionName}`
+      );
 
-      const deletePromises = Array.from(selectedRows).map(rowId =>
+      const deletePromises = Array.from(selectedRows).map((rowId) =>
         pb.collection(fullCollectionName).delete(rowId)
       );
 
@@ -309,13 +325,15 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
 
     const fields = getFieldNames();
     const headers = fields.map((f: any) => f.name).join(',');
-    const rows = collectionData.map(row => {
-      return fields.map((f: any) => {
-        const value = row[f.name];
-        // Escape commas and quotes in CSV
-        const escaped = String(value || '').replace(/"/g, '""');
-        return `"${escaped}"`;
-      }).join(',');
+    const rows = collectionData.map((row) => {
+      return fields
+        .map((f: any) => {
+          const value = row[f.name];
+          // Escape commas and quotes in CSV
+          const escaped = String(value || '').replace(/"/g, '""');
+          return `"${escaped}"`;
+        })
+        .join(',');
     });
 
     const csv = [headers, ...rows].join('\n');
@@ -344,10 +362,13 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
 
       // Update record in actual backend collection
       const fullCollectionName = `${actualProjectId}_${selectedCollection}`;
-      console.log(`[DatabaseViewer] ✏️ Updating record ${rowId} in: ${fullCollectionName}`, { field, value });
+      console.log(`[DatabaseViewer] ✏️ Updating record ${rowId} in: ${fullCollectionName}`, {
+        field,
+        value,
+      });
 
       await pb.collection(fullCollectionName).update(rowId, {
-        [field]: value
+        [field]: value,
       });
       console.log(`[DatabaseViewer] ✅ Record updated: ${rowId}`);
 
@@ -371,7 +392,7 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     if (selectAll) {
       setSelectedRows(new Set());
     } else {
-      const allIds = new Set(filteredData.map(row => row.id));
+      const allIds = new Set(filteredData.map((row) => row.id));
       setSelectedRows(allIds);
     }
     setSelectAll(!selectAll);
@@ -395,7 +416,11 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     return (
       <div className="h-full flex items-center justify-center bg-background-base">
         <div className="text-center">
-          <svg className="w-16 h-16 text-text-tertiary mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <svg
+            className="w-16 h-16 text-text-tertiary mx-auto mb-4"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
             <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
             <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
             <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
@@ -407,7 +432,9 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     );
   }
 
-  const currentCollection = backendConfig.collections.find((c: any) => c.name === selectedCollection);
+  const currentCollection = backendConfig.collections.find(
+    (c: any) => c.name === selectedCollection
+  );
 
   const getFieldNames = () => {
     if (currentCollection?.fields && currentCollection.fields.length > 0) {
@@ -415,10 +442,14 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
     }
     if (collectionData.length > 0) {
       const firstRecord = collectionData[0];
-      return Object.keys(firstRecord).map(key => ({
+      return Object.keys(firstRecord).map((key) => ({
         name: key,
-        type: typeof firstRecord[key] === 'number' ? 'number' :
-              typeof firstRecord[key] === 'boolean' ? 'boolean' : 'text'
+        type:
+          typeof firstRecord[key] === 'number'
+            ? 'number'
+            : typeof firstRecord[key] === 'boolean'
+              ? 'boolean'
+              : 'text',
       }));
     }
     return [];
@@ -426,8 +457,8 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
 
   const fields = getFieldNames();
   const filteredData = searchTerm
-    ? collectionData.filter(row =>
-        Object.values(row).some(val =>
+    ? collectionData.filter((row) =>
+        Object.values(row).some((val) =>
           String(val).toLowerCase().includes(searchTerm.toLowerCase())
         )
       )
@@ -441,13 +472,25 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
         <div className="p-4 border-b border-light flex-shrink-0">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg bg-gradient-brand-br flex items-center justify-center shadow-md">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+                />
               </svg>
             </div>
             <div>
               <h3 className="font-bold text-sm text-text-primary">Collections</h3>
-              <p className="text-xs text-text-tertiary">{backendConfig.collections.length} tables</p>
+              <p className="text-xs text-text-tertiary">
+                {backendConfig.collections.length} tables
+              </p>
             </div>
           </div>
         </div>
@@ -458,7 +501,7 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
               key={collection.name}
               onClick={() => {
                 setSelectedCollection(collection.name);
-                setSearchTerm("");
+                setSearchTerm('');
                 setEditingRow(null);
                 setIsAddingRow(false);
                 setSelectedRows(new Set());
@@ -466,22 +509,34 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
               }}
               className={`w-full px-3 py-2.5 text-left rounded-lg transition-all mb-2 group ${
                 selectedCollection === collection.name
-                  ? "bg-gradient-brand-br text-white shadow-md"
-                  : "hover:bg-background-subtle text-text-primary border border-transparent hover:border-light"
+                  ? 'bg-gradient-brand-br text-white shadow-md'
+                  : 'hover:bg-background-subtle text-text-primary border border-transparent hover:border-light'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <svg className={`w-4 h-4 flex-shrink-0 ${selectedCollection === collection.name ? 'text-white' : 'text-text-tertiary'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <svg
+                    className={`w-4 h-4 flex-shrink-0 ${selectedCollection === collection.name ? 'text-white' : 'text-text-tertiary'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
                   </svg>
                   <span className="text-sm font-medium truncate">{collection.name}</span>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                  selectedCollection === collection.name
-                    ? "bg-white/20 text-white"
-                    : "bg-background-subtle text-text-tertiary group-hover:bg-background-overlay"
-                }`}>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    selectedCollection === collection.name
+                      ? 'bg-white/20 text-white'
+                      : 'bg-background-subtle text-text-tertiary group-hover:bg-background-overlay'
+                  }`}
+                >
                   {recordCounts[collection.name] || 0}
                 </span>
               </div>
@@ -501,8 +556,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 {/* Real-time sync status indicator */}
                 {syncStatus === 'syncing' && (
                   <span className="flex items-center gap-1 text-xs font-normal text-info bg-info/10 px-2 py-1 rounded-xl flex-shrink-0">
-                    <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg
+                      className="w-3 h-3 animate-spin"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                     Syncing...
                   </span>
@@ -510,7 +575,12 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 {syncStatus === 'synced' && (
                   <span className="flex items-center gap-1 text-xs font-normal text-success bg-success/10 px-2 py-1 rounded-xl flex-shrink-0">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     Synced
                   </span>
@@ -518,7 +588,12 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 {syncStatus === 'error' && (
                   <span className="flex items-center gap-1 text-xs font-normal text-error bg-error/10 px-2 py-1 rounded-xl flex-shrink-0">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     Sync Error
                   </span>
@@ -526,8 +601,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
               </h2>
               <p className="text-xs text-text-tertiary mt-1 flex items-center gap-1.5 transition-all duration-200">
                 <span className="flex items-center gap-1 whitespace-nowrap">
-                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="w-3 h-3 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                   {filteredData.length} records
                   {searchTerm && ` (filtered from ${collectionData.length})`}
@@ -535,13 +620,23 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 {selectedRows.size > 0 && (
                   <span className="flex items-center gap-1 whitespace-nowrap transition-all duration-200">
                     <span className="mx-0.5">•</span>
-                    <span className="text-brand-primary font-semibold">{selectedRows.size} selected</span>
+                    <span className="text-brand-primary font-semibold">
+                      {selectedRows.size} selected
+                    </span>
                   </span>
                 )}
                 <span className="flex items-center gap-1 whitespace-nowrap transition-all duration-200">
                   <span className="mx-0.5">•</span>
-                  <svg className="w-3 h-3 text-success flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  <svg
+                    className="w-3 h-3 text-success flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <span className="text-success font-medium">Live</span>
                 </span>
@@ -555,8 +650,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 className="p-2 bg-background-subtle text-text-primary rounded-lg hover:bg-background-overlay transition-all duration-200 border border-light disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Refresh database"
               >
-                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
               </button>
               {selectedRows.size > 0 && (
@@ -566,7 +671,12 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                   title={`Delete ${selectedRows.size} selected record(s)`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                   {selectedRows.size > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -580,14 +690,34 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 disabled={collectionData.length === 0}
                 className="px-3 py-2 bg-background-subtle text-text-primary text-sm font-semibold rounded-lg hover:bg-background-overlay transition-all duration-200 flex items-center gap-1.5 border border-light disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <svg
+                  className="w-4 h-4 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
                 </svg>
                 CSV
               </button>
               <div className="relative">
-                <svg className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg
+                  className="w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
                 </svg>
                 <input
                   type="text"
@@ -605,7 +735,12 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 className="px-4 py-2 bg-gradient-brand-br text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 New Record
               </button>
@@ -624,7 +759,7 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
             </div>
           ) : (
             <div>
-              <table className="border-collapse" style={{minWidth: '100%'}}>
+              <table className="border-collapse" style={{ minWidth: '100%' }}>
                 <thead className="bg-background-raised border-b-2 border-light sticky top-0 z-20 shadow-sm">
                   <tr>
                     <th className="px-5 py-3 text-left w-12">
@@ -636,11 +771,25 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                       />
                     </th>
                     {fields.map((field: any) => (
-                      <th key={field.name} className="px-5 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider whitespace-nowrap" style={{minWidth: '150px', maxWidth: '300px'}}>
+                      <th
+                        key={field.name}
+                        className="px-5 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider whitespace-nowrap"
+                        style={{ minWidth: '150px', maxWidth: '300px' }}
+                      >
                         <div className="flex items-center gap-1">
                           {field.name === 'id' && (
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+                              />
                             </svg>
                           )}
                           {field.name}
@@ -654,7 +803,10 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                 </thead>
                 <tbody className="bg-background-base divide-y divide-border-light/50">
                   {filteredData.map((row) => (
-                    <tr key={row.id} className="hover:bg-background-subtle/50 transition-colors group">
+                    <tr
+                      key={row.id}
+                      className="hover:bg-background-subtle/50 transition-colors group"
+                    >
                       <td className="px-5 py-3.5 w-12">
                         <input
                           type="checkbox"
@@ -664,36 +816,51 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                         />
                       </td>
                       {fields.map((field: any) => (
-                        <td key={field.name} className="px-5 py-3.5 text-sm" style={{minWidth: '150px', maxWidth: '300px'}}>
-                          {editingRow === row.id && field.name !== "id" ? (
+                        <td
+                          key={field.name}
+                          className="px-5 py-3.5 text-sm"
+                          style={{ minWidth: '150px', maxWidth: '300px' }}
+                        >
+                          {editingRow === row.id && field.name !== 'id' ? (
                             <input
                               type="text"
-                              value={row[field.name] || ""}
+                              value={row[field.name] || ''}
                               onChange={(e) => handleUpdateRow(row.id, field.name, e.target.value)}
                               className="w-full px-3 py-1.5 text-sm bg-background-raised border border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary text-text-primary"
                             />
                           ) : (
-                            <div className="truncate overflow-hidden text-ellipsis text-sm" title={String(row[field.name] || '')}>
-                              <span className={field.name === "id" ? "font-mono text-text-tertiary" : "text-text-primary"}>
-                                {field.type === "bool" || field.type === "boolean"
-                                  ? (row[field.name] ? (
-                                      <span className="inline-flex px-2.5 py-1 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30">
-                                        True
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex px-2.5 py-1 rounded-xl text-sm font-semibold bg-gray-500/10 text-text-tertiary border border-light">
-                                        False
-                                      </span>
-                                    ))
-                                  : (row[field.name] || <span className="text-text-tertiary italic">—</span>)
+                            <div
+                              className="truncate overflow-hidden text-ellipsis text-sm"
+                              title={String(row[field.name] || '')}
+                            >
+                              <span
+                                className={
+                                  field.name === 'id'
+                                    ? 'font-mono text-text-tertiary'
+                                    : 'text-text-primary'
                                 }
+                              >
+                                {field.type === 'bool' || field.type === 'boolean' ? (
+                                  row[field.name] ? (
+                                    <span className="inline-flex px-2.5 py-1 rounded-xl text-sm font-semibold bg-success/10 text-success border border-success/30">
+                                      True
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex px-2.5 py-1 rounded-xl text-sm font-semibold bg-gray-500/10 text-text-tertiary border border-light">
+                                      False
+                                    </span>
+                                  )
+                                ) : (
+                                  row[field.name] || (
+                                    <span className="text-text-tertiary italic">—</span>
+                                  )
+                                )}
                               </span>
                             </div>
                           )}
                         </td>
                       ))}
                       <td className="px-5 py-3.5 whitespace-nowrap sticky right-0 bg-background-base group-hover:bg-background-subtle/50 z-10 border-l border-amber-400/30 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.2)]">
-
                         <div className="flex items-center gap-2">
                           {editingRow === row.id ? (
                             <button
@@ -701,8 +868,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                               className="p-1.5 text-white bg-gradient-success hover:opacity-90 rounded-lg transition-all"
                               title="Done editing"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                             </button>
                           ) : (
@@ -711,8 +888,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                               className="p-1.5 text-text-secondary hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-all"
                               title="Edit record"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
                               </svg>
                             </button>
                           )}
@@ -721,8 +908,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                             className="p-1.5 text-text-secondary hover:text-error hover:bg-error/10 rounded-lg transition-all"
                             title="Delete record"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
                             </svg>
                           </button>
                         </div>
@@ -734,30 +931,51 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                     <tr className="bg-brand-primary/5 border-t-2 border-brand-primary">
                       <td className="px-5 py-3.5 w-12"></td>
                       {fields.map((field: any) => (
-                        <td key={field.name} className="px-5 py-3.5 text-sm" style={{minWidth: '150px', maxWidth: '300px'}}>
-                          {field.name === "id" ? (
+                        <td
+                          key={field.name}
+                          className="px-5 py-3.5 text-sm"
+                          style={{ minWidth: '150px', maxWidth: '300px' }}
+                        >
+                          {field.name === 'id' ? (
                             <span className="text-text-tertiary italic">Auto-generated</span>
                           ) : (
                             <input
-                              type={field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}
+                              type={
+                                field.type === 'number'
+                                  ? 'number'
+                                  : field.type === 'email'
+                                    ? 'email'
+                                    : 'text'
+                              }
                               placeholder={`Enter ${field.name}...`}
-                              value={newRowData[field.name] || ""}
-                              onChange={(e) => setNewRowData({ ...newRowData, [field.name]: e.target.value })}
+                              value={newRowData[field.name] || ''}
+                              onChange={(e) =>
+                                setNewRowData({ ...newRowData, [field.name]: e.target.value })
+                              }
                               className="w-full px-3 py-1.5 text-sm bg-background-raised border border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary text-text-primary placeholder:text-text-tertiary"
                             />
                           )}
                         </td>
                       ))}
                       <td className="px-5 py-3.5 whitespace-nowrap sticky right-0 bg-brand-primary/5 z-10 border-l border-amber-400/30 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.2)]">
-
                         <div className="flex items-center gap-2">
                           <button
                             onClick={handleAddRow}
                             className="p-1.5 text-white bg-gradient-success hover:opacity-90 rounded-lg transition-all"
                             title="Save new record"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           </button>
                           <button
@@ -768,8 +986,18 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
                             className="p-1.5 text-text-secondary hover:text-error hover:bg-error/10 rounded-lg transition-all"
                             title="Cancel"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
                             </svg>
                           </button>
                         </div>
@@ -784,15 +1012,27 @@ export default function DatabaseViewerPro({ backendConfig, projectId }: Database
           {!loading && filteredData.length === 0 && !isAddingRow && (
             <div className="text-center py-16">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-background-subtle flex items-center justify-center">
-                <svg className="w-8 h-8 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="w-8 h-8 text-text-tertiary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
               <p className="text-base font-semibold text-text-primary mb-1">
                 {searchTerm ? 'No matching records found' : 'No records in this collection'}
               </p>
               <p className="text-sm text-text-tertiary">
-                {searchTerm ? 'Try adjusting your search terms' : 'Click the "New Record" button above to add your first record'}
+                {searchTerm
+                  ? 'Try adjusting your search terms'
+                  : 'Click the "New Record" button above to add your first record'}
               </p>
             </div>
           )}

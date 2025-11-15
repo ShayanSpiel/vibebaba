@@ -115,7 +115,12 @@ export function detectModel(modelId: string): ModelDetection {
     }
   }
   // OpenAI Detection
-  else if (lowerId.includes('openai') || lowerId.includes('gpt') || lowerId.includes('o1') || lowerId.includes('o3')) {
+  else if (
+    lowerId.includes('openai') ||
+    lowerId.includes('gpt') ||
+    lowerId.includes('o1') ||
+    lowerId.includes('o3')
+  ) {
     detection.provider = 'openai';
     detection.emoji = '🟢';
 
@@ -144,8 +149,7 @@ export function detectModel(modelId: string): ModelDetection {
       detection.isO1 = true;
       detection.modelName = 'O1';
       detection.displayName = 'OpenAI O1';
-    }
-    else {
+    } else {
       detection.modelName = 'OpenAI';
       detection.displayName = 'OpenAI Model';
     }

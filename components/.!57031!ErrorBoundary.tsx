@@ -8,7 +8,8 @@
  * Inspired by Bolt.new's error handling patterns.
  */
 
-import React, { Component, ReactNode } from 'react';
+import type React from 'react';
+import { Component, type ReactNode } from 'react'
 
 export interface ErrorBoundaryProps {
   children: ReactNode;

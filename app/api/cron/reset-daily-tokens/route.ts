@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { pb } from "@/lib/database/pocketbase";
-import { PRICING_PACKAGES } from "@/lib/credits";
+import { type NextRequest, NextResponse } from 'next/server';
+import { PRICING_PACKAGES } from '@/lib/credits';
+import { pb } from '@/lib/database/pocketbase';
 
 export async function GET(req: NextRequest) {
   try {
     // Optional: Add authorization header check for cron jobs
-    const authHeader = req.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET || "your-secret-key";
+    const authHeader = req.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET || 'your-secret-key';
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const now = new Date();
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       message: `Reset daily tokens for ${resetCount} users`,
     });
   } catch (error: any) {
-    console.error("Error resetting daily tokens:", error);
+    console.error('Error resetting daily tokens:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

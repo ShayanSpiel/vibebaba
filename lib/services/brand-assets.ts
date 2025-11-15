@@ -36,8 +36,8 @@ export function generateLogo(config: LogoConfig): string {
   // Extract initials (up to 2 characters)
   const initials = brandName
     .split(' ')
-    .filter(word => word.length > 0)
-    .map(word => word[0].toUpperCase())
+    .filter((word) => word.length > 0)
+    .map((word) => word[0].toUpperCase())
     .slice(0, 2)
     .join('');
 
@@ -56,16 +56,31 @@ export function generateLogo(config: LogoConfig): string {
       svg = generateMinimalLogo(displayText, primaryColor, textColor);
       break;
     case 'modern':
-      svg = generateModernLogo(displayText, primaryColor, secondaryColor || primaryColor, textColor);
+      svg = generateModernLogo(
+        displayText,
+        primaryColor,
+        secondaryColor || primaryColor,
+        textColor
+      );
       break;
     case 'playful':
-      svg = generatePlayfulLogo(displayText, primaryColor, secondaryColor || primaryColor, textColor);
+      svg = generatePlayfulLogo(
+        displayText,
+        primaryColor,
+        secondaryColor || primaryColor,
+        textColor
+      );
       break;
     case 'professional':
       svg = generateProfessionalLogo(displayText, primaryColor, textColor);
       break;
     default:
-      svg = generateModernLogo(displayText, primaryColor, secondaryColor || primaryColor, textColor);
+      svg = generateModernLogo(
+        displayText,
+        primaryColor,
+        secondaryColor || primaryColor,
+        textColor
+      );
   }
 
   return svg;
@@ -92,7 +107,12 @@ function generateMinimalLogo(text: string, bgColor: string, textColor: string): 
 /**
  * Modern logo style - Gradient background with bold text
  */
-function generateModernLogo(text: string, color1: string, color2: string, textColor: string): string {
+function generateModernLogo(
+  text: string,
+  color1: string,
+  color2: string,
+  textColor: string
+): string {
   return `<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -117,7 +137,12 @@ function generateModernLogo(text: string, color1: string, color2: string, textCo
 /**
  * Playful logo style - Rounded shape with vibrant colors
  */
-function generatePlayfulLogo(text: string, color1: string, color2: string, textColor: string): string {
+function generatePlayfulLogo(
+  text: string,
+  color1: string,
+  color2: string,
+  textColor: string
+): string {
   return `<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -249,9 +274,7 @@ export function generateManifest(
  * Convert SVG string to data URI for embedding
  */
 export function svgToDataUri(svg: string): string {
-  const encoded = encodeURIComponent(svg)
-    .replace(/'/g, '%27')
-    .replace(/"/g, '%22');
+  const encoded = encodeURIComponent(svg).replace(/'/g, '%27').replace(/"/g, '%22');
   return `data:image/svg+xml,${encoded}`;
 }
 

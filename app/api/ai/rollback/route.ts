@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { pb } from '@/lib/database/pocketbase';
 
 export const maxDuration = 60;
@@ -8,10 +8,7 @@ export async function POST(req: NextRequest) {
     const { projectId, checkpointId } = await req.json();
 
     if (!projectId || !checkpointId) {
-      return NextResponse.json(
-        { error: 'Missing projectId or checkpointId' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing projectId or checkpointId' }, { status: 400 });
     }
 
     console.log('[Rollback] 🔄 Rolling back to checkpoint:', checkpointId);
@@ -20,10 +17,7 @@ export async function POST(req: NextRequest) {
     const checkpoint = await pb.collection('workflow_checkpoints').getOne(checkpointId);
 
     if (!checkpoint) {
-      return NextResponse.json(
-        { error: 'Checkpoint not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Checkpoint not found' }, { status: 404 });
     }
 
     console.log('[Rollback] ✅ Checkpoint found, restoring files...');
@@ -33,14 +27,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       files: checkpoint.previousFilesSnapshot || [],
-      message: 'Changes reverted successfully'
+      message: 'Changes reverted successfully',
     });
-
   } catch (error: any) {
     console.error('[Rollback] ❌ Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Rollback failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || 'Rollback failed' }, { status: 500 });
   }
 }

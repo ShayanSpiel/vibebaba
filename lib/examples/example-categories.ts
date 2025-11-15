@@ -539,33 +539,31 @@ export const INDUSTRY_CONTEXTS = [
 /**
  * Complexity levels
  */
-export const COMPLEXITY_LEVELS = [
-  'simple',
-  'medium',
-  'complex',
-] as const;
+export const COMPLEXITY_LEVELS = ['simple', 'medium', 'complex'] as const;
 
 /**
  * Get category by slug
  */
 export function getCategoryBySlug(slug: string): CategoryDefinition | undefined {
-  return EXAMPLE_CATEGORIES.find(cat => cat.slug === slug);
+  return EXAMPLE_CATEGORIES.find((cat) => cat.slug === slug);
 }
 
 /**
  * Get high priority categories (priority >= 8)
  */
 export function getHighPriorityCategories(): CategoryDefinition[] {
-  return EXAMPLE_CATEGORIES.filter(cat => cat.priority >= 8)
-    .sort((a, b) => b.priority - a.priority);
+  return EXAMPLE_CATEGORIES.filter((cat) => cat.priority >= 8).sort(
+    (a, b) => b.priority - a.priority
+  );
 }
 
 /**
  * Get categories by priority range
  */
 export function getCategoriesByPriority(min: number, max: number): CategoryDefinition[] {
-  return EXAMPLE_CATEGORIES.filter(cat => cat.priority >= min && cat.priority <= max)
-    .sort((a, b) => b.priority - a.priority);
+  return EXAMPLE_CATEGORIES.filter((cat) => cat.priority >= min && cat.priority <= max).sort(
+    (a, b) => b.priority - a.priority
+  );
 }
 
 /**

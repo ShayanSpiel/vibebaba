@@ -22,7 +22,11 @@ async function testMemoryService() {
 
     await memoryService.storeUserPreference(testUserId, 'prefersDarkMode', true);
     await memoryService.storeUserPreference(testUserId, 'designStyle', 'modern');
-    await memoryService.storeUserPreference(testUserId, 'favoriteComponents', ['navbar', 'hero', 'footer']);
+    await memoryService.storeUserPreference(testUserId, 'favoriteComponents', [
+      'navbar',
+      'hero',
+      'footer',
+    ]);
 
     const userPrefs = await memoryService.getUserPreferences(testUserId);
     console.log('✅ Stored and retrieved user preferences:', userPrefs);
@@ -39,7 +43,7 @@ async function testMemoryService() {
       designDecisions: ['Dark mode', 'Gradient backgrounds'],
       componentChoices: ['hero', 'pricing', 'cta'],
       technicalStack: ['React', 'Tailwind', 'Ant Design'],
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     const projectContext = await memoryService.getProjectContext(testProjectId);
@@ -55,13 +59,13 @@ async function testMemoryService() {
     await memoryService.storeConversation(sessionId, {
       role: 'user',
       content: 'Can you make it dark mode?',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     await memoryService.storeConversation(sessionId, {
       role: 'assistant',
-      content: 'Sure! I\'ll update the theme to dark mode.',
-      timestamp: Date.now()
+      content: "Sure! I'll update the theme to dark mode.",
+      timestamp: Date.now(),
     });
 
     const conversation = await memoryService.getConversationHistory(sessionId);
@@ -72,11 +76,7 @@ async function testMemoryService() {
     console.log('Test 4: Entity Relations');
     console.log('------------------------');
 
-    await memoryService.linkEntities(
-      `user_${testUserId}`,
-      `project_${testProjectId}`,
-      'owns'
-    );
+    await memoryService.linkEntities(`user_${testUserId}`, `project_${testProjectId}`, 'owns');
     console.log('✅ Linked user to project');
     console.log('');
 

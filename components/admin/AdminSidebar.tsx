@@ -1,26 +1,26 @@
 'use client';
 
+import {
+  Activity,
+  AlertCircle,
+  Brain,
+  ChevronDown,
+  ChevronRight,
+  Code2,
+  CreditCard,
+  DollarSign,
+  Edit,
+  Key,
+  LayoutDashboard,
+  MessageSquare,
+  Palette,
+  Rocket,
+  Settings,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import {
-  LayoutDashboard,
-  Activity,
-  Code2,
-  AlertCircle,
-  Edit,
-  Rocket,
-  CreditCard,
-  DollarSign,
-  Users,
-  Key,
-  Brain,
-  Settings,
-  ChevronRight,
-  ChevronDown,
-  MessageSquare,
-  Palette,
-} from 'lucide-react';
 
 interface NavItem {
   title: string;
@@ -121,11 +121,7 @@ export function AdminSidebar() {
       <nav className="flex-1 overflow-y-auto p-4">
         <ul className="space-y-1">
           {navItems.map((item) => (
-            <NavItemComponent
-              key={item.href}
-              item={item}
-              pathname={pathname}
-            />
+            <NavItemComponent key={item.href} item={item} pathname={pathname} />
           ))}
         </ul>
       </nav>
@@ -145,7 +141,7 @@ export function AdminSidebar() {
 function NavItemComponent({ item, pathname }: { item: NavItem; pathname: string }) {
   const isActive = pathname === item.href;
   const hasChildren = item.children && item.children.length > 0;
-  const isChildActive = hasChildren && item.children?.some(child => pathname === child.href);
+  const isChildActive = hasChildren && item.children?.some((child) => pathname === child.href);
   const Icon = item.icon;
 
   return (
@@ -161,11 +157,12 @@ function NavItemComponent({ item, pathname }: { item: NavItem; pathname: string 
       >
         <Icon className="h-4 w-4" />
         <span className="flex-1">{item.title}</span>
-        {hasChildren && (
-          (isActive || isChildActive) ?
-            <ChevronDown className="h-4 w-4" /> :
+        {hasChildren &&
+          (isActive || isChildActive ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
             <ChevronRight className="h-4 w-4" />
-        )}
+          ))}
       </Link>
 
       {hasChildren && (isActive || isChildActive) && (

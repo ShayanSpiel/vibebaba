@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
 
 interface MCPStatusProps {
   show?: boolean;
@@ -70,12 +70,7 @@ export function MCPBadge() {
       className="inline-flex items-center gap-1.5 px-2 py-1 bg-success/10 border border-success/30 rounded-xl text-xs font-medium text-success"
       title="AI enhanced with Model Context Protocol tools"
     >
-      <svg
-        className="w-3 h-3"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

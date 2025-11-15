@@ -17,7 +17,9 @@ async function seedCategories() {
   console.log(`PocketBase URL: ${PB_URL}\n`);
 
   try {
-    console.log('⚠️  Note: Make sure example_categories collection has public Create/Update rules enabled temporarily\n');
+    console.log(
+      '⚠️  Note: Make sure example_categories collection has public Create/Update rules enabled temporarily\n'
+    );
     console.log('Checking existing categories...');
 
     const existingCategories = await pb.collection('example_categories').getFullList();
@@ -30,7 +32,7 @@ async function seedCategories() {
     for (const category of EXAMPLE_CATEGORIES) {
       try {
         // Check if category exists by slug
-        const existing = existingCategories.find(c => c.slug === category.slug);
+        const existing = existingCategories.find((c) => c.slug === category.slug);
 
         if (existing) {
           // Update existing category
@@ -78,11 +80,11 @@ async function seedCategories() {
     console.log(`${'='.repeat(60)}\n`);
 
     // Show summary by priority
-    const highPriority = EXAMPLE_CATEGORIES.filter(c => c.priority >= 8).length;
+    const highPriority = EXAMPLE_CATEGORIES.filter((c) => c.priority >= 8).length;
     const mediumPriority = EXAMPLE_CATEGORIES.filter(
-      c => c.priority >= 5 && c.priority < 8
+      (c) => c.priority >= 5 && c.priority < 8
     ).length;
-    const lowPriority = EXAMPLE_CATEGORIES.filter(c => c.priority < 5).length;
+    const lowPriority = EXAMPLE_CATEGORIES.filter((c) => c.priority < 5).length;
 
     console.log('Priority Distribution:');
     console.log(`  High (8-10): ${highPriority} categories`);
@@ -92,7 +94,9 @@ async function seedCategories() {
     console.log('Target Examples:');
     const totalTarget = EXAMPLE_CATEGORIES.reduce((sum, c) => sum + c.targetExamples, 0);
     console.log(`  Total target: ${totalTarget} examples`);
-    console.log(`  High priority target: ${EXAMPLE_CATEGORIES.filter(c => c.priority >= 8).reduce((sum, c) => sum + c.targetExamples, 0)} examples\n`);
+    console.log(
+      `  High priority target: ${EXAMPLE_CATEGORIES.filter((c) => c.priority >= 8).reduce((sum, c) => sum + c.targetExamples, 0)} examples\n`
+    );
   } catch (error) {
     console.error('❌ Seeding failed:', error);
     process.exit(1);

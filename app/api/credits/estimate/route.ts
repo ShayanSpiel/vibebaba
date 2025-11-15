@@ -1,6 +1,6 @@
 // app/api/credits/estimate/route.ts
 // PHASE 3: API endpoint for estimating workflow credit cost
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getTokenEstimator } from '@/lib/credits/token-estimator';
 import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 
@@ -14,10 +14,7 @@ export async function POST(req: NextRequest) {
     const { workflow } = await req.json();
 
     if (!workflow || !workflow.nodes) {
-      return NextResponse.json(
-        { error: 'Invalid workflow configuration' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid workflow configuration' }, { status: 400 });
     }
 
     // Estimate cost using tiktoken

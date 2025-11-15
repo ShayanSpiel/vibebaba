@@ -1,13 +1,14 @@
 // lib/langgraph/credit-aware-workflow.ts
 // PHASE 3: Credit-Aware Workflow Management
-import { getTokenEstimator } from '@/lib/credits/token-estimator';
+
 import {
-  reserveCredits,
-  consumeFromReservation,
   completeReservation,
-  releaseReservation,
+  consumeFromReservation,
   getReservation,
+  releaseReservation,
+  reserveCredits,
 } from '@/lib/credits/reservation-manager';
+import { getTokenEstimator } from '@/lib/credits/token-estimator';
 
 export interface WorkflowConfig {
   userId: string;
@@ -146,8 +147,7 @@ export function getWorkflowCreditStatus(reservationId: string): {
   }
 
   const tokensRemaining = reservation.tokensReserved - reservation.tokensUsed;
-  const percentUsed =
-    (reservation.tokensUsed / reservation.tokensReserved) * 100;
+  const percentUsed = (reservation.tokensUsed / reservation.tokensReserved) * 100;
 
   return {
     tokensUsed: reservation.tokensUsed,

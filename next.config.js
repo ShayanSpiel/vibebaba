@@ -118,9 +118,7 @@ const nextConfig = {
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name(module) {
-                const packageName = module.context.match(
-                  /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-                )[1];
+                const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
                 return `vendor.${packageName.replace('@', '')}`;
               },
               priority: 10,
@@ -146,7 +144,8 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "connect-src 'self' https: http://localhost:4000 http://localhost:8090 http://127.0.0.1:8090 ws://localhost:* wss://localhost:*;"
+            value:
+              "connect-src 'self' https: http://localhost:4000 http://localhost:8090 http://127.0.0.1:8090 ws://localhost:* wss://localhost:*;",
           },
         ],
       },

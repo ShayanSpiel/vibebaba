@@ -4,14 +4,14 @@
  * Usage: npx tsx scripts/test-design-systems.ts
  */
 
+import { buildComponentLibraryFromNeeds } from '../lib/component-builder';
 import {
+  applyPreset,
   COMPONENT_LIBRARIES,
   getActiveLibraries,
   getConfigSummary,
-  applyPreset,
   toggleLibrary,
 } from '../lib/component-library-config';
-import { buildComponentLibraryFromNeeds } from '../lib/component-builder';
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('DESIGN SYSTEM CONFIGURATION TEST');

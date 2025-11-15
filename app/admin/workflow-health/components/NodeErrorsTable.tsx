@@ -1,9 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface LogEntry {
   id: string;
@@ -92,7 +99,11 @@ export function NodeErrorsTable({ logs, showLoadMore = false, onLoadMore }: Node
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={log.status === 'error' || log.status === 'failed' ? 'destructive' : 'secondary'}
+                    variant={
+                      log.status === 'error' || log.status === 'failed'
+                        ? 'destructive'
+                        : 'secondary'
+                    }
                   >
                     {log.status}
                   </Badge>
@@ -104,11 +115,7 @@ export function NodeErrorsTable({ logs, showLoadMore = false, onLoadMore }: Node
       </Table>
 
       {hasMore && (
-        <Button
-          onClick={() => setVisibleCount((v) => v + 10)}
-          variant="outline"
-          className="w-full"
-        >
+        <Button onClick={() => setVisibleCount((v) => v + 10)} variant="outline" className="w-full">
           Load More (Showing {visibleCount} of {logs.length})
         </Button>
       )}

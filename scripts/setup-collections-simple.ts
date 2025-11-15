@@ -34,7 +34,9 @@ async function setupCollections() {
       await pb.admins.authWithPassword('admin@vibebaba.com', 'admin1234567890');
       console.log('✅ Authenticated as admin\n');
     } catch (error: any) {
-      console.error('❌ Failed to authenticate. Please create an admin account at http://127.0.0.1:8090/_/');
+      console.error(
+        '❌ Failed to authenticate. Please create an admin account at http://127.0.0.1:8090/_/'
+      );
       console.error('   Then update the credentials in this script or in .env.local\n');
       return;
     }
@@ -48,7 +50,12 @@ async function setupCollections() {
           { name: 'user_id', type: 'text', required: true },
           { name: 'workflow_id', type: 'text', required: true },
           { name: 'node_name', type: 'text', required: true },
-          { name: 'status', type: 'select', required: true, options: { maxSelect: 1, values: ['success', 'error', 'warning', 'timeout'] } },
+          {
+            name: 'status',
+            type: 'select',
+            required: true,
+            options: { maxSelect: 1, values: ['success', 'error', 'warning', 'timeout'] },
+          },
           { name: 'error_type', type: 'text', required: false },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'error_stack', type: 'text', required: false, options: { max: 10000 } },
@@ -66,10 +73,25 @@ async function setupCollections() {
         schema: [
           { name: 'project_id', type: 'text', required: true },
           { name: 'user_id', type: 'text', required: true },
-          { name: 'operation_type', type: 'select', required: true, options: { maxSelect: 1, values: ['create', 'rename', 'modify', 'delete'] } },
+          {
+            name: 'operation_type',
+            type: 'select',
+            required: true,
+            options: { maxSelect: 1, values: ['create', 'rename', 'modify', 'delete'] },
+          },
           { name: 'file_path', type: 'text', required: false, options: { max: 500 } },
-          { name: 'change_scope', type: 'select', required: false, options: { maxSelect: 1, values: ['minimal', 'moderate', 'major'] } },
-          { name: 'status', type: 'select', required: true, options: { maxSelect: 1, values: ['success', 'error', 'warning'] } },
+          {
+            name: 'change_scope',
+            type: 'select',
+            required: false,
+            options: { maxSelect: 1, values: ['minimal', 'moderate', 'major'] },
+          },
+          {
+            name: 'status',
+            type: 'select',
+            required: true,
+            options: { maxSelect: 1, values: ['success', 'error', 'warning'] },
+          },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'user_request', type: 'text', required: false, options: { max: 5000 } },
           { name: 'checkpoint_id', type: 'text', required: false },
@@ -84,7 +106,12 @@ async function setupCollections() {
           { name: 'project_id', type: 'text', required: true },
           { name: 'user_id', type: 'text', required: true },
           { name: 'deployment_url', type: 'text', required: false, options: { max: 500 } },
-          { name: 'build_status', type: 'select', required: true, options: { maxSelect: 1, values: ['pending', 'building', 'success', 'failed'] } },
+          {
+            name: 'build_status',
+            type: 'select',
+            required: true,
+            options: { maxSelect: 1, values: ['pending', 'building', 'success', 'failed'] },
+          },
           { name: 'error_message', type: 'text', required: false, options: { max: 5000 } },
           { name: 'build_output', type: 'text', required: false, options: { max: 50000 } },
           { name: 'dependencies_installed', type: 'number', required: false },
@@ -118,7 +145,7 @@ async function setupCollections() {
           required: field.required,
           presentable: false,
           unique: false,
-          options: field.options || {}
+          options: field.options || {},
         }));
 
         const result = await pb.collections.create({
@@ -143,7 +170,6 @@ async function setupCollections() {
 
     console.log('\n🎉 Workflow logging collections setup complete!');
     console.log('📊 Logging will now work and errors will disappear.\n');
-
   } catch (error: any) {
     console.error('❌ Setup failed:', error.message);
     process.exit(1);

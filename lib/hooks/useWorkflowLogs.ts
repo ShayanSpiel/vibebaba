@@ -1,8 +1,18 @@
 // lib/hooks/useWorkflowLogs.ts
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface WorkflowLog {
-  type: 'connected' | 'node:start' | 'node:complete' | 'node:error' | 'workflow:complete' | 'progress' | 'autogen:attempt:start' | 'autogen:agent:start' | 'autogen:agent:complete' | 'autogen:error:diff';
+  type:
+    | 'connected'
+    | 'node:start'
+    | 'node:complete'
+    | 'node:error'
+    | 'workflow:complete'
+    | 'progress'
+    | 'autogen:attempt:start'
+    | 'autogen:agent:start'
+    | 'autogen:agent:complete'
+    | 'autogen:error:diff';
   nodeName?: string;
   agentRole?: string; // AutoGen agent role (analyst, fixer, fileops, reviewer)
   projectId: string;
@@ -52,7 +62,7 @@ export function useWorkflowLogs({
   enabled = true,
   onComplete,
   onError,
-  initialLogs = []
+  initialLogs = [],
 }: UseWorkflowLogsOptions) {
   const [logs, setLogs] = useState<WorkflowLog[]>(initialLogs);
   const [isConnected, setIsConnected] = useState(false);
@@ -85,7 +95,7 @@ export function useWorkflowLogs({
 
   // Add log to array
   const addLog = useCallback((log: WorkflowLog) => {
-    setLogs(prev => [...prev, log]);
+    setLogs((prev) => [...prev, log]);
     // Console logging removed - all information shown in UI
   }, []);
 
@@ -114,7 +124,7 @@ export function useWorkflowLogs({
 
     // Exponential backoff calculator
     const getBackoffDelay = (attempt: number) => {
-      return Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
+      return Math.min(1000 * 2 ** attempt, 10000); // Max 10 seconds
     };
 
     const closeConnection = () => {
@@ -173,11 +183,18 @@ export function useWorkflowLogs({
         }
 
         // Only retry if not manually closed, under retry limit, and workflow not complete
-        if (!connectionClosed && !workflowCompleted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && enabled) {
+        if (
+          !connectionClosed &&
+          !workflowCompleted &&
+          reconnectAttempts < MAX_RECONNECT_ATTEMPTS &&
+          enabled
+        ) {
           reconnectAttempts++;
           const delay = getBackoffDelay(reconnectAttempts);
 
-          console.log(`[Workflow SSE] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+          console.log(
+            `[Workflow SSE] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+          );
 
           reconnectTimeout = setTimeout(() => {
             if (!connectionClosed && !workflowCompleted) {
@@ -208,13 +225,11 @@ export function useWorkflowLogs({
   }, [projectId, enabled]);
 
   // Get current node name (last node that started)
-  const currentNode = logs
-    .filter(log => log.type === 'node:start')
-    .slice(-1)[0]?.nodeName;
+  const currentNode = logs.filter((log) => log.type === 'node:start').slice(-1)[0]?.nodeName;
 
   // Get completion status
-  const isComplete = logs.some(log => log.type === 'workflow:complete');
-  const hasError = logs.some(log => log.type === 'node:error');
+  const isComplete = logs.some((log) => log.type === 'workflow:complete');
+  const hasError = logs.some((log) => log.type === 'node:error');
 
   return {
     logs,
@@ -223,6 +238,6 @@ export function useWorkflowLogs({
     isComplete,
     hasError,
     clearLogs,
-    lastLog: logs[logs.length - 1] || null
+    lastLog: logs[logs.length - 1] || null,
   };
 }

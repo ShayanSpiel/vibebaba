@@ -1,13 +1,8 @@
 // lib/langgraph/ai-conversation-logger.ts
 
-import { workflowEvents } from './events';
-import {
-  LOGGING_CONFIG,
-  truncateIfNeeded,
-  createPreview,
-  shouldLog
-} from './logging-config';
 import { nanoid } from 'nanoid';
+import { workflowEvents } from './events';
+import { createPreview, LOGGING_CONFIG, shouldLog, truncateIfNeeded } from './logging-config';
 
 /**
  * Represents a single AI conversation (prompt + response)
@@ -18,7 +13,7 @@ export interface AIConversation {
   nodeName: string;
   callType: 'analysis' | 'generation' | 'validation' | 'fix' | 'review' | 'planning' | 'other';
   model: string;
-  provider: string;  // 'gemini', 'openrouter', 'puter'
+  provider: string; // 'gemini', 'openrouter', 'puter'
 
   // Timing
   startTime: string;
@@ -33,7 +28,7 @@ export interface AIConversation {
   tokens?: number;
   estimatedTokens?: number;
   attempt: number;
-  fallbacks: string[];  // Models that were tried before success
+  fallbacks: string[]; // Models that were tried before success
 
   // Status
   success: boolean;
@@ -82,7 +77,7 @@ class AIConversationLogger {
       estimatedTokens: params.estimatedTokens,
       attempt: params.attempt || 1,
       fallbacks: [],
-      success: false
+      success: false,
     };
 
     // Store active call
@@ -101,12 +96,14 @@ class AIConversationLogger {
         promptPreview: conversation.promptPreview,
         estimatedTokens: params.estimatedTokens,
         attempt: params.attempt || 1,
-        timestamp: startTime
+        timestamp: startTime,
       });
     }
 
     if (shouldLog('enableConsole') && LOGGING_CONFIG.debugMode) {
-      console.log(`[AI Call] START ${params.nodeName} - ${params.callType} (${params.model}, ~${params.estimatedTokens || '?'} tokens)`);
+      console.log(
+        `[AI Call] START ${params.nodeName} - ${params.callType} (${params.model}, ~${params.estimatedTokens || '?'} tokens)`
+      );
     }
 
     return callId;
@@ -115,11 +112,14 @@ class AIConversationLogger {
   /**
    * Complete an AI call (success)
    */
-  completeAICall(callId: string, params: {
-    response: string;
-    tokens?: number;
-    fallbacks?: string[];
-  }): void {
+  completeAICall(
+    callId: string,
+    params: {
+      response: string;
+      tokens?: number;
+      fallbacks?: string[];
+    }
+  ): void {
     const conversation = this.activeCallsMap.get(callId);
     if (!conversation) {
       console.warn(`[AI Conversation Logger] Call ID ${callId} not found`);
@@ -135,7 +135,10 @@ class AIConversationLogger {
     conversation.response = shouldLog('logAIResponses')
       ? truncateIfNeeded(params.response, LOGGING_CONFIG.maxResponseLength)
       : '[Response logging disabled]';
-    conversation.responsePreview = createPreview(params.response, LOGGING_CONFIG.responsePreviewLength);
+    conversation.responsePreview = createPreview(
+      params.response,
+      LOGGING_CONFIG.responsePreviewLength
+    );
     conversation.tokens = params.tokens;
     conversation.fallbacks = params.fallbacks || [];
     conversation.success = true;
@@ -161,12 +164,14 @@ class AIConversationLogger {
         responsePreview: conversation.responsePreview,
         fallbackUsed: (params.fallbacks?.length || 0) > 0,
         success: true,
-        timestamp: endTime
+        timestamp: endTime,
       });
     }
 
     if (shouldLog('enableConsole') && LOGGING_CONFIG.debugMode) {
-      console.log(`[AI Call] COMPLETE ${conversation.nodeName} - ${conversation.callType} (${duration}ms, ${params.tokens || '?'} tokens)`);
+      console.log(
+        `[AI Call] COMPLETE ${conversation.nodeName} - ${conversation.callType} (${duration}ms, ${params.tokens || '?'} tokens)`
+      );
     }
   }
 
@@ -206,12 +211,14 @@ class AIConversationLogger {
         model: conversation.model,
         duration,
         error: conversation.error,
-        timestamp: endTime
+        timestamp: endTime,
       });
     }
 
     if (shouldLog('enableConsole')) {
-      console.error(`[AI Call] ERROR ${conversation.nodeName} - ${conversation.callType}: ${conversation.error}`);
+      console.error(
+        `[AI Call] ERROR ${conversation.nodeName} - ${conversation.callType}: ${conversation.error}`
+      );
     }
   }
 
@@ -242,7 +249,7 @@ class AIConversationLogger {
    */
   getNodeConversations(projectId: string, nodeName: string): AIConversation[] {
     const allConversations = this.getConversations(projectId);
-    return allConversations.filter(c => c.nodeName === nodeName);
+    return allConversations.filter((c) => c.nodeName === nodeName);
   }
 
   /**
@@ -262,26 +269,24 @@ class AIConversationLogger {
 
     const stats = {
       totalCalls: conversations.length,
-      successfulCalls: conversations.filter(c => c.success).length,
-      failedCalls: conversations.filter(c => !c.success).length,
+      successfulCalls: conversations.filter((c) => c.success).length,
+      failedCalls: conversations.filter((c) => !c.success).length,
       totalDuration: conversations.reduce((sum, c) => sum + (c.duration || 0), 0),
       totalTokens: conversations.reduce((sum, c) => sum + (c.tokens || 0), 0),
       averageDuration: 0,
       modelUsage: {} as Record<string, number>,
-      callTypeBreakdown: {} as Record<string, number>
+      callTypeBreakdown: {} as Record<string, number>,
     };
 
-    stats.averageDuration = stats.totalCalls > 0
-      ? stats.totalDuration / stats.totalCalls
-      : 0;
+    stats.averageDuration = stats.totalCalls > 0 ? stats.totalDuration / stats.totalCalls : 0;
 
     // Model usage
-    conversations.forEach(c => {
+    conversations.forEach((c) => {
       stats.modelUsage[c.model] = (stats.modelUsage[c.model] || 0) + 1;
     });
 
     // Call type breakdown
-    conversations.forEach(c => {
+    conversations.forEach((c) => {
       stats.callTypeBreakdown[c.callType] = (stats.callTypeBreakdown[c.callType] || 0) + 1;
     });
 
@@ -295,12 +300,16 @@ class AIConversationLogger {
     const conversations = this.getConversations(projectId);
     const stats = this.getProjectStats(projectId);
 
-    return JSON.stringify({
-      projectId,
-      timestamp: new Date().toISOString(),
-      stats,
-      conversations
-    }, null, 2);
+    return JSON.stringify(
+      {
+        projectId,
+        timestamp: new Date().toISOString(),
+        stats,
+        conversations,
+      },
+      null,
+      2
+    );
   }
 
   /**

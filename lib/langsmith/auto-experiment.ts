@@ -9,9 +9,8 @@
  * - Auto-promote winners to production
  */
 
-import { getLangSmithClient } from './client';
+import { getDataset, getLangSmithClient, listDatasetExamples } from './client';
 import { fetchPrompt, formatPrompt, type PromptMetrics } from './prompt-manager';
-import { getDataset, listDatasetExamples } from './client';
 
 /**
  * Experiment configuration
@@ -88,12 +87,10 @@ export interface ExperimentResult {
 /**
  * Run automated experiment
  */
-export async function runAutomatedExperiment(
-  config: ExperimentConfig
-): Promise<ExperimentResult> {
+export async function runAutomatedExperiment(config: ExperimentConfig): Promise<ExperimentResult> {
   console.log(`🧪 [AutoExperiment] Starting: ${config.name}`);
   console.log(`📦 Dataset: ${config.datasetName}`);
-  console.log(`🔬 Variants: ${config.variants.map(v => v.name).join(', ')}`);
+  console.log(`🔬 Variants: ${config.variants.map((v) => v.name).join(', ')}`);
 
   // Load dataset
   const dataset = await getDataset(config.datasetName);
@@ -147,18 +144,14 @@ export async function runAutomatedExperiment(
         let totalScore = 0;
 
         for (const evaluator of config.evaluators) {
-          const evalResult = await evaluator.evaluate(
-            example.inputs,
-            output,
-            example.outputs
-          );
+          const evalResult = await evaluator.evaluate(example.inputs, output, example.outputs);
 
           evaluations[evaluator.name] = evalResult;
           totalScore += evalResult.score;
         }
 
         const avgScore = totalScore / config.evaluators.length;
-        const allPassed = Object.values(evaluations).every(e => e.passed);
+        const allPassed = Object.values(evaluations).every((e) => e.passed);
 
         variantResults.results.push({
           exampleId: example.id,
@@ -174,9 +167,14 @@ export async function runAutomatedExperiment(
           variantResults.metrics.failedRuns++;
         }
 
-        console.log(`   ✓ Example ${variantResults.metrics.totalRuns}/${examples.length} - Score: ${avgScore.toFixed(2)} (${latency}ms)`);
+        console.log(
+          `   ✓ Example ${variantResults.metrics.totalRuns}/${examples.length} - Score: ${avgScore.toFixed(2)} (${latency}ms)`
+        );
       } catch (error: any) {
-        console.error(`   ✗ Example ${variantResults.metrics.totalRuns + 1} failed:`, error.message);
+        console.error(
+          `   ✗ Example ${variantResults.metrics.totalRuns + 1} failed:`,
+          error.message
+        );
 
         variantResults.results.push({
           exampleId: example.id,
@@ -195,8 +193,7 @@ export async function runAutomatedExperiment(
       variantResults.metrics.passedRuns / variantResults.metrics.totalRuns;
 
     variantResults.metrics.avgLatency =
-      variantResults.results.reduce((sum, r) => sum + r.latency, 0) /
-      variantResults.results.length;
+      variantResults.results.reduce((sum, r) => sum + r.latency, 0) / variantResults.results.length;
 
     // Calculate average quality score across all evaluations
     let totalQualityScore = 0;
@@ -242,7 +239,7 @@ function selectWinner(
   criteria?: ExperimentConfig['successCriteria']
 ): ExperimentResult['winner'] | undefined {
   // Filter variants that meet minimum criteria
-  const qualifiedVariants = variants.filter(v => {
+  const qualifiedVariants = variants.filter((v) => {
     if (criteria?.minSuccessRate && v.metrics.successRate < criteria.minSuccessRate) {
       return false;
     }
@@ -260,7 +257,7 @@ function selectWinner(
   }
 
   // Score each variant (weighted combination of metrics)
-  const scores = qualifiedVariants.map(v => {
+  const scores = qualifiedVariants.map((v) => {
     const qualityScore = v.metrics.avgQualityScore * 0.5; // 50% weight
     const successScore = v.metrics.successRate * 0.3; // 30% weight
     const latencyScore = Math.max(0, 1 - v.metrics.avgLatency / 10000) * 0.2; // 20% weight (lower is better)
@@ -278,9 +275,7 @@ function selectWinner(
   const runnerUp = scores[1];
 
   // Calculate confidence (how much better winner is than runner-up)
-  const confidence = runnerUp
-    ? (winner.score - runnerUp.score) / winner.score
-    : 1.0;
+  const confidence = runnerUp ? (winner.score - runnerUp.score) / winner.score : 1.0;
 
   // Build reason
   const reasons: string[] = [];

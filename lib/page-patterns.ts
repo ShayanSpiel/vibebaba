@@ -26,57 +26,57 @@ export function getPagePatterns(): PagePattern[] {
       purpose: 'Display collection of items with filtering and actions',
       structure: 'Header + Filters/Search + Table/Grid/List + Pagination',
       whenToUse: 'User needs to browse, filter, or manage multiple items',
-      example: 'User list, product catalog, order history, blog posts'
+      example: 'User list, product catalog, order history, blog posts',
     },
     {
       name: 'Detail View',
       purpose: 'Show comprehensive information about a single item',
       structure: 'Header + Content Sections + Related Data + Actions',
       whenToUse: 'User needs to view full details of one item',
-      example: 'User profile, product details, order summary, blog post'
+      example: 'User profile, product details, order summary, blog post',
     },
     {
       name: 'Form View',
       purpose: 'Create or edit data with validation',
       structure: 'Header + Form Sections + Validation + Submit Actions',
       whenToUse: 'User needs to input or modify data',
-      example: 'Create user, edit product, checkout form, settings'
+      example: 'Create user, edit product, checkout form, settings',
     },
     {
       name: 'Dashboard',
       purpose: 'Overview of key metrics and recent activity',
       structure: 'Stats Grid + Charts/Graphs + Recent Activity + Quick Actions',
       whenToUse: 'User needs to see aggregated data and insights',
-      example: 'Admin dashboard, analytics page, project overview'
+      example: 'Admin dashboard, analytics page, project overview',
     },
     {
       name: 'Calendar View',
       purpose: 'Display and manage time-based data',
       structure: 'Calendar Component + View Toggle (Day/Week/Month) + Event Details',
       whenToUse: 'User needs to view or schedule time-based items',
-      example: 'Event scheduler, booking system, timeline, deadline tracker'
+      example: 'Event scheduler, booking system, timeline, deadline tracker',
     },
     {
       name: 'Feed/Timeline',
       purpose: 'Display chronological stream of updates',
       structure: 'Header + Stream/Feed + Load More/Infinite Scroll',
       whenToUse: 'User needs to see recent updates or activity',
-      example: 'Social feed, activity log, notifications, news feed'
+      example: 'Social feed, activity log, notifications, news feed',
     },
     {
       name: 'Wizard/Multi-Step',
       purpose: 'Guide user through sequential process',
       structure: 'Progress Indicator + Step Content + Back/Next Navigation',
       whenToUse: 'User needs to complete complex task in steps',
-      example: 'Onboarding, checkout, setup wizard, form wizard'
+      example: 'Onboarding, checkout, setup wizard, form wizard',
     },
     {
       name: 'Split View',
       purpose: 'Show list and details side-by-side',
       structure: 'Sidebar List + Main Detail Panel',
       whenToUse: 'User needs to browse list while viewing details',
-      example: 'Email client, file browser, chat interface'
-    }
+      example: 'Email client, file browser, chat interface',
+    },
   ];
 }
 
@@ -91,13 +91,17 @@ export function getPagePatternsPrompt(): string {
 📐 COMMON PAGE PATTERNS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${patterns.map(p => `
+${patterns
+  .map(
+    (p) => `
 ${p.name.toUpperCase()}
 Purpose: ${p.purpose}
 Structure: ${p.structure}
 Use When: ${p.whenToUse}
 Examples: ${p.example}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 IMPORTANT:
 - Choose pattern based on page purpose
@@ -110,16 +114,13 @@ IMPORTANT:
 /**
  * Get specific pattern recommendation based on purpose keywords
  */
-export function recommendPattern(
-  purpose: string,
-  keywords: string[]
-): PagePattern | null {
+export function recommendPattern(purpose: string, keywords: string[]): PagePattern | null {
   const patterns = getPagePatterns();
   const lowerPurpose = purpose.toLowerCase();
-  const lowerKeywords = keywords.map(k => k.toLowerCase());
+  const lowerKeywords = keywords.map((k) => k.toLowerCase());
 
   // Scoring system
-  const scores = patterns.map(pattern => {
+  const scores = patterns.map((pattern) => {
     let score = 0;
 
     // Check purpose description
@@ -129,7 +130,11 @@ export function recommendPattern(
     if (lowerPurpose.includes('detail') || lowerPurpose.includes('view')) {
       if (pattern.name === 'Detail View') score += 3;
     }
-    if (lowerPurpose.includes('form') || lowerPurpose.includes('create') || lowerPurpose.includes('edit')) {
+    if (
+      lowerPurpose.includes('form') ||
+      lowerPurpose.includes('create') ||
+      lowerPurpose.includes('edit')
+    ) {
       if (pattern.name === 'Form View') score += 3;
     }
     if (lowerPurpose.includes('dashboard') || lowerPurpose.includes('overview')) {
@@ -140,7 +145,7 @@ export function recommendPattern(
     }
 
     // Check keywords
-    lowerKeywords.forEach(keyword => {
+    lowerKeywords.forEach((keyword) => {
       if (pattern.example.toLowerCase().includes(keyword)) score += 1;
       if (pattern.whenToUse.toLowerCase().includes(keyword)) score += 1;
     });
@@ -149,7 +154,7 @@ export function recommendPattern(
   });
 
   // Return highest scoring pattern
-  const best = scores.reduce((max, curr) => curr.score > max.score ? curr : max);
+  const best = scores.reduce((max, curr) => (curr.score > max.score ? curr : max));
   return best.score > 0 ? best.pattern : null;
 }
 

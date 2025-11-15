@@ -10,12 +10,11 @@ const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.
 
 // Authenticate with admin credentials if available
 if (process.env.POCKETBASE_ADMIN_EMAIL && process.env.POCKETBASE_ADMIN_PASSWORD) {
-  pb.admins.authWithPassword(
-    process.env.POCKETBASE_ADMIN_EMAIL,
-    process.env.POCKETBASE_ADMIN_PASSWORD
-  ).catch(() => {
-    console.warn('[WorkflowLogger] Failed to authenticate as admin, using unauthenticated mode');
-  });
+  pb.admins
+    .authWithPassword(process.env.POCKETBASE_ADMIN_EMAIL, process.env.POCKETBASE_ADMIN_PASSWORD)
+    .catch(() => {
+      console.warn('[WorkflowLogger] Failed to authenticate as admin, using unauthenticated mode');
+    });
 }
 
 // Types
@@ -174,11 +173,10 @@ export async function getWorkflowStats(
     });
 
     const totalExecutions = logs.length;
-    const totalErrors = logs.filter(log => log.status === 'error').length;
-    const totalWarnings = logs.filter(log => log.status === 'warning').length;
-    const successRate = totalExecutions > 0
-      ? ((totalExecutions - totalErrors) / totalExecutions) * 100
-      : 100;
+    const totalErrors = logs.filter((log) => log.status === 'error').length;
+    const totalWarnings = logs.filter((log) => log.status === 'warning').length;
+    const successRate =
+      totalExecutions > 0 ? ((totalExecutions - totalErrors) / totalExecutions) * 100 : 100;
 
     return {
       totalExecutions,
@@ -200,9 +198,7 @@ export async function getWorkflowStats(
 /**
  * Get editor operation statistics
  */
-export async function getEditorStats(
-  timeframeMs: number
-): Promise<{
+export async function getEditorStats(timeframeMs: number): Promise<{
   totalOperations: number;
   totalErrors: number;
   totalWarnings: number;
@@ -217,11 +213,10 @@ export async function getEditorStats(
     });
 
     const totalOperations = logs.length;
-    const totalErrors = logs.filter(log => log.status === 'error').length;
-    const totalWarnings = logs.filter(log => log.status === 'warning').length;
-    const successRate = totalOperations > 0
-      ? ((totalOperations - totalErrors) / totalOperations) * 100
-      : 100;
+    const totalErrors = logs.filter((log) => log.status === 'error').length;
+    const totalWarnings = logs.filter((log) => log.status === 'warning').length;
+    const successRate =
+      totalOperations > 0 ? ((totalOperations - totalErrors) / totalOperations) * 100 : 100;
 
     return {
       totalOperations,
@@ -243,9 +238,7 @@ export async function getEditorStats(
 /**
  * Get deployment statistics
  */
-export async function getDeploymentStats(
-  timeframeMs: number
-): Promise<{
+export async function getDeploymentStats(timeframeMs: number): Promise<{
   totalDeployments: number;
   totalFailed: number;
   successRate: number;
@@ -259,10 +252,9 @@ export async function getDeploymentStats(
     });
 
     const totalDeployments = logs.length;
-    const totalFailed = logs.filter(log => log.build_status === 'failed').length;
-    const successRate = totalDeployments > 0
-      ? ((totalDeployments - totalFailed) / totalDeployments) * 100
-      : 100;
+    const totalFailed = logs.filter((log) => log.build_status === 'failed').length;
+    const successRate =
+      totalDeployments > 0 ? ((totalDeployments - totalFailed) / totalDeployments) * 100 : 100;
 
     return {
       totalDeployments,

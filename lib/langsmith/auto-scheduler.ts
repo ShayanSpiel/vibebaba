@@ -8,8 +8,8 @@
  * - Continuous optimization mode
  */
 
-import { runAutomatedExperiment, type ExperimentConfig } from './auto-experiment';
-import { promoteWinner, backupConfig, type PromotionConfig } from './auto-promotion';
+import { type ExperimentConfig, runAutomatedExperiment } from './auto-experiment';
+import { backupConfig, type PromotionConfig, promoteWinner } from './auto-promotion';
 
 /**
  * Scheduler configuration
@@ -35,7 +35,7 @@ interface SchedulerState {
   errors: string[];
 }
 
-let schedulerState: SchedulerState = {
+const schedulerState: SchedulerState = {
   running: false,
   runCount: 0,
   errors: [],
@@ -127,7 +127,9 @@ async function runScheduledExperiments(config: SchedulerConfig) {
   for (const experiment of config.experiments) {
     try {
       console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-      console.log(`🧪 Experiment ${config.experiments.indexOf(experiment) + 1}/${config.experiments.length}: ${experiment.name}`);
+      console.log(
+        `🧪 Experiment ${config.experiments.indexOf(experiment) + 1}/${config.experiments.length}: ${experiment.name}`
+      );
       console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
       // Backup config before experiment
@@ -220,7 +222,9 @@ export function enableContinuousOptimization(config: {
   console.log('🔄 [Continuous Optimization] Enabled');
   console.log(`   Running every ${config.intervalHours || 24} hours`);
   console.log(`   Auto-promotion: ${schedulerConfig.promotionConfig.strategy}`);
-  console.log(`   Min confidence: ${(schedulerConfig.promotionConfig.minConfidence! * 100).toFixed(0)}%`);
+  console.log(
+    `   Min confidence: ${(schedulerConfig.promotionConfig.minConfidence! * 100).toFixed(0)}%`
+  );
 
   startScheduler(schedulerConfig);
 }

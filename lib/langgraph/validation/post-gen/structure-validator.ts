@@ -12,9 +12,9 @@
  * - import-validator.ts (525 lines)
  */
 
-import type { ValidationError, FileToValidate } from './types';
-import { getLineNumber } from '@/lib/utils/validation';
 import { getProjectRegistry } from '@/lib/registry/project-registry';
+import { getLineNumber } from '@/lib/utils/validation';
+import type { FileToValidate, ValidationError } from './types';
 
 /**
  * Validate overall file structure
@@ -81,7 +81,7 @@ function validateDocTypes(files: FileToValidate[]): ValidationError[] {
  */
 function validateLinks(files: FileToValidate[], isMultiPage: boolean): ValidationError[] {
   const errors: ValidationError[] = [];
-  const fileNames = files.map(f => f.path);
+  const fileNames = files.map((f) => f.path);
 
   for (const file of files) {
     if (!file.path.endsWith('.html')) continue;
@@ -130,7 +130,7 @@ function validateLinks(files: FileToValidate[], isMultiPage: boolean): Validatio
             message: `Broken link: "${href}" not found in generated files`,
             rule: 'broken-link',
             autoFixable: false,
-            suggestion: `Create ${href} or fix the link to an existing file: ${fileNames.filter(f => f.endsWith('.html')).join(', ')}`,
+            suggestion: `Create ${href} or fix the link to an existing file: ${fileNames.filter((f) => f.endsWith('.html')).join(', ')}`,
           });
         }
       }
@@ -161,7 +161,10 @@ function validateNoHashRouting(files: FileToValidate[]): ValidationError[] {
     const indicators = [
       { pattern: /window\.location\.hash/gim, message: 'Using window.location.hash for routing' },
       { pattern: /hashchange/gim, message: 'Using hashchange event for routing' },
-      { pattern: /showpage|hidepage|togglepage/gim, message: 'Using show/hide page functions (single-page pattern)' },
+      {
+        pattern: /showpage|hidepage|togglepage/gim,
+        message: 'Using show/hide page functions (single-page pattern)',
+      },
     ];
 
     for (const { pattern, message } of indicators) {
@@ -211,7 +214,18 @@ function validateHTMLExtensions(files: FileToValidate[]): ValidationError[] {
       }
 
       // Check if this looks like a page name (common page names)
-      const pageNames = ['home', 'about', 'contact', 'pricing', 'features', 'services', 'blog', 'portfolio', 'team', 'faq'];
+      const pageNames = [
+        'home',
+        'about',
+        'contact',
+        'pricing',
+        'features',
+        'services',
+        'blog',
+        'portfolio',
+        'team',
+        'faq',
+      ];
       if (pageNames.includes(href.toLowerCase())) {
         const line = getLineNumber(file.content, match.index || 0);
         errors.push({
@@ -293,7 +307,9 @@ function extractRouteReferences(content: string, filePath: string): string[] {
     routes.push(match[2]);
   }
 
-  const routerPushMatches = content.matchAll(/router\.(push|replace)\s*\(\s*['"`](\/[^'"`]+)['"`]/gi);
+  const routerPushMatches = content.matchAll(
+    /router\.(push|replace)\s*\(\s*['"`](\/[^'"`]+)['"`]/gi
+  );
   for (const match of routerPushMatches) {
     routes.push(match[2]);
   }
@@ -321,10 +337,13 @@ function routeToFilePath(route: string): string {
 }
 
 function routeFileExists(files: FileToValidate[], expectedPath: string): boolean {
-  return files.some(file => {
+  return files.some((file) => {
     const normalizedFilePath = file.path.replace(/\\/g, '/');
     const normalizedExpectedPath = expectedPath.replace(/\\/g, '/');
-    return normalizedFilePath === normalizedExpectedPath || normalizedFilePath.endsWith('/' + normalizedExpectedPath);
+    return (
+      normalizedFilePath === normalizedExpectedPath ||
+      normalizedFilePath.endsWith('/' + normalizedExpectedPath)
+    );
   });
 }
 
@@ -351,7 +370,12 @@ export function validateRoutes(files: FileToValidate[]): ValidationError[] {
   console.log(`[RouteValidator] Found ${allReferencedRoutes.size} unique route references`);
 
   for (const route of allReferencedRoutes) {
-    if (route.startsWith('http') || route.startsWith('#') || route.startsWith('mailto:') || route.startsWith('/api/')) {
+    if (
+      route.startsWith('http') ||
+      route.startsWith('#') ||
+      route.startsWith('mailto:') ||
+      route.startsWith('/api/')
+    ) {
       continue;
     }
     if (route.includes('[param]') || route.includes('[id]') || route.includes('[slug]')) {
@@ -371,7 +395,7 @@ export function validateRoutes(files: FileToValidate[]): ValidationError[] {
         rule: 'route-completeness',
         severity: 'warning',
         autoFixable: false,
-        suggestion: `Create ${expectedFilePath} if this route should exist`
+        suggestion: `Create ${expectedFilePath} if this route should exist`,
       });
       console.log(`[RouteValidator] ⚠️  Missing page for route: ${route}`);
     }
@@ -388,8 +412,15 @@ export function validateRoutes(files: FileToValidate[]): ValidationError[] {
 // ============================================================================
 
 const REACT_HOOKS = [
-  'useState', 'useEffect', 'useCallback', 'useMemo', 'useRef',
-  'useContext', 'useReducer', 'useLayoutEffect', 'useImperativeHandle'
+  'useState',
+  'useEffect',
+  'useCallback',
+  'useMemo',
+  'useRef',
+  'useContext',
+  'useReducer',
+  'useLayoutEffect',
+  'useImperativeHandle',
 ];
 
 const COMMON_LIBRARY_PATTERNS: Record<string, RegExp> = {
@@ -406,9 +437,9 @@ function extractImports(content: string): Map<string, string> {
   const namedImportRegex = /import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g;
   let match;
   while ((match = namedImportRegex.exec(content)) !== null) {
-    const importedNames = match[1].split(',').map(n => n.trim().replace(/^type\s+/, ''));
+    const importedNames = match[1].split(',').map((n) => n.trim().replace(/^type\s+/, ''));
     const source = match[2];
-    importedNames.forEach(name => imports.set(name, source));
+    importedNames.forEach((name) => imports.set(name, source));
   }
 
   const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/g;
@@ -426,7 +457,7 @@ function extractImports(content: string): Map<string, string> {
 
 function extractJSXComponents(content: string): Set<string> {
   const components = new Set<string>();
-  let cleanContent = content
+  const cleanContent = content
     .replace(/React\.\w+Event<HTML\w+Element>/g, 'ReactEvent')
     .replace(/\bfunction\s+\w+<[^>]+>/g, 'function ')
     .replace(/\b<[A-Z](?:\s+extends\s+[^>]+)?>/g, '')
@@ -476,7 +507,7 @@ export function validateImports(files: FileToValidate[]): ValidationError[] {
             rule: 'missing-jsx-component-import',
             severity: 'error',
             autoFixable: true,
-            suggestion: `Add to imports: import ${resolvedImport.type === 'default' ? component : `{ ${component} }`} from '${resolvedImport.source}'`
+            suggestion: `Add to imports: import ${resolvedImport.type === 'default' ? component : `{ ${component} }`} from '${resolvedImport.source}'`,
           });
         }
       }
@@ -498,7 +529,7 @@ export function validateImports(files: FileToValidate[]): ValidationError[] {
             rule: 'malformed-lucide-import',
             severity: 'error',
             autoFixable: true,
-            suggestion: `Add commas between icon names: { Icon1, Icon2, Icon3 }`
+            suggestion: `Add commas between icon names: { Icon1, Icon2, Icon3 }`,
           });
         }
       }
@@ -507,7 +538,9 @@ export function validateImports(files: FileToValidate[]): ValidationError[] {
         const hookUsageRegex = new RegExp(`\\b${hook}\\s*\\(`, 'g');
         const isUsed = file.content.match(hookUsageRegex);
         if (isUsed) {
-          const reactImportMatch = file.content.match(/import\s+\{([^}]+)\}\s+from\s+['"]react['"]/);
+          const reactImportMatch = file.content.match(
+            /import\s+\{([^}]+)\}\s+from\s+['"]react['"]/
+          );
           if (!reactImportMatch || !reactImportMatch[1].includes(hook)) {
             errors.push({
               file: file.path,
@@ -516,7 +549,7 @@ export function validateImports(files: FileToValidate[]): ValidationError[] {
               rule: 'missing-react-hook-import',
               severity: 'error',
               autoFixable: true,
-              suggestion: `Add '${hook}' to the React import`
+              suggestion: `Add '${hook}' to the React import`,
             });
             break;
           }

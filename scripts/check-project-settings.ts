@@ -25,7 +25,7 @@ async function checkSettings() {
     if (projectId) {
       console.log(`[Check] Looking for project: ${projectId}\n`);
       const records = await pb.collection('project_settings_memory').getFullList({
-        filter: `projectId = "${projectId}"`
+        filter: `projectId = "${projectId}"`,
       });
 
       if (records.length === 0) {
@@ -60,7 +60,10 @@ async function checkSettings() {
 
       if (stylingConfig.enhancedColors) {
         console.log('\n[Check] 🎨 Enhanced Colors:');
-        console.log('[Check]   - Semantic colors:', Object.keys(stylingConfig.enhancedColors.semantic || {}).length);
+        console.log(
+          '[Check]   - Semantic colors:',
+          Object.keys(stylingConfig.enhancedColors.semantic || {}).length
+        );
         console.log('[Check]   - Dark mode overrides?', !!stylingConfig.enhancedColors.darkMode);
       }
 
@@ -71,7 +74,6 @@ async function checkSettings() {
 
       console.log('\n[Check] 📄 Full Config (first 500 chars):');
       console.log(JSON.stringify(stylingConfig, null, 2).substring(0, 500) + '...');
-
     } else {
       // Show all projects
       console.log('[Check] Fetching all project settings...\n');
@@ -95,7 +97,9 @@ async function checkSettings() {
           console.log(`   ID: ${record.projectId}`);
           console.log(`   Updated: ${record.updatedAt}`);
           console.log(`   Config type: ${typeof record.stylingConfig}`);
-          console.log(`   Has enriched config? ${!!stylingConfig.brand && !!stylingConfig.enhancedColors}`);
+          console.log(
+            `   Has enriched config? ${!!stylingConfig.brand && !!stylingConfig.enhancedColors}`
+          );
           console.log(`   Config keys: ${Object.keys(stylingConfig).join(', ')}`);
           console.log('');
         } catch (err: any) {

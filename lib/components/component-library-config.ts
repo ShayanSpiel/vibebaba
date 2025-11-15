@@ -40,7 +40,7 @@ export const PRESETS = {
 };
 
 export function getActiveLibraries(): ComponentLibrary[] {
-  return COMPONENT_LIBRARIES.filter(lib => lib.enabled);
+  return COMPONENT_LIBRARIES.filter((lib) => lib.enabled);
 }
 
 export function getConfigSummary() {
@@ -48,31 +48,31 @@ export function getConfigSummary() {
   return {
     totalLibraries: COMPONENT_LIBRARIES.length,
     activeLibraries: active.length,
-    categories: Array.from(new Set(active.flatMap(lib => lib.categories))),
+    categories: Array.from(new Set(active.flatMap((lib) => lib.categories))),
   };
 }
 
 export function toggleLibrary(libraryId: string, enabled: boolean) {
-  const library = COMPONENT_LIBRARIES.find(lib => lib.id === libraryId);
+  const library = COMPONENT_LIBRARIES.find((lib) => lib.id === libraryId);
   if (library) {
     library.enabled = enabled;
   }
 }
 
 export function toggleLibraryCategory(libraryId: string, category: string, enabled: boolean) {
-  const library = COMPONENT_LIBRARIES.find(lib => lib.id === libraryId);
+  const library = COMPONENT_LIBRARIES.find((lib) => lib.id === libraryId);
   if (library) {
     if (enabled && !library.categories.includes(category)) {
       library.categories.push(category);
     } else if (!enabled) {
-      library.categories = library.categories.filter(c => c !== category);
+      library.categories = library.categories.filter((c) => c !== category);
     }
   }
 }
 
 export function applyPreset(presetKey: keyof typeof PRESETS) {
   const preset = PRESETS[presetKey];
-  COMPONENT_LIBRARIES.forEach(lib => {
+  COMPONENT_LIBRARIES.forEach((lib) => {
     lib.enabled = preset.libraries.includes(lib.id);
   });
 }

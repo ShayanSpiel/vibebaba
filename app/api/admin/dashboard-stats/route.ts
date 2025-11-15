@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { requireAdmin } from '@/lib/auth/admin-middleware';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
@@ -16,16 +16,19 @@ export async function GET(req: NextRequest) {
       // New users today
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const newUsersTodayResult = await pb.collection('users').getList(1, 1, {
-        filter: `created >= "${oneDayAgo.toISOString()}"`
+        filter: `created >= "${oneDayAgo.toISOString()}"`,
       });
       const newUsersToday = newUsersTodayResult.totalItems;
 
       // Total revenue from transactions
       const completedTransactionsResult = await pb.collection('transactions').getList(1, 500, {
         filter: 'status = "completed"',
-        fields: 'amount'
+        fields: 'amount',
       });
-      const totalRevenue = completedTransactionsResult.items.reduce((sum, t: any) => sum + (t.amount || 0), 0);
+      const totalRevenue = completedTransactionsResult.items.reduce(
+        (sum, t: any) => sum + (t.amount || 0),
+        0
+      );
 
       // Revenue this month
       const firstDayOfMonth = new Date();
@@ -33,9 +36,12 @@ export async function GET(req: NextRequest) {
       firstDayOfMonth.setHours(0, 0, 0, 0);
       const monthTransactionsResult = await pb.collection('transactions').getList(1, 500, {
         filter: `status = "completed" && created >= "${firstDayOfMonth.toISOString()}"`,
-        fields: 'amount'
+        fields: 'amount',
       });
-      const revenueThisMonth = monthTransactionsResult.items.reduce((sum, t: any) => sum + (t.amount || 0), 0);
+      const revenueThisMonth = monthTransactionsResult.items.reduce(
+        (sum, t: any) => sum + (t.amount || 0),
+        0
+      );
 
       // Total API calls (token usage)
       const tokenUsageResult = await pb.collection('token_usage').getList(1, 1);
@@ -43,33 +49,33 @@ export async function GET(req: NextRequest) {
 
       // API calls today
       const apiCallsTodayResult = await pb.collection('token_usage').getList(1, 1, {
-        filter: `created >= "${oneDayAgo.toISOString()}"`
+        filter: `created >= "${oneDayAgo.toISOString()}"`,
       });
       const apiCallsToday = apiCallsTodayResult.totalItems;
 
       // Active projects
       const activeProjectsResult = await pb.collection('projects').getList(1, 1, {
-        filter: '(stage = "planning" || stage = "building")'
+        filter: '(stage = "planning" || stage = "building")',
       });
       const activeProjects = activeProjectsResult.totalItems;
 
       // Recent users (last 5)
       const recentUsersResult = await pb.collection('users').getList(1, 5, {
         sort: '-created',
-        fields: 'id,email,name,username,created'
+        fields: 'id,email,name,username,created',
       });
       const recentUsers = recentUsersResult.items.map((user: any) => ({
         id: user.id,
         email: user.email,
         name: user.name || user.username || '',
-        createdAt: new Date(user.created).getTime()
+        createdAt: new Date(user.created).getTime(),
       }));
 
       // Recent transactions (last 5)
       const recentTransactionsResult = await pb.collection('transactions').getList(1, 5, {
         sort: '-created',
         expand: 'userId',
-        fields: 'id,userId,amount,tokens,status,created'
+        fields: 'id,userId,amount,tokens,status,created',
       });
       const recentTransactions = recentTransactionsResult.items.map((tx: any) => ({
         id: tx.id,
@@ -77,7 +83,7 @@ export async function GET(req: NextRequest) {
         amount: tx.amount,
         tokens: tx.tokens,
         status: tx.status,
-        createdAt: new Date(tx.created).getTime()
+        createdAt: new Date(tx.created).getTime(),
       }));
 
       return NextResponse.json({
@@ -93,10 +99,7 @@ export async function GET(req: NextRequest) {
       });
     } catch (error: any) {
       console.error('Error loading dashboard stats:', error);
-      return NextResponse.json(
-        { error: 'Failed to load dashboard stats' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to load dashboard stats' }, { status: 500 });
     }
   });
 }

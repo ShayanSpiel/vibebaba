@@ -1,6 +1,6 @@
 // app/api/admin/setup/create-settings-collection/route.ts
 // One-time setup endpoint to create settings collection
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';
 
@@ -58,9 +58,7 @@ export async function POST(req: NextRequest) {
           },
         },
       ],
-      indexes: [
-        'CREATE UNIQUE INDEX idx_settings_key ON settings (key)',
-      ],
+      indexes: ['CREATE UNIQUE INDEX idx_settings_key ON settings (key)'],
       listRule: null, // Only admins can list
       viewRule: null, // Only admins can view
       createRule: null, // Only admins can create

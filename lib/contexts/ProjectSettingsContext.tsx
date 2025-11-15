@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 /**
  * Project Settings from Memory API
@@ -80,53 +80,54 @@ export function ProjectSettingsProvider({ projectId, children }: ProjectSettings
   }, [fetchSettings]);
 
   // Update settings locally and persist to API
-  const updateSettings = useCallback(async (updates: Partial<ProjectSettings>) => {
-    console.log('[ProjectSettings] 📝 Updating settings:', updates);
+  const updateSettings = useCallback(
+    async (updates: Partial<ProjectSettings>) => {
+      console.log('[ProjectSettings] 📝 Updating settings:', updates);
 
-    try {
-      // Optimistic update
-      setSettings(prev => ({ ...prev, ...updates }));
+      try {
+        // Optimistic update
+        setSettings((prev) => ({ ...prev, ...updates }));
 
-      // Persist to API
-      const res = await fetch('/api/memory/project-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          ...updates
-        })
-      });
+        // Persist to API
+        const res = await fetch('/api/memory/project-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            ...updates,
+          }),
+        });
 
-      if (!res.ok) {
-        throw new Error(`Failed to update settings: ${res.status}`);
+        if (!res.ok) {
+          throw new Error(`Failed to update settings: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          console.log('[ProjectSettings] ✅ Settings updated successfully');
+          // Optionally refetch to get server state
+          // await fetchSettings();
+        }
+      } catch (err) {
+        console.error('[ProjectSettings] ❌ Failed to update settings:', err);
+        // Rollback optimistic update
+        await fetchSettings();
+        throw err;
       }
-
-      const data = await res.json();
-      if (data.success) {
-        console.log('[ProjectSettings] ✅ Settings updated successfully');
-        // Optionally refetch to get server state
-        // await fetchSettings();
-      }
-    } catch (err) {
-      console.error('[ProjectSettings] ❌ Failed to update settings:', err);
-      // Rollback optimistic update
-      await fetchSettings();
-      throw err;
-    }
-  }, [projectId, fetchSettings]);
+    },
+    [projectId, fetchSettings]
+  );
 
   const value: ProjectSettingsContextValue = {
     settings,
     loading,
     error,
     refetch: fetchSettings,
-    updateSettings
+    updateSettings,
   };
 
   return (
-    <ProjectSettingsContext.Provider value={value}>
-      {children}
-    </ProjectSettingsContext.Provider>
+    <ProjectSettingsContext.Provider value={value}>{children}</ProjectSettingsContext.Provider>
   );
 }
 

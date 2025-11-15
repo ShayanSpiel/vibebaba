@@ -7,28 +7,28 @@
 
 export const GENERATION_CONSTRAINTS = {
   // Core principle
-  principle: 'explicit-only',  // Only add what user explicitly requested
+  principle: 'explicit-only', // Only add what user explicitly requested
 
   // Default component inclusion behavior
   components: {
     navigation: {
       defaultInclude: false,
-      includeIf: 'User mentions navigation/menu/navbar OR multi-page app'
+      includeIf: 'User mentions navigation/menu/navbar OR multi-page app',
     },
     footer: {
       defaultInclude: false,
-      includeIf: 'User mentions footer/copyright/contact info at bottom'
+      includeIf: 'User mentions footer/copyright/contact info at bottom',
     },
     hero: {
       defaultInclude: false,
-      includeIf: 'Landing page OR user mentions hero section'
-    }
+      includeIf: 'Landing page OR user mentions hero section',
+    },
   },
 
   // Feature addition policy
   features: {
     policy: 'never-assume',
-    rule: 'Do not add features for completeness or best practices'
+    rule: 'Do not add features for completeness or best practices',
   },
 
   // Output format constraints
@@ -36,8 +36,8 @@ export const GENERATION_CONSTRAINTS = {
     jsonOnly: true,
     noMarkdown: true,
     noReasoningTags: true,
-    noPlaceholders: true
-  }
+    noPlaceholders: true,
+  },
 };
 
 /**

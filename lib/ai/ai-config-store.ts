@@ -79,7 +79,7 @@ export function setAIMode(mode: AIMode): void {
  */
 export function getCachedWorkingModel(): { provider: AIProvider; model: string } | null {
   const config = readConfig();
-  
+
   if (!config.cachedModel || !config.cachedProvider || !config.cachedTimestamp) {
     return null;
   }
@@ -129,15 +129,18 @@ export function clearCachedWorkingModel(): void {
 export function getConfigSummary() {
   const config = readConfig();
   const cached = getCachedWorkingModel();
-  
-  const activeProviders = config.mode === 'serverless'
-    ? ['puter', 'huggingface']
-    : ['mistral', 'gemini', 'openrouter', 'groq'];
-  
+
+  const activeProviders =
+    config.mode === 'serverless'
+      ? ['puter', 'huggingface']
+      : ['mistral', 'gemini', 'openrouter', 'groq'];
+
   return {
     mode: config.mode,
     activeProviders,
     cachedModel: cached ? `${cached.provider}/${cached.model}` : null,
-    cacheAge: config.cachedTimestamp ? Math.floor((Date.now() - config.cachedTimestamp) / 1000) : null,
+    cacheAge: config.cachedTimestamp
+      ? Math.floor((Date.now() - config.cachedTimestamp) / 1000)
+      : null,
   };
 }

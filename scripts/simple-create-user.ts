@@ -19,7 +19,7 @@ async function createUser() {
       email: email,
       password: password,
       passwordConfirm: password,
-      name: 'Shayan'
+      name: 'Shayan',
     });
 
     console.log('✅ User created!');
@@ -28,7 +28,7 @@ async function createUser() {
     // Now try to update with role
     console.log('\n🔄 Updating user to admin role...');
     const updated = await pb.collection('users').update(user.id, {
-      role: 'admin'
+      role: 'admin',
     });
 
     console.log('✅ Role updated!');
@@ -38,7 +38,6 @@ async function createUser() {
     console.log('\n🎉 Success! Login with:');
     console.log(`   Email: ${email}`);
     console.log(`   Password: ${password}`);
-
   } catch (error: any) {
     console.error('❌ Error:', error.message);
     console.error('\nFull error:', JSON.stringify(error, null, 2));

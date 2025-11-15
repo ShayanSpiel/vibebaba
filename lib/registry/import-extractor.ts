@@ -1,4 +1,4 @@
-import type { ImportSpec, ExportSpec } from './types';
+import type { ExportSpec, ImportSpec } from './types';
 
 /**
  * Extract import statements from TypeScript/React code
@@ -10,16 +10,16 @@ export function extractImports(code: string): ImportSpec[] {
   const namedImportRegex = /import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g;
   let match;
   while ((match = namedImportRegex.exec(code)) !== null) {
-    const names = match[1].split(',').map(n => n.trim().replace(/^type\s+/, ''));
+    const names = match[1].split(',').map((n) => n.trim().replace(/^type\s+/, ''));
     const source = match[2];
     const isLocal = source.startsWith('./') || source.startsWith('../') || source.startsWith('@/');
 
-    names.forEach(name => {
+    names.forEach((name) => {
       imports.push({
         name,
         source,
         type: match[1].includes('type ' + name) ? 'type' : 'named',
-        isLocal
+        isLocal,
       });
     });
   }
@@ -32,7 +32,7 @@ export function extractImports(code: string): ImportSpec[] {
       name: match[1],
       source,
       type: 'default',
-      isLocal: source.startsWith('./') || source.startsWith('../') || source.startsWith('@/')
+      isLocal: source.startsWith('./') || source.startsWith('../') || source.startsWith('@/'),
     });
   }
 
@@ -44,7 +44,7 @@ export function extractImports(code: string): ImportSpec[] {
       name: match[1],
       source,
       type: 'namespace',
-      isLocal: source.startsWith('./') || source.startsWith('../') || source.startsWith('@/')
+      isLocal: source.startsWith('./') || source.startsWith('../') || source.startsWith('@/'),
     });
   }
 
@@ -64,7 +64,7 @@ export function extractExports(code: string): ExportSpec[] {
     exports.push({
       name: match[1],
       type: 'default',
-      isType: false
+      isType: false,
     });
   }
 
@@ -74,7 +74,7 @@ export function extractExports(code: string): ExportSpec[] {
     exports.push({
       name: match[1],
       type: 'named',
-      isType: false
+      isType: false,
     });
   }
 
@@ -84,7 +84,7 @@ export function extractExports(code: string): ExportSpec[] {
     exports.push({
       name: match[1],
       type: 'named',
-      isType: false
+      isType: false,
     });
   }
 
@@ -94,7 +94,7 @@ export function extractExports(code: string): ExportSpec[] {
     exports.push({
       name: match[1],
       type: 'named',
-      isType: true
+      isType: true,
     });
   }
 
@@ -104,7 +104,7 @@ export function extractExports(code: string): ExportSpec[] {
     exports.push({
       name: match[1],
       type: 'named',
-      isType: true
+      isType: true,
     });
   }
 
@@ -130,7 +130,9 @@ export function extractJSXComponents(code: string): Set<string> {
 /**
  * Extract type/interface definitions from code
  */
-export function extractTypes(code: string): Array<{ name: string; kind: 'interface' | 'type' | 'enum' }> {
+export function extractTypes(
+  code: string
+): Array<{ name: string; kind: 'interface' | 'type' | 'enum' }> {
   const types: Array<{ name: string; kind: 'interface' | 'type' | 'enum' }> = [];
 
   // Match: interface X

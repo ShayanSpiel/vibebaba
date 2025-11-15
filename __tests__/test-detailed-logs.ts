@@ -55,7 +55,7 @@ Endpoint: /api/generate
     errorSummary: {
       'html-doctype': 1,
       'html-tag-pair': 1,
-      'css-placeholder': 3
+      'css-placeholder': 3,
     },
     timestamp,
     durationMs: 2500,

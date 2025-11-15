@@ -7,8 +7,8 @@
 // FIXME: MemoryVectorStore export location changed in LangChain v1.0+
 // Need to update to new import path or use alternative vector store
 // import { MemoryVectorStore } from "@langchain/core/vectorstores";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import type { CodeChunk, SemanticSearchResult, ExtractedCode } from '../types';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import type { CodeChunk, ExtractedCode, SemanticSearchResult } from '../types';
 
 /**
  * Code vector store for semantic search
@@ -21,7 +21,7 @@ export class CodeVectorStore {
   constructor() {
     if (process.env.OPENAI_API_KEY) {
       this.embeddings = new OpenAIEmbeddings({
-        modelName: "text-embedding-3-small",
+        modelName: 'text-embedding-3-small',
         apiKey: process.env.OPENAI_API_KEY,
       });
     }
@@ -42,7 +42,9 @@ export class CodeVectorStore {
       // FIXME: Temporarily disabled until MemoryVectorStore import is fixed
       // this.store = new MemoryVectorStore(this.embeddings);
       // this.initialized = true;
-      console.log('[VectorStore] ⚠️ Initialization temporarily disabled - awaiting LangChain update');
+      console.log(
+        '[VectorStore] ⚠️ Initialization temporarily disabled - awaiting LangChain update'
+      );
       return false; // Return false to indicate vector store is not available
     } catch (error) {
       console.error('[VectorStore] Failed to initialize:', error);
@@ -61,7 +63,7 @@ export class CodeVectorStore {
     }
 
     try {
-      const documents = code.map(c => ({
+      const documents = code.map((c) => ({
         pageContent: `${c.path}\n\n${c.content}`,
         metadata: {
           repo: c.repo,

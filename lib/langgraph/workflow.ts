@@ -1,27 +1,23 @@
 // @ts-nocheck
 // lib/langgraph/workflow.ts
-import { StateGraph, END, START } from '@langchain/langgraph';
-import type { AppGenState } from './types';
-import { AppGenAnnotation } from './types'; // NEW: Import annotation for modern state management
-
+import { END, START, StateGraph } from '@langchain/langgraph';
+// Workflow health logging
+import { logNodeError, logNodeExecution } from '@/lib/services/workflow-logger';
 // Import all agent nodes
 import {
-  founderNode,
-  pmNode,
-  uxNode,
   backendNode,
+  devopsNode,
+  founderNode,
+  inputDetectorNode,
+  pmNode,
   qaNode,
-  devopsNode
+  techLeadNode,
+  uxNode,
 } from './nodes';
-import { frontendRouter } from './nodes/frontend/router'; // ✅ USE ROUTER INSTEAD OF DIRECT FRONTEND NODE
-
-// PHASE 3: Conversational editor nodes
-import { inputDetectorNode } from './nodes/input-detector';
-import { contextAnalyzerNode } from './nodes/context-analyzer';
 import { editorNode } from './nodes/editor';
-
-// Workflow health logging
-import { logNodeExecution, logNodeError } from '@/lib/services/workflow-logger';
+import { frontendRouter } from './nodes/frontend/router'; // ✅ USE ROUTER INSTEAD OF DIRECT FRONTEND NODE
+import type { AppGenState } from './types';
+import { AppGenAnnotation } from './types'; // NEW: Import annotation for modern state management
 
 /**
  * Wrap node execution with error recovery and logging
@@ -32,7 +28,8 @@ function withErrorRecovery<T extends AppGenState>(
 ) {
   return async (state: T): Promise<Partial<T>> => {
     const startTime = Date.now();
-    const workflowId = state.workflowId || `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const workflowId =
+      state.workflowId || `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
       const result = await nodeFunc(state);
@@ -50,8 +47,8 @@ function withErrorRecovery<T extends AppGenState>(
           metadata: {
             completedNodes: state.completedNodes,
             hasFiles: !!state.files,
-            filesCount: state.files?.length || 0
-          }
+            filesCount: state.files?.length || 0,
+          },
         });
       }
 
@@ -71,8 +68,8 @@ function withErrorRecovery<T extends AppGenState>(
             durationMs: duration,
             metadata: {
               completedNodes: state.completedNodes,
-              errorCode: error.code
-            }
+              errorCode: error.code,
+            },
           },
           error
         );
@@ -89,10 +86,10 @@ function withErrorRecovery<T extends AppGenState>(
             code: error.code,
             cause: error.cause,
             stack: error.stack,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         ],
-        completedNodes: [...(state.completedNodes || []), nodeName]
+        completedNodes: [...(state.completedNodes || []), nodeName],
       } as Partial<T>;
     }
   };
@@ -203,7 +200,10 @@ export function createAppGenWorkflow() {
 
   // PHASE 3: Conversational editor workflow nodes
   workflow.addNode('input-detector', withErrorRecovery('input-detector', inputDetectorNode) as any);
-  workflow.addNode('context-analyzer', withErrorRecovery('context-analyzer', contextAnalyzerNode) as any);
+  workflow.addNode(
+    'tech-lead',
+    withErrorRecovery('tech-lead', techLeadNode) as any
+  );
   workflow.addNode('editor', withErrorRecovery('editor', editorNode) as any);
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -255,7 +255,7 @@ export function createAppGenWorkflow() {
         filesToModify: [],
         preservedSections: new Map(),
         changesApplied: [],
-        fileChanges: []
+        fileChanges: [],
       };
 
       console.log('[Workflow] 🎯 Feature addition detected - routing to editing workflow');
@@ -284,11 +284,11 @@ export function createAppGenWorkflow() {
   });
 
   // GENERATION PATH: founder → pm → ux → backend → frontend → qa → devops → END
-  (workflow as any).addEdge('founder', 'pm');         // Create product plan + detect backend needs
-  (workflow as any).addEdge('pm', 'ux');              // Design UI/UX system
-  (workflow as any).addEdge('ux', 'backend');         // Generate Express API + PocketBase schema
-  (workflow as any).addEdge('backend', 'frontend');   // Generate Next.js frontend + API client
-  (workflow as any).addEdge('frontend', 'qa');        // Validate code quality & fix errors
+  (workflow as any).addEdge('founder', 'pm'); // Create product plan + detect backend needs
+  (workflow as any).addEdge('pm', 'ux'); // Design UI/UX system
+  (workflow as any).addEdge('ux', 'backend'); // Generate Express API + PocketBase schema
+  (workflow as any).addEdge('backend', 'frontend'); // Generate Next.js frontend + API client
+  (workflow as any).addEdge('frontend', 'qa'); // Validate code quality & fix errors
 
   // PHASE 3: EDITING PATH with conversational features
   // input-detector → (pause if input needed OR continue) → context-analyzer → editor → qa → devops → END
@@ -299,12 +299,12 @@ export function createAppGenWorkflow() {
       return '__end__'; // Pause and wait for user response
     }
 
-    console.log('🔀 [Workflow] No input needed - continuing to Context Analyzer');
-    return 'context-analyzer';
+    console.log('🔀 [Workflow] No input needed - continuing to Tech Lead');
+    return 'tech-lead';
   });
 
-  // CRITICAL ROUTING: Context Analyzer decides between editor workflow or full generation workflow
-  (workflow as any).addConditionalEdges('context-analyzer', (state: AppGenState) => {
+  // CRITICAL ROUTING: Tech Lead decides which node to start from
+  (workflow as any).addConditionalEdges('tech-lead', (state: AppGenState) => {
     const session = state.editingSession;
 
     // Question answered, end workflow
@@ -313,30 +313,31 @@ export function createAppGenWorkflow() {
       return '__end__';
     }
 
-    // Feature request - route through full generation workflow (PM → UX → Backend → Frontend)
-    if (session?.requestType === 'feature' && session?.requiresFullWorkflow) {
-      console.log('🔀 [Workflow] Feature detected - routing to PM node for full workflow');
-      console.log(`🔀 [Workflow]   Feature: ${session.suggestedFeatureName || 'unknown'}`);
-      console.log(`🔀 [Workflow]   Complexity: ${session.estimatedComplexity || 'moderate'}`);
+    // Route based on startNode from Tech Lead
+    const startNode = session?.startNode || 'pm'; // Default to PM for safety
 
-      // Clear editing session (no longer in edit mode)
-      // userDescription is already set by context-analyzer
+    console.log('🔀 [Workflow] Tech Lead routing:');
+    console.log(`🔀 [Workflow]   Request type: ${session?.requestType}`);
+    console.log(`🔀 [Workflow]   Start node: ${startNode.toUpperCase()}`);
+    console.log(`🔀 [Workflow]   Reasoning: ${session?.reasoning || 'N/A'}`);
 
-      return 'pm';  // PM → UX → Backend → Frontend → QA → DevOps
+    // Valid start nodes: pm, ux, backend, frontend, editor
+    const validNodes = ['pm', 'ux', 'backend', 'frontend', 'editor'];
+    if (validNodes.includes(startNode)) {
+      console.log(`🔀 [Workflow] ✅ Routing to ${startNode.toUpperCase()} node`);
+      return startNode;
     }
 
-    // Simple edit - go directly to editor
-    console.log('🔀 [Workflow] Edit request - routing to Editor node');
-    console.log(`🔀 [Workflow]   Scope: ${session?.changeScope || 'moderate'}`);
-    console.log(`🔀 [Workflow]   Files: ${session?.filesToModify?.length || 0}`);
-    return 'editor';  // Editor → QA → DevOps
+    // Fallback to PM for safety
+    console.warn('🔀 [Workflow] ⚠️ Invalid startNode - defaulting to PM');
+    return 'pm';
   });
 
-  (workflow as any).addEdge('editor', 'qa');                // Apply edits & validate
+  (workflow as any).addEdge('editor', 'qa'); // Apply edits & validate
 
   // SHARED PATH: Both generation and editing paths merge at QA → DevOps → END
-  (workflow as any).addEdge('qa', 'devops');          // Deploy to server + start API server
-  (workflow as any).addEdge('devops', '__end__');     // Complete! 🎉
+  (workflow as any).addEdge('qa', 'devops'); // Deploy to server + start API server
+  (workflow as any).addEdge('devops', '__end__'); // Complete! 🎉
 
   // Compile the workflow
   return workflow.compile();

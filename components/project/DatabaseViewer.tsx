@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
 
 interface DatabaseViewerProps {
   backendConfig: any;
@@ -8,7 +8,7 @@ interface DatabaseViewerProps {
 }
 
 export default function DatabaseViewer({ backendConfig, projectId }: DatabaseViewerProps) {
-  const [selectedCollection, setSelectedCollection] = useState<string>("");
+  const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [collectionData, setCollectionData] = useState<any[]>([]);
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [editingRow, setEditingRow] = useState<string | null>(null);
@@ -44,34 +44,34 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
 
   const generateSampleData = (collection: any) => {
     const samples = [];
-    const count = collection.name === "users" ? 3 : 5;
+    const count = collection.name === 'users' ? 3 : 5;
 
     for (let i = 0; i < count; i++) {
       const row: any = { id: `${Date.now()}_${i}` };
 
       collection.fields.forEach((field: any) => {
-        if (field.name === "id") return;
+        if (field.name === 'id') return;
 
         switch (field.type) {
-          case "text":
-          case "email":
-            if (field.name.includes("email")) {
+          case 'text':
+          case 'email':
+            if (field.name.includes('email')) {
               row[field.name] = `user${i + 1}@example.com`;
-            } else if (field.name.includes("name")) {
+            } else if (field.name.includes('name')) {
               row[field.name] = `Sample ${collection.name} ${i + 1}`;
             } else {
               row[field.name] = `Sample text ${i + 1}`;
             }
             break;
-          case "number":
+          case 'number':
             row[field.name] = (i + 1) * 10;
             break;
-          case "bool":
-          case "boolean":
+          case 'bool':
+          case 'boolean':
             row[field.name] = i % 2 === 0;
             break;
-          case "date":
-          case "datetime":
+          case 'date':
+          case 'datetime':
             row[field.name] = new Date().toISOString().split('T')[0];
             break;
           default:
@@ -91,10 +91,12 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
     setCollectionData(data);
 
     // Trigger storage event for app sync
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: storageKey,
-      newValue: JSON.stringify(data),
-    }));
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: storageKey,
+        newValue: JSON.stringify(data),
+      })
+    );
   };
 
   const handleAddRow = () => {
@@ -102,8 +104,8 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
     const newRow: any = { id: `${Date.now()}` };
 
     collection.fields.forEach((field: any) => {
-      if (field.name !== "id") {
-        newRow[field.name] = newRowData[field.name] || "";
+      if (field.name !== 'id') {
+        newRow[field.name] = newRowData[field.name] || '';
       }
     });
 
@@ -114,12 +116,12 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
   };
 
   const handleDeleteRow = (rowId: string) => {
-    const updated = collectionData.filter(row => row.id !== rowId);
+    const updated = collectionData.filter((row) => row.id !== rowId);
     saveCollectionData(selectedCollection, updated);
   };
 
   const handleUpdateRow = (rowId: string, field: string, value: any) => {
-    const updated = collectionData.map(row =>
+    const updated = collectionData.map((row) =>
       row.id === rowId ? { ...row, [field]: value } : row
     );
     saveCollectionData(selectedCollection, updated);
@@ -136,7 +138,9 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
     );
   }
 
-  const currentCollection = backendConfig.collections.find((c: any) => c.name === selectedCollection);
+  const currentCollection = backendConfig.collections.find(
+    (c: any) => c.name === selectedCollection
+  );
 
   return (
     <div className="h-full flex flex-col">
@@ -148,8 +152,8 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
             onClick={() => setSelectedCollection(collection.name)}
             className={`px-6 py-3 font-semibold whitespace-nowrap transition-colors ${
               selectedCollection === collection.name
-                ? "bg-background-raised text-text-primary border-b border-brand-primary -mb-px"
-                : "text-text-secondary hover:bg-background-subtle"
+                ? 'bg-background-raised text-text-primary border-b border-brand-primary -mb-px'
+                : 'text-text-secondary hover:bg-background-subtle'
             }`}
           >
             {collection.name}
@@ -187,22 +191,26 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
             </thead>
             <tbody>
               {collectionData.map((row, idx) => (
-                <tr key={row.id} className={`border-b border-default ${idx % 2 === 0 ? 'bg-background-raised' : 'bg-background-overlay'}`}>
+                <tr
+                  key={row.id}
+                  className={`border-b border-default ${idx % 2 === 0 ? 'bg-background-raised' : 'bg-background-overlay'}`}
+                >
                   {currentCollection?.fields.map((field: any) => (
                     <td key={field.name} className="px-4 py-3">
                       {editingRow === row.id ? (
                         <input
                           type="text"
-                          value={row[field.name] || ""}
+                          value={row[field.name] || ''}
                           onChange={(e) => handleUpdateRow(row.id, field.name, e.target.value)}
                           className="w-full px-2 py-1 bg-background-sunken border border-default rounded text-text-primary"
                         />
                       ) : (
                         <span className="text-sm">
-                          {field.type === "bool" || field.type === "boolean"
-                            ? (row[field.name] ? "True" : "False")
-                            : (row[field.name] || <span className="text-text-tertiary">—</span>)
-                          }
+                          {field.type === 'bool' || field.type === 'boolean'
+                            ? row[field.name]
+                              ? 'True'
+                              : 'False'
+                            : row[field.name] || <span className="text-text-tertiary">—</span>}
                         </span>
                       )}
                     </td>
@@ -240,14 +248,22 @@ export default function DatabaseViewer({ backendConfig, projectId }: DatabaseVie
                 <tr className="bg-background-overlay border border-brand-primary">
                   {currentCollection?.fields.map((field: any) => (
                     <td key={field.name} className="px-4 py-3">
-                      {field.name === "id" ? (
+                      {field.name === 'id' ? (
                         <span className="text-sm text-text-tertiary">Auto-generated</span>
                       ) : (
                         <input
-                          type={field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}
+                          type={
+                            field.type === 'number'
+                              ? 'number'
+                              : field.type === 'email'
+                                ? 'email'
+                                : 'text'
+                          }
                           placeholder={field.name}
-                          value={newRowData[field.name] || ""}
-                          onChange={(e) => setNewRowData({ ...newRowData, [field.name]: e.target.value })}
+                          value={newRowData[field.name] || ''}
+                          onChange={(e) =>
+                            setNewRowData({ ...newRowData, [field.name]: e.target.value })
+                          }
                           className="w-full px-2 py-1 bg-background-sunken border border-default rounded text-text-primary"
                         />
                       )}

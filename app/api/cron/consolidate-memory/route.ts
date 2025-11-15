@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getMemoryConsolidator } from '@/lib/services/memory-consolidator';
 
 /**
@@ -38,14 +38,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Memory consolidation complete',
-      duration
+      duration,
     });
   } catch (error: any) {
     console.error('[Cron] Memory consolidation failed:', error);
     return NextResponse.json(
       {
         error: 'Memory consolidation failed',
-        message: error.message
+        message: error.message,
       },
       { status: 500 }
     );
@@ -67,13 +67,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Test consolidation complete'
+      message: 'Test consolidation complete',
     });
   } catch (error: any) {
     console.error('[Cron Test] Failed:', error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

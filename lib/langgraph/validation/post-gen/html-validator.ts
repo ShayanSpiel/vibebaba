@@ -55,7 +55,6 @@ export function validateHTML(content: string, filePath: string): ValidationError
 
     // Additional custom validations
     errors.push(...validateCustomRules(content, filePath));
-
   } catch (error: any) {
     errors.push({
       file: filePath,
@@ -180,7 +179,7 @@ function validateCustomRules(content: string, filePath: string): ValidationError
         message: 'Standalone & should be escaped as &amp; in text content',
         rule: 'spec-char-escape',
         autoFixable: true, // NOW AUTO-FIXABLE - we can safely escape in text content
-        suggestion: 'Replace & with &amp; unless it\'s part of an HTML entity',
+        suggestion: "Replace & with &amp; unless it's part of an HTML entity",
       });
     }
   }
@@ -188,19 +187,19 @@ function validateCustomRules(content: string, filePath: string): ValidationError
   // Check for invalid nesting (e.g., <div> inside <p>)
   // P tags can only contain inline elements (phrasing content), not block elements
   const invalidNestingPatterns = [
-    { pattern: /<p[^>]*>[\s\S]*?<div/gmi, message: '<div> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<section/gmi, message: '<section> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<article/gmi, message: '<article> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<header/gmi, message: '<header> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<footer/gmi, message: '<footer> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<nav/gmi, message: '<nav> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<aside/gmi, message: '<aside> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<main/gmi, message: '<main> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<h[1-6]/gmi, message: 'Heading tags cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<ul/gmi, message: '<ul> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<ol/gmi, message: '<ol> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<table/gmi, message: '<table> cannot be nested inside <p>' },
-    { pattern: /<p[^>]*>[\s\S]*?<form/gmi, message: '<form> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<div/gim, message: '<div> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<section/gim, message: '<section> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<article/gim, message: '<article> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<header/gim, message: '<header> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<footer/gim, message: '<footer> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<nav/gim, message: '<nav> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<aside/gim, message: '<aside> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<main/gim, message: '<main> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<h[1-6]/gim, message: 'Heading tags cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<ul/gim, message: '<ul> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<ol/gim, message: '<ol> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<table/gim, message: '<table> cannot be nested inside <p>' },
+    { pattern: /<p[^>]*>[\s\S]*?<form/gim, message: '<form> cannot be nested inside <p>' },
   ];
 
   for (const { pattern, message } of invalidNestingPatterns) {
@@ -223,7 +222,8 @@ function validateCustomRules(content: string, filePath: string): ValidationError
           message: `Invalid nesting: ${message}`,
           rule: 'invalid-nesting',
           autoFixable: false,
-          suggestion: 'Use <div> or <section> as the outer container, then put <p> tags inside for text content. <p> tags should only contain inline elements like <span>, <a>, <strong>, <em>.',
+          suggestion:
+            'Use <div> or <section> as the outer container, then put <p> tags inside for text content. <p> tags should only contain inline elements like <span>, <a>, <strong>, <em>.',
         });
       }
     }

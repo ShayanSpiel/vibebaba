@@ -1,22 +1,23 @@
 // lib/langgraph/subgraphs/autogen-debugger.ts
-import { validateCode } from '@/lib/langgraph/validation/post-gen';
-import { detectPlaceholders } from '@/lib/langgraph/validation/post-gen/placeholder-detector';
+
 import { generateWithFallback } from '@/lib/ai/ai';
 import type { FileOperation } from '@/lib/files/file-operation-guards';
 import {
-  validateFileOperation,
   filterOperations,
   logFileOperation,
+  validateFileOperation,
 } from '@/lib/files/file-operation-guards';
+import { validateCode } from '@/lib/langgraph/validation/post-gen';
+import { detectPlaceholders } from '@/lib/langgraph/validation/post-gen/placeholder-detector';
+import { addAssistantMessage, getConversationContext } from '@/lib/memory/conversation-memory';
+import { estimateTokens, generateWithLogging } from '../utils/logging/ai-with-logging';
 import {
-  emitAutoGenAttemptStart,
-  emitAutoGenAgentStart,
   emitAutoGenAgentComplete,
+  emitAutoGenAgentStart,
+  emitAutoGenAttemptStart,
   emitAutoGenErrorDiff,
-  emitProgress
+  emitProgress,
 } from '../utils/logging/events';
-import { generateWithLogging, estimateTokens } from '../utils/logging/ai-with-logging';
-import { getConversationContext, addAssistantMessage } from '@/lib/memory/conversation-memory';
 
 interface DebugContext {
   files: Array<{ path: string; content: string }>;
@@ -51,7 +52,9 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
   console.log('[AutoGen Debugger] 💬 Loading conversation memory...');
   const conversationContext = getConversationContext(context.projectContext.projectId);
   if (conversationContext) {
-    console.log('[AutoGen Debugger] 💬 Conversation context loaded - will pass to all debugging agents');
+    console.log(
+      '[AutoGen Debugger] 💬 Conversation context loaded - will pass to all debugging agents'
+    );
   }
 
   // Check if errors are too severe to fix (structural HTML issues)
@@ -61,15 +64,21 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
   const MAX_ERRORS_THRESHOLD = 100;
 
   if (errorCount > MAX_ERRORS_THRESHOLD) {
-    console.log(`[AutoGen Debugger] ⚠️  ${errorCount} errors detected - likely severe structural issues from initial generation`);
-    console.log('[AutoGen Debugger] 💡 Skipping AutoGen - recommend regenerating with improved prompt');
+    console.log(
+      `[AutoGen Debugger] ⚠️  ${errorCount} errors detected - likely severe structural issues from initial generation`
+    );
+    console.log(
+      '[AutoGen Debugger] 💡 Skipping AutoGen - recommend regenerating with improved prompt'
+    );
     return {
       success: false,
       files: context.files,
       validationResult: context.validationResult,
       attempts: 0,
-      collaborationLog: [`Skipped AutoGen: Too many structural errors (>${MAX_ERRORS_THRESHOLD}). Root cause is poor initial HTML generation.`],
-      fileOperations: []
+      collaborationLog: [
+        `Skipped AutoGen: Too many structural errors (>${MAX_ERRORS_THRESHOLD}). Root cause is poor initial HTML generation.`,
+      ],
+      fileOperations: [],
     };
   }
 
@@ -102,14 +111,18 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       `Inspecting code to find ${errorCount} issue${errorCount > 1 ? 's' : ''}...`
     );
 
-    const analysisPrompt = buildAnalysisPrompt(currentFiles, currentValidation, context.projectContext);
+    const analysisPrompt = buildAnalysisPrompt(
+      currentFiles,
+      currentValidation,
+      context.projectContext
+    );
     const analysis = await generateWithLogging({
       prompt: analysisPrompt,
       projectId: context.projectContext.projectId,
       nodeName: 'qa-autogen-analyst',
       callType: 'analysis',
       estimatedTokens: estimateTokens(analysisPrompt),
-      attempt
+      attempt,
     });
 
     collaborationLog.push(`[Attempt ${attempt}] Analyst: ${analysis.substring(0, 200)}...`);
@@ -132,14 +145,19 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
     );
 
     // ✅ CRITICAL FIX: Pass conversationContext to prevent repeating rejected fixes
-    const fixPrompt = buildFixPrompt(currentFiles, analysis, context.projectContext, conversationContext);
+    const fixPrompt = buildFixPrompt(
+      currentFiles,
+      analysis,
+      context.projectContext,
+      conversationContext
+    );
     const fixedCodeText = await generateWithLogging({
       prompt: fixPrompt,
       projectId: context.projectContext.projectId,
       nodeName: 'qa-autogen-fixer',
       callType: 'fix',
       estimatedTokens: estimateTokens(fixPrompt),
-      attempt
+      attempt,
     });
 
     // Parse fixed files
@@ -148,20 +166,30 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
 
     // CRITICAL: Check for reasoning tags leaking into output
     const reasoningTagPattern = /<\/?(?:think|thinking|reasoning|analysis)>/gi;
-    const hasReasoningTags = fixedFiles.some(file => reasoningTagPattern.test(file.content));
+    const hasReasoningTags = fixedFiles.some((file) => reasoningTagPattern.test(file.content));
     if (hasReasoningTags) {
-      console.error(`[AutoGen Debugger] ❌ REJECTED: Fixer included reasoning tags (</think>, </reasoning>, etc.)!`);
+      console.error(
+        `[AutoGen Debugger] ❌ REJECTED: Fixer included reasoning tags (</think>, </reasoning>, etc.)!`
+      );
       collaborationLog.push(`[Attempt ${attempt}] REJECTED: Reasoning tags leaked into output`);
       continue;
     }
 
     // CRITICAL: Check for placeholder/nonsense content before validation using the official detector
-    const placeholderErrors = fixedFiles.flatMap(file => detectPlaceholders(file.content, file.path));
+    const placeholderErrors = fixedFiles.flatMap((file) =>
+      detectPlaceholders(file.content, file.path)
+    );
     if (placeholderErrors.length > 0) {
-      console.error(`[AutoGen Debugger] ❌ REJECTED: Fixer generated ${placeholderErrors.length} placeholder/nonsense content!`);
-      const errorMessages = placeholderErrors.slice(0, 3).map(e => `${e.file}:${e.line} - ${e.message}`);
+      console.error(
+        `[AutoGen Debugger] ❌ REJECTED: Fixer generated ${placeholderErrors.length} placeholder/nonsense content!`
+      );
+      const errorMessages = placeholderErrors
+        .slice(0, 3)
+        .map((e) => `${e.file}:${e.line} - ${e.message}`);
       console.error(`[AutoGen Debugger] Found: ${errorMessages.join(', ')}`);
-      collaborationLog.push(`[Attempt ${attempt}] REJECTED: Placeholder content detected - ${errorMessages[0]}`);
+      collaborationLog.push(
+        `[Attempt ${attempt}] REJECTED: Placeholder content detected - ${errorMessages[0]}`
+      );
 
       // Continue to next attempt without using these files
       continue;
@@ -171,24 +199,31 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
     const duplicateImportErrors: string[] = [];
     for (const file of fixedFiles) {
       // Check for duplicate named imports in single statement: import { X, X } from 'y'
-      const duplicateNamedImports = file.content.match(/import\s*{\s*([^}]+)\s*}\s*from\s*['"][^'"]+['"]/g);
+      const duplicateNamedImports = file.content.match(
+        /import\s*{\s*([^}]+)\s*}\s*from\s*['"][^'"]+['"]/g
+      );
       if (duplicateNamedImports) {
         for (const importStatement of duplicateNamedImports) {
-          const names = importStatement.match(/{\s*([^}]+)\s*}/)?.[1]
+          const names = importStatement
+            .match(/{\s*([^}]+)\s*}/)?.[1]
             .split(',')
-            .map(n => n.trim())
-            .filter(n => n.length > 0);
+            .map((n) => n.trim())
+            .filter((n) => n.length > 0);
           if (names) {
             const unique = new Set(names);
             if (unique.size < names.length) {
-              duplicateImportErrors.push(`${file.path}: Duplicate named imports in statement: ${importStatement.substring(0, 100)}`);
+              duplicateImportErrors.push(
+                `${file.path}: Duplicate named imports in statement: ${importStatement.substring(0, 100)}`
+              );
             }
           }
         }
       }
 
       // Check for multiple import statements from same module
-      const importLines = file.content.split('\n').filter(line => /^import\s+.*from\s+['"]/.test(line.trim()));
+      const importLines = file.content
+        .split('\n')
+        .filter((line) => /^import\s+.*from\s+['"]/.test(line.trim()));
       const moduleImports = new Map<string, number>();
       for (const line of importLines) {
         const moduleMatch = line.match(/from\s+['"]([^'"]+)['"]/);
@@ -199,15 +234,23 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       }
       for (const [module, count] of moduleImports.entries()) {
         if (count > 1) {
-          duplicateImportErrors.push(`${file.path}: ${count} separate import statements from '${module}' (should be merged into one)`);
+          duplicateImportErrors.push(
+            `${file.path}: ${count} separate import statements from '${module}' (should be merged into one)`
+          );
         }
       }
     }
 
     if (duplicateImportErrors.length > 0) {
-      console.error(`[AutoGen Debugger] ❌ REJECTED: Fixer generated ${duplicateImportErrors.length} duplicate import errors!`);
-      duplicateImportErrors.slice(0, 3).forEach(err => console.error(`[AutoGen Debugger]   ${err}`));
-      collaborationLog.push(`[Attempt ${attempt}] REJECTED: Duplicate imports detected - ${duplicateImportErrors[0]}`);
+      console.error(
+        `[AutoGen Debugger] ❌ REJECTED: Fixer generated ${duplicateImportErrors.length} duplicate import errors!`
+      );
+      duplicateImportErrors
+        .slice(0, 3)
+        .forEach((err) => console.error(`[AutoGen Debugger]   ${err}`));
+      collaborationLog.push(
+        `[Attempt ${attempt}] REJECTED: Duplicate imports detected - ${duplicateImportErrors[0]}`
+      );
 
       // Continue to next attempt without using these files
       continue;
@@ -230,14 +273,19 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       'Checking if files need updates...'
     );
 
-    const fileOpsPrompt = buildFileOperationsPrompt(currentFiles, fixedFiles, analysis, context.projectContext);
+    const fileOpsPrompt = buildFileOperationsPrompt(
+      currentFiles,
+      fixedFiles,
+      analysis,
+      context.projectContext
+    );
     const fileOpsResponse = await generateWithLogging({
       prompt: fileOpsPrompt,
       projectId: context.projectContext.projectId,
       nodeName: 'qa-autogen-fileops',
       callType: 'analysis',
       estimatedTokens: estimateTokens(fileOpsPrompt),
-      attempt
+      attempt,
     });
     const proposedOperations = parseFileOperations(fileOpsResponse);
 
@@ -248,7 +296,7 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       Date.now() - agentStartTime3,
       {
         operationsProposed: proposedOperations.length,
-        operations: proposedOperations.map(op => `${op.type}: ${op.path}`)
+        operations: proposedOperations.map((op) => `${op.type}: ${op.path}`),
       }
     );
 
@@ -268,7 +316,9 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
         const operationResults = executeFileOperations(allowed, currentFiles);
         currentFiles = operationResults.files;
         allFileOperations.push(...allowed);
-        collaborationLog.push(`[Attempt ${attempt}] FileOps: Executed ${allowed.length} operations (${rejected.length} rejected)`);
+        collaborationLog.push(
+          `[Attempt ${attempt}] FileOps: Executed ${allowed.length} operations (${rejected.length} rejected)`
+        );
       }
     }
 
@@ -288,7 +338,7 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       nodeName: 'qa-autogen-reviewer',
       callType: 'review',
       estimatedTokens: estimateTokens(reviewPrompt),
-      attempt
+      attempt,
     });
     collaborationLog.push(`[Attempt ${attempt}] Reviewer: ${review.substring(0, 200)}...`);
 
@@ -306,10 +356,12 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
     const newValidation = await validateCode(fixedFiles, {
       autoFix: true,
       strict: false,
-      isMultiPage: context.projectContext.isMultiPage
+      isMultiPage: context.projectContext.isMultiPage,
     });
 
-    console.log(`[AutoGen Debugger] Attempt ${attempt} validation: ${newValidation.report.errors.length} errors`);
+    console.log(
+      `[AutoGen Debugger] Attempt ${attempt} validation: ${newValidation.report.errors.length} errors`
+    );
 
     // Calculate error diff
     const errorDiff = compareValidationResults(currentValidation, newValidation);
@@ -320,11 +372,11 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       attempt,
       {
         count: currentValidation.report.errors.length,
-        errors: currentValidation.report.errors.slice(0, 10) // Only send first 10 for brevity
+        errors: currentValidation.report.errors.slice(0, 10), // Only send first 10 for brevity
       },
       {
         count: newValidation.report.errors.length,
-        errors: newValidation.report.errors.slice(0, 10)
+        errors: newValidation.report.errors.slice(0, 10),
       },
       errorDiff
     );
@@ -338,7 +390,11 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
       console.log(`[AutoGen Debugger] ✅ SUCCESS after ${attempt} attempts`);
 
       // CONVERSATION MEMORY: Track successful debugging
-      addAssistantMessage(context.projectContext.projectId, `Fixed all code errors after ${attempt} debugging attempt(s)`, 'autogen-debugger');
+      addAssistantMessage(
+        context.projectContext.projectId,
+        `Fixed all code errors after ${attempt} debugging attempt(s)`,
+        'autogen-debugger'
+      );
       console.log('[AutoGen Debugger] 💬 Tracked successful debugging in conversation memory');
 
       return {
@@ -347,22 +403,33 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
         validationResult: newValidation,
         attempts: attempt,
         collaborationLog,
-        fileOperations: allFileOperations // ✅ RETURN FILE OPERATIONS
+        fileOperations: allFileOperations, // ✅ RETURN FILE OPERATIONS
       };
     }
 
     // If errors reduced significantly, log progress
-    const errorReduction = context.validationResult.report.errors.length - newValidation.report.errors.length;
+    const errorReduction =
+      context.validationResult.report.errors.length - newValidation.report.errors.length;
     if (errorReduction > 0) {
       console.log(`[AutoGen Debugger] Progress: Reduced errors by ${errorReduction}`);
     } else if (errorReduction === 0 && attempt > 1) {
       // No progress made - same error count as before
-      console.log(`[AutoGen Debugger] ⚠️  No progress in attempt ${attempt} - stopping to avoid infinite loop`);
-      console.log(`[AutoGen Debugger] 💡 Same errors persisting suggest false positives or structural issues`);
-      collaborationLog.push(`[Attempt ${attempt}] STOPPED: No progress made - likely false positives or unfixable errors`);
+      console.log(
+        `[AutoGen Debugger] ⚠️  No progress in attempt ${attempt} - stopping to avoid infinite loop`
+      );
+      console.log(
+        `[AutoGen Debugger] 💡 Same errors persisting suggest false positives or structural issues`
+      );
+      collaborationLog.push(
+        `[Attempt ${attempt}] STOPPED: No progress made - likely false positives or unfixable errors`
+      );
 
       // CONVERSATION MEMORY: Track stopped debugging
-      addAssistantMessage(context.projectContext.projectId, `Stopped debugging after ${attempt} attempts - no progress made (likely false positives)`, 'autogen-debugger');
+      addAssistantMessage(
+        context.projectContext.projectId,
+        `Stopped debugging after ${attempt} attempts - no progress made (likely false positives)`,
+        'autogen-debugger'
+      );
 
       return {
         success: false,
@@ -370,7 +437,7 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
         validationResult: currentValidation,
         attempts: attempt,
         collaborationLog,
-        fileOperations: allFileOperations
+        fileOperations: allFileOperations,
       };
     }
   }
@@ -379,7 +446,11 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
   console.log(`[AutoGen Debugger] ❌ FAILED after ${MAX_ATTEMPTS} attempts`);
 
   // CONVERSATION MEMORY: Track failed debugging
-  addAssistantMessage(context.projectContext.projectId, `Attempted to fix errors ${MAX_ATTEMPTS} times but ${currentValidation.report.errors.length} error(s) remain`, 'autogen-debugger');
+  addAssistantMessage(
+    context.projectContext.projectId,
+    `Attempted to fix errors ${MAX_ATTEMPTS} times but ${currentValidation.report.errors.length} error(s) remain`,
+    'autogen-debugger'
+  );
   console.log('[AutoGen Debugger] 💬 Tracked failed debugging attempts in conversation memory');
 
   return {
@@ -388,7 +459,7 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
     validationResult: currentValidation,
     attempts: MAX_ATTEMPTS,
     collaborationLog,
-    fileOperations: allFileOperations // ✅ RETURN FILE OPERATIONS
+    fileOperations: allFileOperations, // ✅ RETURN FILE OPERATIONS
   };
 }
 
@@ -398,9 +469,13 @@ export async function autoGenDebugWorkflow(context: DebugContext): Promise<Debug
  */
 function buildAnalysisPrompt(files: any[], validation: any, context: any): string {
   const errors = validation.report.errors || [];
-  const errorSummary = errors.slice(0, 20).map((e: any) =>
-    `Line ${e.line || '?'}: ${e.message || e.type || 'Error'}${e.rule ? ` [${e.rule}]` : ''}`
-  ).join('\n');
+  const errorSummary = errors
+    .slice(0, 20)
+    .map(
+      (e: any) =>
+        `Line ${e.line || '?'}: ${e.message || e.type || 'Error'}${e.rule ? ` [${e.rule}]` : ''}`
+    )
+    .join('\n');
   const moreErrors = errors.length > 20 ? `\n...${errors.length - 20} more` : '';
 
   return `Analyze errors. Find pattern.
@@ -420,25 +495,36 @@ Root cause + fix strategy (50 words max):`;
  *
  * ✅ NOW INCLUDES: Validation context to prevent repeating rejected fixes
  */
-function buildFixPrompt(files: any[], analysis: string, context: any, conversationContext?: any): string {
+function buildFixPrompt(
+  files: any[],
+  analysis: string,
+  context: any,
+  conversationContext?: any
+): string {
   // Detect framework
-  const isNextJS = files.some(f =>
-    f.path.startsWith('src/app/') ||
-    f.path === 'next.config.js' ||
-    f.path.includes('layout.tsx') ||
-    f.path.includes('page.tsx')
+  const isNextJS = files.some(
+    (f) =>
+      f.path.startsWith('src/app/') ||
+      f.path === 'next.config.js' ||
+      f.path.includes('layout.tsx') ||
+      f.path.includes('page.tsx')
   );
 
   // Truncate very large files to avoid token limits
   const truncatedFiles = files.map((f: any) => {
     const MAX_FILE_SIZE = 30000;
     if (f.content.length > MAX_FILE_SIZE) {
-      console.log(`[AutoGen] ⚠️  File ${f.path} is ${f.content.length} chars, truncating to ${MAX_FILE_SIZE}`);
+      console.log(
+        `[AutoGen] ⚠️  File ${f.path} is ${f.content.length} chars, truncating to ${MAX_FILE_SIZE}`
+      );
       const firstPart = Math.floor(MAX_FILE_SIZE * 0.6);
       const lastPart = MAX_FILE_SIZE - firstPart;
       return {
         ...f,
-        content: f.content.substring(0, firstPart) + '\n\n... [TRUNCATED] ...\n\n' + f.content.substring(f.content.length - lastPart)
+        content:
+          f.content.substring(0, firstPart) +
+          '\n\n... [TRUNCATED] ...\n\n' +
+          f.content.substring(f.content.length - lastPart),
       };
     }
     return f;
@@ -463,21 +549,22 @@ function buildFixPrompt(files: any[], analysis: string, context: any, conversati
         if (rejectedIcons.length > 0) {
           validationContextSection += `
 🚫 INVALID LUCIDE ICONS (already rejected - DO NOT add these):
-${rejectedIcons.map((r: any) =>
-  `   ❌ '${r.from}' in ${r.files.join(', ')} - NOT a valid lucide-react icon
+${rejectedIcons
+  .map(
+    (r: any) =>
+      `   ❌ '${r.from}' in ${r.files.join(', ')} - NOT a valid lucide-react icon
       → This is likely a TYPE or COMPONENT, not an icon
       → DO NOT import from lucide-react
       → Either define it locally or remove it completely`
-).join('\n')}
+  )
+  .join('\n')}
 `;
         }
 
         if (replacedIcons.length > 0) {
           validationContextSection += `
 ✅ ICON REPLACEMENTS (already applied):
-${replacedIcons.map((r: any) =>
-  `   '${r.from}' → '${r.to}' in ${r.files.join(', ')}`
-).join('\n')}
+${replacedIcons.map((r: any) => `   '${r.from}' → '${r.to}' in ${r.files.join(', ')}`).join('\n')}
 `;
         }
 
@@ -490,9 +577,7 @@ ${replacedIcons.map((r: any) =>
     if (importFixes?.length > 0) {
       validationContextSection += `
 IMPORTS ALREADY FIXED:
-${importFixes.map((f: any) =>
-  `✅ ${f.file}: ${f.fix} - ${f.imports.join(', ')}`
-).join('\n')}
+${importFixes.map((f: any) => `✅ ${f.file}: ${f.fix} - ${f.imports.join(', ')}`).join('\n')}
 `;
     }
   }
@@ -507,10 +592,14 @@ ${analysis}
 CURRENT FILES (${truncatedFiles.length} total):
 ${truncatedFiles.map((f: any) => `=== ${f.path} ===\n${f.content}`).join('\n\n')}
 
-${context.backendConfig ? `
+${
+  context.backendConfig
+    ? `
 DATABASE: PocketBase collections available:
 ${context.backendConfig.collections?.map((c: any) => c.name).join(', ')}
-` : ''}
+`
+    : ''
+}
 
 CRITICAL FIXES:
 🚨 JSX TAGS: Every <button> needs </button>, <form> needs </form>, <div> needs </div>. Count tags. Match exactly.
@@ -555,24 +644,32 @@ ${analysis}
 CURRENT FILES:
 ${truncatedFiles.map((f: any) => `=== ${f.path} ===\n${f.content}`).join('\n\n')}
 
-${context.backendConfig ? `
+${
+  context.backendConfig
+    ? `
 DATABASE: Collections: ${context.backendConfig.collections?.map((c: any) => c.name).join(', ')}
-` : ''}
+`
+    : ''
+}
 
 CRITICAL:
 🚨 HTML TAGS: Every <button> needs </button>, <form> needs </form>, <div> needs </div>. Count. Match exactly.
 ✅ NO placeholders, NO "...", write COMPLETE code.
 ✅ Proper nesting. Close tags in reverse order.
 
-${context.isMultiPage ? `
+${
+  context.isMultiPage
+    ? `
 FORMAT:
 ---FILE:filename.html---
 <!DOCTYPE html>
 <html>...</html>
 ---ENDFILE---
-` : `
+`
+    : `
 FORMAT: Return complete HTML from <!DOCTYPE html> to </html>
-`}
+`
+}
 
 Code only.`;
 }
@@ -586,15 +683,24 @@ function buildReviewPrompt(originalFiles: any[], fixedFiles: any[], analysis: st
 Does fix solve root cause? (10 words):`;
 }
 
-function parseFixedFiles(code: string, originalFiles: any[]): Array<{ path: string; content: string }> {
+function parseFixedFiles(
+  code: string,
+  originalFiles: any[]
+): Array<{ path: string; content: string }> {
   // Clean up code
-  code = code.replace(/^```(?:json|html)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+  code = code
+    .replace(/^```(?:json|html)?\s*/gi, '')
+    .replace(/```\s*$/gi, '')
+    .trim();
 
   // CRITICAL FIX: Unescape JSON escape sequences if AI generated escaped HTML
   if (code.includes('\\n') || code.includes('\\"')) {
     console.log('[AutoGen] ⚠️ Detected JSON-escaped HTML, unescaping...');
     try {
-      if ((code.startsWith('"') && code.endsWith('"')) || (code.startsWith("'") && code.endsWith("'"))) {
+      if (
+        (code.startsWith('"') && code.endsWith('"')) ||
+        (code.startsWith("'") && code.endsWith("'"))
+      ) {
         code = JSON.parse(code);
         console.log('[AutoGen] ✅ Successfully unescaped JSON-quoted HTML');
       } else {
@@ -622,30 +728,31 @@ function parseFixedFiles(code: string, originalFiles: any[]): Array<{ path: stri
 
   if (code.includes('---FILE:') && code.includes('---ENDFILE---')) {
     // Multi-file response - support paths with slashes (e.g., app/layout.tsx)
-    const fileMatches = code.matchAll(/---FILE:([\w\/\-.]+)---([\s\S]*?)---ENDFILE---/g);
-    files = Array.from(fileMatches).map(match => ({
+    const fileMatches = code.matchAll(/---FILE:([\w/\-.]+)---([\s\S]*?)---ENDFILE---/g);
+    files = Array.from(fileMatches).map((match) => ({
       path: match[1].trim(),
-      content: match[2].trim()
+      content: match[2].trim(),
     }));
   } else {
     // ❌ AI FORGOT FORMAT - try to recover instead of assuming HTML
     console.warn('[AutoGen] ⚠️  AI did not use ---FILE:--- format, attempting recovery...');
 
     // Detect if this is TSX/JSX code (React components)
-    const isTSX = code.includes('export default') ||
-                  code.includes('from "react"') ||
-                  code.includes("from 'react'") ||
-                  code.includes('useState') ||
-                  code.includes('useEffect') ||
-                  code.includes('className=') ||
-                  code.includes('import {') ||
-                  code.startsWith("'use client'") ||
-                  code.startsWith('"use client"');
+    const isTSX =
+      code.includes('export default') ||
+      code.includes('from "react"') ||
+      code.includes("from 'react'") ||
+      code.includes('useState') ||
+      code.includes('useEffect') ||
+      code.includes('className=') ||
+      code.includes('import {') ||
+      code.startsWith("'use client'") ||
+      code.startsWith('"use client"');
 
     if (isTSX) {
       // This is TSX but AI forgot format - find the file with errors and use that path
-      const fileWithError = originalFiles.find(f =>
-        f.path.endsWith('.tsx') || f.path.endsWith('.jsx')
+      const fileWithError = originalFiles.find(
+        (f) => f.path.endsWith('.tsx') || f.path.endsWith('.jsx')
       );
 
       if (fileWithError) {
@@ -672,7 +779,7 @@ function parseFixedFiles(code: string, originalFiles: any[]): Array<{ path: stri
 
   // CRITICAL: Merge strategy - preserve original files AI didn't return
   // This prevents file loss if AI forgets to include some files
-  const parsedPaths = new Set(files.map(f => f.path));
+  const parsedPaths = new Set(files.map((f) => f.path));
   const missingFiles: string[] = [];
 
   for (const originalFile of originalFiles) {
@@ -684,8 +791,12 @@ function parseFixedFiles(code: string, originalFiles: any[]): Array<{ path: stri
   }
 
   if (missingFiles.length > 0) {
-    console.warn(`[AutoGen Debugger] AI forgot ${missingFiles.length} file(s): ${missingFiles.slice(0, 5).join(', ')}${missingFiles.length > 5 ? '...' : ''}`);
-    console.warn(`[AutoGen Debugger] Merged with originals: ${files.length} total files (${files.length - missingFiles.length} from AI + ${missingFiles.length} preserved)`);
+    console.warn(
+      `[AutoGen Debugger] AI forgot ${missingFiles.length} file(s): ${missingFiles.slice(0, 5).join(', ')}${missingFiles.length > 5 ? '...' : ''}`
+    );
+    console.warn(
+      `[AutoGen Debugger] Merged with originals: ${files.length} total files (${files.length - missingFiles.length} from AI + ${missingFiles.length} preserved)`
+    );
   }
 
   return files;
@@ -701,11 +812,12 @@ function buildFileOperationsPrompt(
   context: any
 ): string {
   // Detect framework
-  const isNextJS = currentFiles.some(f =>
-    f.path.startsWith('src/app/') ||
-    f.path === 'next.config.js' ||
-    f.path.includes('layout.tsx') ||
-    f.path.includes('page.tsx')
+  const isNextJS = currentFiles.some(
+    (f) =>
+      f.path.startsWith('src/app/') ||
+      f.path === 'next.config.js' ||
+      f.path.includes('layout.tsx') ||
+      f.path.includes('page.tsx')
   );
 
   if (isNextJS) {
@@ -757,7 +869,10 @@ function parseFileOperations(response: string): FileOperation[] {
   try {
     // Clean up response
     let cleaned = response.trim();
-    cleaned = cleaned.replace(/^```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+    cleaned = cleaned
+      .replace(/^```(?:json)?\s*/gi, '')
+      .replace(/```\s*$/gi, '')
+      .trim();
 
     // Extract JSON array
     const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
@@ -775,10 +890,7 @@ function parseFileOperations(response: string): FileOperation[] {
 
     return operations.filter((op: any) => {
       return (
-        op.type &&
-        ['create', 'delete', 'rename', 'move'].includes(op.type) &&
-        op.path &&
-        op.reason
+        op.type && ['create', 'delete', 'rename', 'move'].includes(op.type) && op.path && op.reason
       );
     });
   } catch (error) {
@@ -800,7 +912,7 @@ function executeFileOperations(
   for (const op of operations) {
     try {
       switch (op.type) {
-        case 'create':
+        case 'create': {
           if (!op.content) {
             errors.push(`Cannot create ${op.path}: no content provided`);
             break;
@@ -810,15 +922,16 @@ function executeFileOperations(
           if (existingIndex !== -1) {
             console.log(`[AutoGen Debugger] File ${op.path} exists, replacing (create→update)`);
             files[existingIndex].content = op.content;
-            logFileOperation({...op, type: 'update'}, true, 'Replaced existing file');
+            logFileOperation({ ...op, type: 'update' }, true, 'Replaced existing file');
           } else {
             files.push({ path: op.path, content: op.content });
             console.log(`[AutoGen Debugger] ✅ Created: ${op.path}`);
             logFileOperation(op, true);
           }
           break;
+        }
 
-        case 'delete':
+        case 'delete': {
           const deleteIndex = files.findIndex((f) => f.path === op.path);
           if (deleteIndex === -1) {
             errors.push(`Cannot delete ${op.path}: file not found`);
@@ -829,9 +942,10 @@ function executeFileOperations(
             logFileOperation(op, true);
           }
           break;
+        }
 
         case 'rename':
-        case 'move':
+        case 'move': {
           if (!op.newPath) {
             errors.push(`Cannot rename ${op.path}: no new path provided`);
             break;
@@ -846,6 +960,7 @@ function executeFileOperations(
             logFileOperation(op, true);
           }
           break;
+        }
 
         default:
           errors.push(`Unknown operation type: ${op.type}`);
@@ -863,7 +978,10 @@ function executeFileOperations(
 /**
  * Compare validation results to track error changes
  */
-function compareValidationResults(before: any, after: any): {
+function compareValidationResults(
+  before: any,
+  after: any
+): {
   fixed: any[];
   new: any[];
   remaining: any[];

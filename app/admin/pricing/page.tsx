@@ -5,12 +5,22 @@
  * Comprehensive pricing configuration interface
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  CheckCircle2,
+  Copy,
+  DollarSign,
+  Globe,
+  Info,
+  Package,
+  RefreshCw,
+  Save,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -20,7 +30,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, RefreshCw, DollarSign, Globe, Package, Info, Copy, CheckCircle2 } from 'lucide-react';
 
 interface PricingPackage {
   id: string;
@@ -120,7 +129,9 @@ export default function PricingManagementPage() {
       if (!contentType || !contentType.includes('application/json')) {
         const text = await res.text();
         console.error('Non-JSON response:', text);
-        setSavedMessage(`❌ Error: Server returned non-JSON response (status ${res.status}). Check server logs.`);
+        setSavedMessage(
+          `❌ Error: Server returned non-JSON response (status ${res.status}). Check server logs.`
+        );
         setTimeout(() => setSavedMessage(''), 5000);
         return;
       }
@@ -133,7 +144,9 @@ export default function PricingManagementPage() {
         setTimeout(() => setSavedMessage(''), 3000);
         await loadConfig();
       } else {
-        setSavedMessage(`❌ Error: ${data.error || 'Failed to save'} ${data.details ? `- ${data.details}` : ''}`);
+        setSavedMessage(
+          `❌ Error: ${data.error || 'Failed to save'} ${data.details ? `- ${data.details}` : ''}`
+        );
         console.error('Failed to save package:', data);
         setTimeout(() => setSavedMessage(''), 5000);
       }
@@ -163,7 +176,9 @@ export default function PricingManagementPage() {
         setTimeout(() => setSavedMessage(''), 3000);
         await loadConfig();
       } else {
-        setSavedMessage(`❌ Error: ${data.error || 'Failed to save'} ${data.details ? `- ${data.details}` : ''}`);
+        setSavedMessage(
+          `❌ Error: ${data.error || 'Failed to save'} ${data.details ? `- ${data.details}` : ''}`
+        );
         console.error('Failed to save exchange rates:', data);
         setTimeout(() => setSavedMessage(''), 5000);
       }
@@ -193,7 +208,9 @@ export default function PricingManagementPage() {
         setTimeout(() => setSavedMessage(''), 3000);
         await loadConfig();
       } else {
-        setSavedMessage(`❌ Error: ${data.error || 'Failed to save'} ${data.details ? `- ${data.details}` : ''}`);
+        setSavedMessage(
+          `❌ Error: ${data.error || 'Failed to save'} ${data.details ? `- ${data.details}` : ''}`
+        );
         console.error('Failed to save custom pricing:', data);
         setTimeout(() => setSavedMessage(''), 5000);
       }
@@ -227,11 +244,15 @@ export default function PricingManagementPage() {
         if (data.alreadyExists) {
           setSavedMessage('✅ Settings collection already exists!');
         } else {
-          setSavedMessage('✅ Settings collection created successfully! You can now save pricing changes.');
+          setSavedMessage(
+            '✅ Settings collection created successfully! You can now save pricing changes.'
+          );
         }
         setTimeout(() => setSavedMessage(''), 5000);
       } else {
-        setSavedMessage(`❌ Error: ${data.error || 'Failed to create collection'} ${data.details ? `- ${data.details}` : ''}`);
+        setSavedMessage(
+          `❌ Error: ${data.error || 'Failed to create collection'} ${data.details ? `- ${data.details}` : ''}`
+        );
         console.error('Failed to create settings collection:', data);
         setTimeout(() => setSavedMessage(''), 5000);
       }
@@ -282,9 +303,15 @@ export default function PricingManagementPage() {
       </div>
 
       {savedMessage && (
-        <div className={`p-4 rounded-md border flex items-center gap-3 ${savedMessage.includes('❌') ? 'bg-error/10 border-error' : 'bg-success/10 border-success'}`}>
-          <CheckCircle2 className={`h-4 w-4 ${savedMessage.includes('❌') ? 'text-error' : 'text-success'}`} />
-          <p className={savedMessage.includes('❌') ? 'text-error' : 'text-success'}>{savedMessage}</p>
+        <div
+          className={`p-4 rounded-md border flex items-center gap-3 ${savedMessage.includes('❌') ? 'bg-error/10 border-error' : 'bg-success/10 border-success'}`}
+        >
+          <CheckCircle2
+            className={`h-4 w-4 ${savedMessage.includes('❌') ? 'text-error' : 'text-success'}`}
+          />
+          <p className={savedMessage.includes('❌') ? 'text-error' : 'text-success'}>
+            {savedMessage}
+          </p>
         </div>
       )}
 
@@ -293,7 +320,9 @@ export default function PricingManagementPage() {
           <div className="flex items-start gap-3">
             <Info className="h-4 w-4 mt-1" />
             <div className="space-y-2 flex-1">
-              <p className="font-semibold">To activate changes, add this to your environment variables:</p>
+              <p className="font-semibold">
+                To activate changes, add this to your environment variables:
+              </p>
               <div className="flex gap-2 items-center">
                 <code className="flex-1 bg-background-subtle p-2 rounded text-xs overflow-x-auto">
                   PRICING_CONFIG_JSON='{envVariable.substring(0, 100)}...'
@@ -302,7 +331,9 @@ export default function PricingManagementPage() {
                   {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-sm text-text-secondary">Then restart your server or deploy to production</p>
+              <p className="text-sm text-text-secondary">
+                Then restart your server or deploy to production
+              </p>
             </div>
           </div>
         </div>
@@ -339,9 +370,7 @@ export default function PricingManagementPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                        {pkg.isPopular && (
-                          <Badge variant="default">Most Popular</Badge>
-                        )}
+                        {pkg.isPopular && <Badge variant="default">Most Popular</Badge>}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -418,11 +447,7 @@ export default function PricingManagementPage() {
                           />
                         </div>
                       </div>
-                      <Button
-                        onClick={() => savePackage(id)}
-                        disabled={saving}
-                        className="mt-4"
-                      >
+                      <Button onClick={() => savePackage(id)} disabled={saving} className="mt-4">
                         <Save className="h-4 w-4 mr-2" />
                         Save {pkg.name}
                       </Button>
@@ -499,9 +524,7 @@ export default function PricingManagementPage() {
           <Card>
             <CardHeader>
               <CardTitle>Custom Credit Pricing (Per Token)</CardTitle>
-              <CardDescription>
-                Configure pricing for custom token purchases
-              </CardDescription>
+              <CardDescription>Configure pricing for custom token purchases</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -536,7 +559,8 @@ export default function PricingManagementPage() {
                       }
                     />
                     <p className="text-sm text-text-tertiary mt-1">
-                      ${customPricing.priceUSD} per {(customPricing.unitSize / 1000).toFixed(0)}K tokens
+                      ${customPricing.priceUSD} per {(customPricing.unitSize / 1000).toFixed(0)}K
+                      tokens
                     </p>
                   </div>
                   <div>
@@ -574,7 +598,9 @@ export default function PricingManagementPage() {
                           <TableRow key={tokens}>
                             <TableCell>{(tokens / 1000).toFixed(0)}K</TableCell>
                             <TableCell>${(units * customPricing.priceUSD).toFixed(2)}</TableCell>
-                            <TableCell>{(units * customPricing.priceIRT).toLocaleString()}</TableCell>
+                            <TableCell>
+                              {(units * customPricing.priceIRT).toLocaleString()}
+                            </TableCell>
                           </TableRow>
                         );
                       })}

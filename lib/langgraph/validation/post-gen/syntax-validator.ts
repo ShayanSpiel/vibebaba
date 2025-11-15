@@ -13,13 +13,13 @@
  */
 
 import { HTMLHint } from 'htmlhint';
-import type { ValidationError } from './types';
 import {
-  getLineNumber,
-  extractStyleBlocks,
-  extractScriptBlocks,
   areBracketsBalanced,
+  extractScriptBlocks,
+  extractStyleBlocks,
+  getLineNumber,
 } from '@/lib/utils/validation';
+import type { ValidationError } from './types';
 
 // ============================================================================
 // CONFIGURATION
@@ -553,7 +553,14 @@ export class SyntaxValidator {
       const beforeColon = css.substring(Math.max(0, (match.index || 0) - 50), match.index || 0);
       const property = beforeColon.match(/(\w+)\s*:\s*$/)?.[1];
 
-      const noUnitProperties = ['opacity', 'z-index', 'font-weight', 'line-height', 'flex', 'order'];
+      const noUnitProperties = [
+        'opacity',
+        'z-index',
+        'font-weight',
+        'line-height',
+        'flex',
+        'order',
+      ];
       if (property && noUnitProperties.includes(property.toLowerCase())) {
         continue;
       }

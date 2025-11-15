@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { getAuthenticatedUser } from '@/lib/database/pocketbase-middleware';
 import { RateLimiter, sanitizeError } from '@/lib/database/pocketbase-utils';
 
 // Rate limiter: 20 file uploads per minute per user
@@ -16,7 +16,7 @@ const ALLOWED_TYPES = [
   'image/gif',
   'image/webp',
   'image/svg+xml',
-  'application/pdf'
+  'application/pdf',
 ];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -27,10 +27,7 @@ export async function POST(request: NextRequest) {
     const user = await getAuthenticatedUser(request);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check rate limit
@@ -49,10 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     // projectId is optional for homepage/session uploads
@@ -114,7 +108,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[Upload] Creating record for user:', user.id, 'projectId:', projectId || 'none');
-    console.log('[Upload] PB auth valid:', pb.authStore.isValid, 'token:', pb.authStore.token ? 'present' : 'missing');
+    console.log(
+      '[Upload] PB auth valid:',
+      pb.authStore.isValid,
+      'token:',
+      pb.authStore.token ? 'present' : 'missing'
+    );
 
     const record = await pb.collection('uploaded_files').create(uploadFormData);
 
@@ -124,16 +123,18 @@ export async function POST(request: NextRequest) {
     const fileUrl = pb.files.getUrl(record, record.file);
 
     // Return success response
-    return NextResponse.json({
-      id: record.id,
-      fileName: record.fileName,
-      fileUrl: fileUrl,
-      fileType: record.fileType,
-      purpose: record.purpose,
-      created: record.created,
-      updated: record.updated
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        id: record.id,
+        fileName: record.fileName,
+        fileUrl: fileUrl,
+        fileType: record.fileType,
+        purpose: record.purpose,
+        created: record.created,
+        updated: record.updated,
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
     console.error('[File Upload] Error:', error);
 

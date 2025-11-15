@@ -46,7 +46,9 @@ async function migrate() {
 
     // Set first user as admin (optional)
     if (userCount.count > 0) {
-      const firstUser = db.prepare('SELECT id, email FROM user ORDER BY createdAt ASC LIMIT 1').get() as any;
+      const firstUser = db
+        .prepare('SELECT id, email FROM user ORDER BY createdAt ASC LIMIT 1')
+        .get() as any;
       if (firstUser) {
         db.prepare('UPDATE user SET role = ? WHERE id = ?').run('admin', firstUser.id);
         console.log(`👑 Set first user as admin: ${firstUser.email}`);

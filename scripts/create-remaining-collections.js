@@ -1,5 +1,5 @@
 // Load environment variables
-require("dotenv").config({ path: ".env.local" });
+require('dotenv').config({ path: '.env.local' });
 
 /**
  * Create remaining PocketBase collections
@@ -23,8 +23,8 @@ async function createCollections() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         identity: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD
-      })
+        password: ADMIN_PASSWORD,
+      }),
     });
     const auth = await authData.json();
     pb.authStore.save(auth.token, auth.admin);
@@ -32,11 +32,11 @@ async function createCollections() {
 
     // Get existing collections
     const existing = await pb.collections.getFullList();
-    const existingNames = existing.map(c => c.name);
+    const existingNames = existing.map((c) => c.name);
     console.log('📋 Existing collections:', existingNames.join(', '), '\n');
 
     // Get users collection ID
-    const usersCollection = existing.find(c => c.name === 'users');
+    const usersCollection = existing.find((c) => c.name === 'users');
     if (!usersCollection) {
       throw new Error('Users collection not found!');
     }
@@ -56,8 +56,8 @@ async function createCollections() {
               collectionId: usersCollection.id,
               cascadeDelete: false,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'type',
@@ -65,28 +65,28 @@ async function createCollections() {
             required: true,
             options: {
               values: ['purchase', 'subscription', 'refund'],
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'amount',
             type: 'number',
-            required: true
+            required: true,
           },
           {
             name: 'tokens',
             type: 'number',
-            required: true
+            required: true,
           },
           {
             name: 'currency',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'packageId',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'paymentProvider',
@@ -94,13 +94,13 @@ async function createCollections() {
             required: false,
             options: {
               values: ['stripe', 'paypal', 'zibal'],
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'paymentId',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'status',
@@ -108,15 +108,15 @@ async function createCollections() {
             required: true,
             options: {
               values: ['pending', 'completed', 'failed', 'refunded'],
-              maxSelect: 1
-            }
-          }
+              maxSelect: 1,
+            },
+          },
         ],
         listRule: 'userId = @request.auth.id',
         viewRule: 'userId = @request.auth.id',
         createRule: '@request.auth.id != ""',
         updateRule: null,
-        deleteRule: null
+        deleteRule: null,
       });
       console.log('✅ Transactions created\n');
     } else {
@@ -138,18 +138,18 @@ async function createCollections() {
               collectionId: usersCollection.id,
               cascadeDelete: false,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'name',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'description',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'stage',
@@ -157,29 +157,29 @@ async function createCollections() {
             required: true,
             options: {
               values: ['planning', 'building', 'completed', 'error'],
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'plan',
             type: 'text',
-            required: false
+            required: false,
           },
           {
             name: 'backendConfig',
             type: 'json',
             required: false,
             options: {
-              maxSize: 2000000
-            }
+              maxSize: 2000000,
+            },
           },
           {
             name: 'context',
             type: 'json',
             required: false,
             options: {
-              maxSize: 2000000
-            }
+              maxSize: 2000000,
+            },
           },
           {
             name: 'thumbnail',
@@ -188,8 +188,8 @@ async function createCollections() {
             options: {
               maxSelect: 1,
               maxSize: 2097152,
-              mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
-            }
+              mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            },
           },
           {
             name: 'deployUrl',
@@ -197,15 +197,15 @@ async function createCollections() {
             required: false,
             options: {
               exceptDomains: [],
-              onlyDomains: []
-            }
-          }
+              onlyDomains: [],
+            },
+          },
         ],
         listRule: 'userId = @request.auth.id',
         viewRule: 'userId = @request.auth.id',
         createRule: '@request.auth.id != ""',
         updateRule: 'userId = @request.auth.id',
-        deleteRule: 'userId = @request.auth.id'
+        deleteRule: 'userId = @request.auth.id',
       });
       console.log('✅ Projects created\n');
     } else {
@@ -214,7 +214,7 @@ async function createCollections() {
 
     // Refresh collection list
     const updated = await pb.collections.getFullList();
-    const projectsCollection = updated.find(c => c.name === 'projects');
+    const projectsCollection = updated.find((c) => c.name === 'projects');
 
     if (!projectsCollection) {
       throw new Error('Failed to create projects collection');
@@ -235,18 +235,18 @@ async function createCollections() {
               collectionId: projectsCollection.id,
               cascadeDelete: true,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'path',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'content',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'encoding',
@@ -254,20 +254,20 @@ async function createCollections() {
             required: false,
             options: {
               values: ['utf-8', 'base64'],
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'size',
             type: 'number',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: 'projectId.userId = @request.auth.id',
         viewRule: 'projectId.userId = @request.auth.id',
         createRule: 'projectId.userId = @request.auth.id',
         updateRule: 'projectId.userId = @request.auth.id',
-        deleteRule: 'projectId.userId = @request.auth.id'
+        deleteRule: 'projectId.userId = @request.auth.id',
       });
       console.log('✅ Project files created\n');
     } else {
@@ -289,8 +289,8 @@ async function createCollections() {
               collectionId: projectsCollection.id,
               cascadeDelete: true,
               minSelect: 1,
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'role',
@@ -298,25 +298,25 @@ async function createCollections() {
             required: true,
             options: {
               values: ['user', 'assistant', 'system'],
-              maxSelect: 1
-            }
+              maxSelect: 1,
+            },
           },
           {
             name: 'content',
             type: 'text',
-            required: true
+            required: true,
           },
           {
             name: 'tokens',
             type: 'number',
-            required: false
-          }
+            required: false,
+          },
         ],
         listRule: 'projectId.userId = @request.auth.id',
         viewRule: 'projectId.userId = @request.auth.id',
         createRule: 'projectId.userId = @request.auth.id',
         updateRule: null,
-        deleteRule: 'projectId.userId = @request.auth.id'
+        deleteRule: 'projectId.userId = @request.auth.id',
       });
       console.log('✅ Project messages created\n');
     } else {
@@ -326,12 +326,11 @@ async function createCollections() {
     // Final summary
     const final = await pb.collections.getFullList();
     console.log('\n✨ Setup complete! Collections:');
-    final.forEach(c => {
+    final.forEach((c) => {
       console.log(`   ✅ ${c.name} (${c.type})`);
     });
 
     console.log('\n🌐 View in admin UI: http://localhost:8090/_/#/collections');
-
   } catch (error) {
     console.error('\n❌ Error:', error.message);
     if (error.response) {

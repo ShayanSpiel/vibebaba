@@ -46,7 +46,7 @@ async function checkAndFix() {
       console.log(`\n⚠️  Your role is: "${user.role || 'undefined'}" - updating to admin...`);
 
       const updated = await pb.collection('users').update(user.id, {
-        role: 'admin'
+        role: 'admin',
       });
 
       console.log('✅ Role updated to admin!');
@@ -54,7 +54,6 @@ async function checkAndFix() {
       console.log('\n🎉 You should now be able to access /admin');
       console.log('   Please logout and login again to refresh your session.');
     }
-
   } catch (error: any) {
     if (error.status === 400) {
       console.error('❌ Incorrect password!');

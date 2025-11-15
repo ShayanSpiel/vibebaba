@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
 import { PRICING_PACKAGES } from '@/lib/database/pocketbase-credits';
 
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     const usersToReset = await pb.collection('users').getFullList({
       filter: `lastDailyReset < "${oneDayAgo.toISOString()}" || lastDailyReset = ""`,
       fields: 'id,email,packageId,packageExpiry,lastDailyReset',
-      sort: 'lastDailyReset'
+      sort: 'lastDailyReset',
     });
 
     console.log(`[Cron] Found ${usersToReset.length} users needing daily reset`);
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
         success: true,
         resetCount: 0,
         duration: Date.now() - startTime,
-        message: 'No users need daily reset'
+        message: 'No users need daily reset',
       });
     }
 
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
           await pb.collection('users').update(user.id, {
             dailyTokens: dailyAmount,
             lastDailyReset: now.toISOString(),
-            needsDailyReset: false // Clear the flag
+            needsDailyReset: false, // Clear the flag
           });
 
           resetCount++;
@@ -115,15 +115,14 @@ export async function GET(req: NextRequest) {
       resetCount,
       errorCount,
       duration,
-      message: `Successfully reset ${resetCount} users in ${duration}ms`
+      message: `Successfully reset ${resetCount} users in ${duration}ms`,
     });
-
   } catch (error: any) {
     console.error('[Cron] Daily reset failed:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error'
+        error: error.message || 'Internal server error',
       },
       { status: 500 }
     );

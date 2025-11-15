@@ -2,18 +2,18 @@
 
 export interface ColorTheme {
   mode: 'light' | 'dark' | 'auto';
-  primary: string;                // Hex color (e.g., '#1890ff')
-  secondary?: string;             // Optional secondary color
-  accent?: string;                // Optional accent color
-  background?: string;            // Main background color
-  backgroundSecondary?: string;   // Secondary background (cards, panels)
-  backgroundTertiary?: string;    // Tertiary background (hover states)
-  border?: string;                // Border color
-  muted?: string;                 // Muted text/elements
-  destructive?: string;           // Error/delete actions (red)
-  success?: string;               // Success states (green)
-  warning?: string;               // Warning states (yellow/orange)
-  info?: string;                  // Info states (blue)
+  primary: string; // Hex color (e.g., '#1890ff')
+  secondary?: string; // Optional secondary color
+  accent?: string; // Optional accent color
+  background?: string; // Main background color
+  backgroundSecondary?: string; // Secondary background (cards, panels)
+  backgroundTertiary?: string; // Tertiary background (hover states)
+  border?: string; // Border color
+  muted?: string; // Muted text/elements
+  destructive?: string; // Error/delete actions (red)
+  success?: string; // Success states (green)
+  warning?: string; // Warning states (yellow/orange)
+  info?: string; // Info states (blue)
 }
 
 export interface LayoutConfig {
@@ -24,17 +24,26 @@ export interface LayoutConfig {
 }
 
 export interface TypographyConfig {
-  fontFamily: 'Inter' | 'Roboto' | 'Poppins' | 'Montserrat' | 'Open Sans' | 'Lato' | 'Playfair Display' | 'Space Grotesk' | 'custom';
-  customFont?: string;  // If fontFamily === 'custom'
+  fontFamily:
+    | 'Inter'
+    | 'Roboto'
+    | 'Poppins'
+    | 'Montserrat'
+    | 'Open Sans'
+    | 'Lato'
+    | 'Playfair Display'
+    | 'Space Grotesk'
+    | 'custom';
+  customFont?: string; // If fontFamily === 'custom'
   scale: 'small' | 'normal' | 'large';
   headingWeight: 400 | 500 | 600 | 700 | 800 | 900;
-  bodyWeight?: 300 | 400 | 500;  // Body text weight
-  weights?: number[];  // Font weights to load from Google Fonts
+  bodyWeight?: 300 | 400 | 500; // Body text weight
+  weights?: number[]; // Font weights to load from Google Fonts
 }
 
 export interface IconographyConfig {
   style: 'outlined' | 'filled' | 'two-tone' | 'rounded';
-  source: 'lucide' | 'heroicons' | 'material-icons';  // Standardized to match frontend usage
+  source: 'lucide' | 'heroicons' | 'material-icons'; // Standardized to match frontend usage
   size: 'small' | 'medium' | 'large';
 }
 
@@ -72,10 +81,10 @@ export interface BrandConfig {
 
   /** Responsive breakpoints */
   breakpoints: {
-    sm: string;   // e.g., "640px"
-    md: string;   // e.g., "768px"
-    lg: string;   // e.g., "1024px"
-    xl: string;   // e.g., "1280px"
+    sm: string; // e.g., "640px"
+    md: string; // e.g., "768px"
+    lg: string; // e.g., "1024px"
+    xl: string; // e.g., "1280px"
     '2xl': string; // e.g., "1536px"
   };
 }
@@ -163,42 +172,42 @@ export interface EnhancedColorTheme extends ColorTheme {
 // ============================================================================
 
 export interface FontSizes {
-  xs: string;    // 0.75rem
-  sm: string;    // 0.875rem
-  base: string;  // 1rem
-  lg: string;    // 1.125rem
-  xl: string;    // 1.25rem
+  xs: string; // 0.75rem
+  sm: string; // 0.875rem
+  base: string; // 1rem
+  lg: string; // 1.125rem
+  xl: string; // 1.25rem
   '2xl': string; // 1.5rem
   '3xl': string; // 1.875rem
   '4xl': string; // 2.25rem
   '5xl': string; // 3rem
-  h1: string;    // Heading 1
-  h2: string;    // Heading 2
-  h3: string;    // Heading 3
-  h4: string;    // Heading 4
-  h5: string;    // Heading 5
-  h6: string;    // Heading 6
+  h1: string; // Heading 1
+  h2: string; // Heading 2
+  h3: string; // Heading 3
+  h4: string; // Heading 4
+  h5: string; // Heading 5
+  h6: string; // Heading 6
 }
 
 export interface LineHeights {
-  none: number;     // 1
-  tight: number;    // 1.25
-  snug: number;     // 1.375
-  normal: number;   // 1.5
-  relaxed: number;  // 1.625
-  loose: number;    // 2
+  none: number; // 1
+  tight: number; // 1.25
+  snug: number; // 1.375
+  normal: number; // 1.5
+  relaxed: number; // 1.625
+  loose: number; // 2
 }
 
 export interface FontWeights {
-  thin: number;       // 100
+  thin: number; // 100
   extralight: number; // 200
-  light: number;      // 300
-  normal: number;     // 400
-  medium: number;     // 500
-  semibold: number;   // 600
-  bold: number;       // 700
-  extrabold: number;  // 800
-  black: number;      // 900
+  light: number; // 300
+  normal: number; // 400
+  medium: number; // 500
+  semibold: number; // 600
+  bold: number; // 700
+  extrabold: number; // 800
+  black: number; // 900
 }
 
 // Extend existing TypographyConfig
@@ -224,20 +233,20 @@ export interface EnhancedTypographyConfig extends TypographyConfig {
 // ============================================================================
 
 export interface SpacingScale {
-  '0': string;   // 0
-  '1': string;   // 0.25rem
-  '2': string;   // 0.5rem
-  '3': string;   // 0.75rem
-  '4': string;   // 1rem
-  '5': string;   // 1.25rem
-  '6': string;   // 1.5rem
-  '8': string;   // 2rem
-  '10': string;  // 2.5rem
-  '12': string;  // 3rem
-  '16': string;  // 4rem
-  '20': string;  // 5rem
-  '24': string;  // 6rem
-  '32': string;  // 8rem
+  '0': string; // 0
+  '1': string; // 0.25rem
+  '2': string; // 0.5rem
+  '3': string; // 0.75rem
+  '4': string; // 1rem
+  '5': string; // 1.25rem
+  '6': string; // 1.5rem
+  '8': string; // 2rem
+  '10': string; // 2.5rem
+  '12': string; // 3rem
+  '16': string; // 4rem
+  '20': string; // 5rem
+  '24': string; // 6rem
+  '32': string; // 8rem
 }
 
 export interface LayoutSpacing {
@@ -267,21 +276,21 @@ export interface SpacingConfig {
 // ============================================================================
 
 export interface BorderRadiusScale {
-  none: string;   // 0
-  sm: string;     // 0.125rem
-  md: string;     // 0.375rem
-  lg: string;     // 0.5rem
-  xl: string;     // 0.75rem
-  '2xl': string;  // 1rem
-  '3xl': string;  // 1.5rem
-  full: string;   // 9999px
+  none: string; // 0
+  sm: string; // 0.125rem
+  md: string; // 0.375rem
+  lg: string; // 0.5rem
+  xl: string; // 0.75rem
+  '2xl': string; // 1rem
+  '3xl': string; // 1.5rem
+  full: string; // 9999px
 }
 
 export interface BorderWidths {
-  none: string;    // 0
-  thin: string;    // 1px
-  medium: string;  // 2px
-  thick: string;   // 4px
+  none: string; // 0
+  thin: string; // 1px
+  medium: string; // 2px
+  thick: string; // 4px
 }
 
 export interface BorderingConfig {
@@ -297,27 +306,27 @@ export interface BorderingConfig {
 // ============================================================================
 
 export interface TransitionDurations {
-  fast: string;     // 150ms
-  normal: string;   // 300ms
-  slow: string;     // 500ms
+  fast: string; // 150ms
+  normal: string; // 300ms
+  slow: string; // 500ms
 }
 
 export interface EasingFunctions {
-  default: string;   // ease-in-out
-  linear: string;    // linear
-  easeIn: string;    // ease-in
-  easeOut: string;   // ease-out
-  spring: string;    // cubic-bezier(0.68, -0.55, 0.265, 1.55)
+  default: string; // ease-in-out
+  linear: string; // linear
+  easeIn: string; // ease-in
+  easeOut: string; // ease-out
+  spring: string; // cubic-bezier(0.68, -0.55, 0.265, 1.55)
 }
 
 export interface ZIndices {
-  dropdown: number;   // 100
-  sticky: number;     // 200
-  fixed: number;      // 300
-  overlay: number;    // 400
-  modal: number;      // 500
-  popover: number;    // 600
-  toast: number;      // 1000
+  dropdown: number; // 100
+  sticky: number; // 200
+  fixed: number; // 300
+  overlay: number; // 400
+  modal: number; // 500
+  popover: number; // 600
+  toast: number; // 1000
 }
 
 export interface TransitionConfig {
@@ -501,28 +510,28 @@ export interface StylingConfig {
 export const DEFAULT_STYLING_CONFIG: StylingConfig = {
   colorTheme: {
     primary: '#1890ff',
-    mode: 'light'
+    mode: 'light',
   },
   layout: {
     direction: 'ltr',
     maxWidth: '1200px',
-    spacing: 'normal'
+    spacing: 'normal',
   },
   typography: {
     fontFamily: 'Inter',
     scale: 'normal',
-    headingWeight: 700
+    headingWeight: 700,
   },
   iconography: {
     style: 'outlined',
     source: 'lucide',
-    size: 'medium'
+    size: 'medium',
   },
   animations: {
     enabled: true,
     intensity: 'subtle',
     transitions: true,
     pageTransitions: false,
-    hoverEffects: true
-  }
+    hoverEffects: true,
+  },
 };

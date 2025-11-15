@@ -1,16 +1,17 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import { Providers } from "./providers";
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
 import Script from 'next/script';
 import { Toaster } from 'sonner';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://vibebaba.app'),
   title: {
     default: 'Vibebaba - AI App Builder',
-    template: '%s | Vibebaba'
+    template: '%s | Vibebaba',
   },
-  description: 'Turn your ideas into full-stack applications with AI. Generate React, Next.js, and Vue apps instantly with advanced AI models. No-code platform for developers.',
+  description:
+    'Turn your ideas into full-stack applications with AI. Generate React, Next.js, and Vue apps instantly with advanced AI models. No-code platform for developers.',
   keywords: [
     'AI app builder',
     'no-code platform',
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     'code generator',
     'app development',
     'artificial intelligence',
-    'web app builder'
+    'web app builder',
   ],
   authors: [{ name: 'Vibebaba Team', url: 'https://vibebaba.app' }],
   creator: 'Vibebaba',
@@ -37,14 +38,17 @@ export const metadata: Metadata = {
     alternateLocale: ['fa_IR', 'ar_SA'],
     url: 'https://vibebaba.app',
     title: 'Vibebaba - AI App Builder',
-    description: 'Turn your ideas into full-stack applications with AI. Generate modern web applications instantly.',
+    description:
+      'Turn your ideas into full-stack applications with AI. Generate modern web applications instantly.',
     siteName: 'Vibebaba',
-    images: [{
-      url: '/og-image.png',
-      width: 1200,
-      height: 630,
-      alt: 'Vibebaba AI App Builder - Generate Full-Stack Applications',
-    }],
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Vibebaba AI App Builder - Generate Full-Stack Applications',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
@@ -72,9 +76,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://vibebaba.app',
     languages: {
-      'en': 'https://vibebaba.app',
-      'fa': 'https://vibebaba.app/fa',
-      'ar': 'https://vibebaba.app/ar',
+      en: 'https://vibebaba.app',
+      fa: 'https://vibebaba.app/fa',
+      ar: 'https://vibebaba.app/ar',
     },
   },
 };
@@ -103,7 +107,8 @@ export default function RootLayout({
       price: '0',
       priceCurrency: 'USD',
     },
-    description: 'AI-powered full-stack application builder that generates React, Next.js, and Vue applications',
+    description:
+      'AI-powered full-stack application builder that generates React, Next.js, and Vue applications',
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: '4.8',
@@ -179,29 +184,61 @@ export default function RootLayout({
             // BRAND GUIDELINE ICONS - Exactly matching /app/brand-guidelines/page.tsx:2024-2074
             error: (
               <div className="w-7 h-7 rounded-lg bg-gradient-error flex items-center justify-center flex-shrink-0 shadow-md">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2.5"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
             ),
             success: (
               <div className="w-7 h-7 rounded-lg bg-gradient-success flex items-center justify-center flex-shrink-0 shadow-md">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2.5"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             ),
             warning: (
               <div className="w-7 h-7 rounded-lg bg-gradient-warning flex items-center justify-center flex-shrink-0 shadow-md">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
               </div>
             ),
             info: (
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
             ),
@@ -237,7 +274,6 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
         />
-
       </body>
     </html>
   );

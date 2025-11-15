@@ -4,15 +4,12 @@
  * Analyzes user queries to determine search intent and extract entities
  */
 
-import type { SearchIntent, SearchContext, ColorIntent } from './types';
+import type { ColorIntent, SearchContext, SearchIntent } from './types';
 
 /**
  * Analyze user query to determine intent and extract entities
  */
-export async function analyzeIntent(
-  query: string,
-  context?: SearchContext
-): Promise<SearchIntent> {
+export async function analyzeIntent(query: string, context?: SearchContext): Promise<SearchIntent> {
   const prompt = buildIntentAnalysisPrompt(query, context);
 
   // Call Claude API for intent analysis
@@ -139,15 +136,30 @@ function getFallbackIntent(query: string): SearchIntent {
   let category: SearchIntent['category'] = 'general-knowledge';
   const searchSources: SearchIntent['searchSources'] = ['exa', 'duckduckgo'];
 
-  if (lowerQuery.includes('code') || lowerQuery.includes('component') || lowerQuery.includes('repo')) {
+  if (
+    lowerQuery.includes('code') ||
+    lowerQuery.includes('component') ||
+    lowerQuery.includes('repo')
+  ) {
     category = 'code-search';
     searchSources.push('github');
-  } else if (lowerQuery.includes('like') && (lowerQuery.includes('stripe') || lowerQuery.includes('linear'))) {
+  } else if (
+    lowerQuery.includes('like') &&
+    (lowerQuery.includes('stripe') || lowerQuery.includes('linear'))
+  ) {
     category = 'brand-clone';
     searchSources.push('brand');
-  } else if (lowerQuery.includes('design') || lowerQuery.includes('ui') || lowerQuery.includes('layout')) {
+  } else if (
+    lowerQuery.includes('design') ||
+    lowerQuery.includes('ui') ||
+    lowerQuery.includes('layout')
+  ) {
     category = 'design-inspiration';
-  } else if (lowerQuery.includes('api') || lowerQuery.includes('docs') || lowerQuery.includes('documentation')) {
+  } else if (
+    lowerQuery.includes('api') ||
+    lowerQuery.includes('docs') ||
+    lowerQuery.includes('documentation')
+  ) {
     category = 'api-documentation';
     searchSources.push('docs');
   }
@@ -201,33 +213,33 @@ async function enrichColorIntent(colors: SearchIntent['colors']): Promise<Search
 function getColorHexMap(): Record<string, string> {
   return {
     // Basic colors
-    'red': '#EF4444',
-    'orange': '#F97316',
-    'yellow': '#EAB308',
-    'green': '#10B981',
-    'blue': '#3B82F6',
-    'purple': '#8B5CF6',
-    'pink': '#EC4899',
-    'teal': '#14B8A6',
-    'cyan': '#06B6D4',
-    'indigo': '#6366F1',
+    red: '#EF4444',
+    orange: '#F97316',
+    yellow: '#EAB308',
+    green: '#10B981',
+    blue: '#3B82F6',
+    purple: '#8B5CF6',
+    pink: '#EC4899',
+    teal: '#14B8A6',
+    cyan: '#06B6D4',
+    indigo: '#6366F1',
 
     // Shades
-    'black': '#000000',
-    'white': '#FFFFFF',
-    'gray': '#6B7280',
-    'grey': '#6B7280',
+    black: '#000000',
+    white: '#FFFFFF',
+    gray: '#6B7280',
+    grey: '#6B7280',
 
     // Special colors
-    'cream': '#FFFDD0',
-    'beige': '#F5F5DC',
-    'navy': '#000080',
-    'maroon': '#800000',
-    'olive': '#808000',
-    'lime': '#00FF00',
-    'aqua': '#00FFFF',
-    'fuchsia': '#FF00FF',
-    'silver': '#C0C0C0',
+    cream: '#FFFDD0',
+    beige: '#F5F5DC',
+    navy: '#000080',
+    maroon: '#800000',
+    olive: '#808000',
+    lime: '#00FF00',
+    aqua: '#00FFFF',
+    fuchsia: '#FF00FF',
+    silver: '#C0C0C0',
 
     // Pastel colors
     'pastel pink': '#FFD1DC',
@@ -257,18 +269,18 @@ function hexToRgb(hex: string): string {
  */
 function getTailwindColor(colorName: string): string {
   const colorMap: Record<string, string> = {
-    'red': 'red-500',
-    'orange': 'orange-500',
-    'yellow': 'yellow-500',
-    'green': 'green-500',
-    'blue': 'blue-500',
-    'purple': 'purple-500',
-    'pink': 'pink-500',
-    'teal': 'teal-500',
-    'cyan': 'cyan-500',
-    'indigo': 'indigo-500',
-    'gray': 'gray-500',
-    'grey': 'gray-500',
+    red: 'red-500',
+    orange: 'orange-500',
+    yellow: 'yellow-500',
+    green: 'green-500',
+    blue: 'blue-500',
+    purple: 'purple-500',
+    pink: 'pink-500',
+    teal: 'teal-500',
+    cyan: 'cyan-500',
+    indigo: 'indigo-500',
+    gray: 'gray-500',
+    grey: 'gray-500',
   };
 
   return colorMap[colorName.toLowerCase()] || 'gray-500';
@@ -277,7 +289,10 @@ function getTailwindColor(colorName: string): string {
 /**
  * Generate optimized search queries based on intent
  */
-export function generateSearchQueries(intent: SearchIntent, originalQuery: string): SearchIntent['queries'] {
+export function generateSearchQueries(
+  intent: SearchIntent,
+  originalQuery: string
+): SearchIntent['queries'] {
   const queries: SearchIntent['queries'] = {
     github: [],
     exa: [],
@@ -287,7 +302,7 @@ export function generateSearchQueries(intent: SearchIntent, originalQuery: strin
   // GitHub queries
   if (intent.searchSources.includes('github')) {
     if (intent.techStack && intent.features) {
-      queries.github = intent.features.map(feature => {
+      queries.github = intent.features.map((feature) => {
         const tech = intent.techStack?.join(' ') || '';
         return `${feature} ${tech} stars:>100`;
       });
@@ -312,7 +327,7 @@ export function generateSearchQueries(intent: SearchIntent, originalQuery: strin
     queries.web = [originalQuery];
 
     if (intent.brandMentions && intent.brandMentions.length > 0) {
-      queries.web.push(...intent.brandMentions.map(brand => `${brand} brand guidelines`));
+      queries.web.push(...intent.brandMentions.map((brand) => `${brand} brand guidelines`));
     }
   }
 

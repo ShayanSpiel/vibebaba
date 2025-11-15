@@ -5,8 +5,8 @@
  */
 
 import { LRUCache } from 'lru-cache';
-import type { SearchResult, CachedSearch } from '../types';
 import { CACHE_TTL } from '../config';
+import type { CachedSearch, SearchResult } from '../types';
 
 /**
  * Search cache with LRU eviction
@@ -38,7 +38,7 @@ export class SearchCache {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
@@ -72,12 +72,7 @@ export class SearchCache {
   /**
    * Set cached search result
    */
-  async set(
-    query: string,
-    orgId: string,
-    result: SearchResult,
-    ttl?: number
-  ): Promise<void> {
+  async set(query: string, orgId: string, result: SearchResult, ttl?: number): Promise<void> {
     const key = this.getCacheKey(query, orgId);
 
     // Determine TTL based on intent category

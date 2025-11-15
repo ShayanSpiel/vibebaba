@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Edit } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { CategoryFilter } from '../components/CategoryFilter';
 import { ErrorSummaryCard } from '../components/ErrorSummaryCard';
 import { LogViewer } from '../components/LogViewer';
-import { CategoryFilter } from '../components/CategoryFilter';
-import { Edit } from 'lucide-react';
 
 export default function EditorHealthPage() {
   const [timeframe, setTimeframe] = useState('24h');
@@ -19,7 +19,9 @@ export default function EditorHealthPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/workflow-health?category=editor&timeframe=${timeframe}`);
+      const response = await fetch(
+        `/api/admin/workflow-health?category=editor&timeframe=${timeframe}`
+      );
       if (!response.ok) throw new Error('Failed to fetch');
       const result = await response.json();
       setData(result);
@@ -73,9 +75,13 @@ export default function EditorHealthPage() {
         totalErrors={editorStats.errors}
         totalWarnings={editorStats.warnings}
         successRate={
-          editorStats.total > 0 ? ((editorStats.total - editorStats.errors) / editorStats.total) * 100 : 100
+          editorStats.total > 0
+            ? ((editorStats.total - editorStats.errors) / editorStats.total) * 100
+            : 100
         }
-        status={editorStats.errors === 0 ? 'healthy' : editorStats.errors < 5 ? 'degraded' : 'critical'}
+        status={
+          editorStats.errors === 0 ? 'healthy' : editorStats.errors < 5 ? 'degraded' : 'critical'
+        }
       />
 
       {/* Operation Stats */}
@@ -86,7 +92,9 @@ export default function EditorHealthPage() {
         </Card>
         <Card className="p-6">
           <p className="text-sm text-text-secondary mb-2">Successful</p>
-          <p className="text-3xl font-bold text-success">{editorStats.total - editorStats.errors}</p>
+          <p className="text-3xl font-bold text-success">
+            {editorStats.total - editorStats.errors}
+          </p>
         </Card>
         <Card className="p-6">
           <p className="text-sm text-text-secondary mb-2">Failed</p>

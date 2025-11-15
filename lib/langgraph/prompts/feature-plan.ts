@@ -7,10 +7,9 @@
 
 export const FEATURE_EXTRACTION_RULES = `
 EXTRACT ALL FEATURES USER MENTIONS:
-- Extract EVERY feature the user requests
-- Don't limit yourself - list everything they want
+- Extract all feature the user requests
 - Phasing will be done automatically by the system
-- Exclude: styling (colors, themes, animations)
+- Exclude: styling (colors, themes, animations, design or component style related)
 
 EXAMPLES:
 "E-commerce site with products, cart, checkout, and user accounts"
@@ -36,7 +35,7 @@ BACKEND DETECTION:
 ✗ No backend: Display-only content (landing sections, static pages, lists without CRUD)
 
 ROUTE PLANNING:
-- Landing page → "/" (single page.tsx with all sections)
+- Landing page or homepage → "/" (single page.tsx with all sections)
 - Multi-page app → Separate routes for distinct features
 - List + Detail → Two routes: "/items", "/items/[id]"
 - Default: Use "/" for main feature

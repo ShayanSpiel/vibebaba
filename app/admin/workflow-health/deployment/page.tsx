@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Rocket } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { CategoryFilter } from '../components/CategoryFilter';
 import { ErrorSummaryCard } from '../components/ErrorSummaryCard';
 import { LogViewer } from '../components/LogViewer';
-import { CategoryFilter } from '../components/CategoryFilter';
-import { Rocket } from 'lucide-react';
 
 export default function DeploymentHealthPage() {
   const [timeframe, setTimeframe] = useState('24h');
@@ -19,7 +19,9 @@ export default function DeploymentHealthPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/workflow-health?category=deployment&timeframe=${timeframe}`);
+      const response = await fetch(
+        `/api/admin/workflow-health?category=deployment&timeframe=${timeframe}`
+      );
       if (!response.ok) throw new Error('Failed to fetch');
       const result = await response.json();
       setData(result);
@@ -58,7 +60,9 @@ export default function DeploymentHealthPage() {
           <Rocket className="h-8 w-8 text-brand-primary" />
           <div>
             <h1 className="text-3xl font-bold text-text-primary">Deployment Health</h1>
-            <p className="text-text-secondary mt-1">Monitor deployment processes and build status</p>
+            <p className="text-text-secondary mt-1">
+              Monitor deployment processes and build status
+            </p>
           </div>
         </div>
 
@@ -76,7 +80,11 @@ export default function DeploymentHealthPage() {
             : 100
         }
         status={
-          deploymentStats.errors === 0 ? 'healthy' : deploymentStats.errors < 3 ? 'degraded' : 'critical'
+          deploymentStats.errors === 0
+            ? 'healthy'
+            : deploymentStats.errors < 3
+              ? 'degraded'
+              : 'critical'
         }
       />
 
@@ -88,7 +96,9 @@ export default function DeploymentHealthPage() {
         </Card>
         <Card className="p-6">
           <p className="text-sm text-text-secondary mb-2">Successful</p>
-          <p className="text-3xl font-bold text-success">{deploymentStats.total - deploymentStats.errors}</p>
+          <p className="text-3xl font-bold text-success">
+            {deploymentStats.total - deploymentStats.errors}
+          </p>
         </Card>
         <Card className="p-6">
           <p className="text-sm text-text-secondary mb-2">Failed</p>
@@ -98,7 +108,10 @@ export default function DeploymentHealthPage() {
           <p className="text-sm text-text-secondary mb-2">Success Rate</p>
           <p className="text-3xl font-bold text-success">
             {deploymentStats.total > 0
-              ? (((deploymentStats.total - deploymentStats.errors) / deploymentStats.total) * 100).toFixed(1)
+              ? (
+                  ((deploymentStats.total - deploymentStats.errors) / deploymentStats.total) *
+                  100
+                ).toFixed(1)
               : '100'}
             %
           </p>

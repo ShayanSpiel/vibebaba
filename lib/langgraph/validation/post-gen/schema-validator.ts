@@ -51,7 +51,7 @@ export function validateApiClientMatchesSchema(
         issue: 'Function not found in API client',
         expected: `export async function ${endpoint.handler}(...)`,
         actual: 'Not found',
-        severity: 'error'
+        severity: 'error',
       });
       continue;
     }
@@ -60,11 +60,7 @@ export function validateApiClientMatchesSchema(
 
     // Validate parameters
     if (endpoint.parameters && Array.isArray(endpoint.parameters)) {
-      const result = validateParameters(
-        endpoint.handler,
-        endpoint.parameters,
-        actualParams
-      );
+      const result = validateParameters(endpoint.handler, endpoint.parameters, actualParams);
       errors.push(...result.errors);
       warnings.push(...result.warnings);
     }
@@ -80,7 +76,7 @@ export function validateApiClientMatchesSchema(
           warnings.push({
             endpoint: endpoint.handler,
             issue: 'Return type is generic',
-            suggestion: `Consider using specific type: Promise<${expectedReturn}>`
+            suggestion: `Consider using specific type: Promise<${expectedReturn}>`,
           });
         } else {
           errors.push({
@@ -88,7 +84,7 @@ export function validateApiClientMatchesSchema(
             issue: 'Return type mismatch',
             expected: `Promise<${expectedReturn}>`,
             actual: `Promise<${actualReturnTrimmed}>`,
-            severity: 'warning'
+            severity: 'warning',
           });
         }
       }
@@ -96,9 +92,9 @@ export function validateApiClientMatchesSchema(
   }
 
   return {
-    valid: errors.filter(e => e.severity === 'error').length === 0,
+    valid: errors.filter((e) => e.severity === 'error').length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -119,26 +115,26 @@ function validateParameters(
   // Build expected parameters from schema
   const expectedParams: string[] = [];
 
-  const pathParams = schemaParams.filter(p => p.location === 'path');
-  const queryParams = schemaParams.filter(p => p.location === 'query');
-  const bodyParams = schemaParams.filter(p => p.location === 'body');
+  const pathParams = schemaParams.filter((p) => p.location === 'path');
+  const queryParams = schemaParams.filter((p) => p.location === 'query');
+  const bodyParams = schemaParams.filter((p) => p.location === 'body');
 
   // Path parameters
-  pathParams.forEach(p => {
+  pathParams.forEach((p) => {
     expectedParams.push(`${p.name}: ${p.type}`);
   });
 
   // Query parameters (as object)
   if (queryParams.length > 0) {
-    const isAllOptional = queryParams.every(p => !p.required);
-    const queryType = `{ ${queryParams.map(p =>
-      `${p.name}${p.required ? '' : '?'}: ${p.type}`
-    ).join(', ')} }`;
+    const isAllOptional = queryParams.every((p) => !p.required);
+    const queryType = `{ ${queryParams
+      .map((p) => `${p.name}${p.required ? '' : '?'}: ${p.type}`)
+      .join(', ')} }`;
     expectedParams.push(`params${isAllOptional ? '?' : ''}: ${queryType}`);
   }
 
   // Body parameters
-  bodyParams.forEach(p => {
+  bodyParams.forEach((p) => {
     expectedParams.push(`${p.name}: ${p.type}`);
   });
 
@@ -157,7 +153,7 @@ function validateParameters(
         issue: 'Parameter signature mismatch',
         expected: expectedStr,
         actual: actualStr,
-        severity: 'error'
+        severity: 'error',
       });
     }
   }
@@ -223,7 +219,7 @@ export function generateSchemaValidationReport(result: SchemaValidationResult): 
 
   if (result.errors.length > 0) {
     report += '❌ SCHEMA VALIDATION ERRORS:\n\n';
-    result.errors.forEach(error => {
+    result.errors.forEach((error) => {
       report += `Function: ${error.endpoint}\n`;
       report += `Issue: ${error.issue}\n`;
       report += `Expected: ${error.expected}\n`;
@@ -234,7 +230,7 @@ export function generateSchemaValidationReport(result: SchemaValidationResult): 
 
   if (result.warnings.length > 0) {
     report += '⚠️  SCHEMA VALIDATION WARNINGS:\n\n';
-    result.warnings.forEach(warning => {
+    result.warnings.forEach((warning) => {
       report += `Function: ${warning.endpoint}\n`;
       report += `Issue: ${warning.issue}\n`;
       report += `Suggestion: ${warning.suggestion}\n\n`;

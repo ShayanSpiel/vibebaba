@@ -3,7 +3,7 @@
  * Tests individual models and providers
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { generateWithFallback } from '@/lib/ai/ai';
 
 // POST /api/admin/ai-config/test - Test AI generation

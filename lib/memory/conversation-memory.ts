@@ -1,6 +1,7 @@
 // lib/memory/conversation-memory.ts
 
 import { pb } from '../database/pocketbase';
+import type { UnifiedMessage } from '@/lib/messaging/message-types';
 
 /**
  * Conversation Memory Manager
@@ -9,35 +10,45 @@ import { pb } from '../database/pocketbase';
  * Compatible with current AND future multi-tenant architecture
  */
 
+/**
+ * LEGACY Message interface - kept for backward compatibility
+ * @deprecated Use UnifiedMessage from message-types.ts instead
+ */
 export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  nodeId?: string;  // Which node generated this (pm, frontend, etc.)
+  nodeId?: string; // Which node generated this (pm, frontend, etc.)
 }
+
+/**
+ * Type alias for consistency - Message and UnifiedMessage are compatible
+ * UnifiedMessage has additional fields but all are optional
+ */
+export type StoredMessage = UnifiedMessage;
 
 export interface ConversationMemory {
   projectId: string;
   messages: Message[];
-  summary?: string;           // Auto-generated summary of conversation
-  entities: EntityMemory;     // Tracked entities (components, features, etc.)
+  summary?: string; // Auto-generated summary of conversation
+  entities: EntityMemory; // Tracked entities (components, features, etc.)
 
   // ✅ UNIFIED MEMORY: Full project state (replaces MCP Memory)
-  projectConfig?: ProjectConfig;      // Complete project configuration
-  userPreferences?: UserPreferences;  // User preferences
+  projectConfig?: ProjectConfig; // Complete project configuration
+  userPreferences?: UserPreferences; // User preferences
   workflowMetadata?: WorkflowMetadata; // Workflow execution data
 
   // ✅ NEW: Full context awareness for AutoGen
-  validationContext?: ValidationContext;    // All validation fixes applied
-  techStackContext?: TechStackContext;      // Tech stack constraints
+  validationContext?: ValidationContext; // All validation fixes applied
+  techStackContext?: TechStackContext; // Tech stack constraints
   fileMetadata?: Record<string, FileMetadata>; // Per-file metadata
 }
 
 export interface EntityMemory {
-  components: string[];       // ["NavBar", "Hero", "ContactForm"]
-  features: string[];         // ["dark mode", "authentication", "blog"]
-  techStack: string[];        // ["Next.js", "Tailwind", "PocketBase"]
-  designDecisions: string[];  // ["minimalist", "blue primary color"]
+  components: string[]; // ["NavBar", "Hero", "ContactForm"]
+  features: string[]; // ["dark mode", "authentication", "blog"]
+  techStack: string[]; // ["Next.js", "Tailwind", "PocketBase"]
+  designDecisions: string[]; // ["minimalist", "blue primary color"]
 }
 
 export interface ProjectConfig {
@@ -47,7 +58,7 @@ export interface ProjectConfig {
 
   // Design & styling (FULL configs, not summaries)
   designSystem?: string;
-  stylingConfig?: any;        // Complete 80+ design tokens
+  stylingConfig?: any; // Complete 80+ design tokens
 
   // Backend configuration (FULL, not summary)
   backendConfig?: {
@@ -108,19 +119,19 @@ export interface UserPreferences {
 }
 
 export interface WorkflowMetadata {
-  completedNodes: string[];        // Nodes that executed
-  totalDuration?: number;          // Total workflow time (ms)
+  completedNodes: string[]; // Nodes that executed
+  totalDuration?: number; // Total workflow time (ms)
   tokenUsage?: {
     total: number;
     byNode: Record<string, number>;
   };
-  deployUrl?: string;              // Final deployment URL
+  deployUrl?: string; // Final deployment URL
   validationResult?: {
     valid: boolean;
     errors: number;
     warnings: number;
   };
-  debugAttempts?: number;          // QA debugging attempts
+  debugAttempts?: number; // QA debugging attempts
   lastUpdated: Date;
 }
 
@@ -132,23 +143,23 @@ export interface WorkflowMetadata {
  */
 export interface ValidationContext {
   iconReplacements: Array<{
-    from: string;           // Invalid icon name (e.g., 'CreditCard')
-    to: string;             // Valid replacement (e.g., 'Square')
-    files: string[];        // Which files were affected
+    from: string; // Invalid icon name (e.g., 'CreditCard')
+    to: string; // Valid replacement (e.g., 'Square')
+    files: string[]; // Which files were affected
     timestamp: Date;
   }>;
 
   importFixes: Array<{
-    file: string;           // File path
+    file: string; // File path
     fix: 'added' | 'removed' | 'deduplicated';
-    imports: string[];      // Which imports were affected
+    imports: string[]; // Which imports were affected
     timestamp: Date;
   }>;
 
   contrastFixes: Array<{
     file: string;
-    issue: string;          // Description of contrast issue
-    fix: string;            // What was changed
+    issue: string; // Description of contrast issue
+    fix: string; // What was changed
     timestamp: Date;
   }>;
 
@@ -171,7 +182,7 @@ export interface TechStackContext {
   typescript: boolean;
   styling: 'Tailwind CSS';
   icons: 'lucide-react';
-  validIcons: string[];              // List of valid icon names
+  validIcons: string[]; // List of valid icon names
   backend?: {
     type: 'PocketBase';
     collections: Array<{
@@ -207,9 +218,9 @@ export interface FileMetadata {
   }>;
 
   imports: {
-    icons: string[];        // Which icons this file uses
-    hooks: string[];        // Which React hooks
-    types: string[];        // Which TypeScript types
+    icons: string[]; // Which icons this file uses
+    hooks: string[]; // Which React hooks
+    types: string[]; // Which TypeScript types
   };
 
   lastModified: Date;
@@ -239,7 +250,9 @@ class ConversationMemoryStore {
     const loaded = await this.loadMemory(projectId);
 
     if (loaded) {
-      console.log(`[Memory] ✅ Loaded from DB: ${loaded.messages.length} messages, ${loaded.projectConfig?.files?.length || 0} files`);
+      console.log(
+        `[Memory] ✅ Loaded from DB: ${loaded.messages.length} messages, ${loaded.projectConfig?.files?.length || 0} files`
+      );
       return loaded;
     }
 
@@ -252,7 +265,7 @@ class ConversationMemoryStore {
         components: [],
         features: [],
         techStack: [],
-        designDecisions: []
+        designDecisions: [],
       },
       projectConfig: undefined,
       userPreferences: undefined,
@@ -262,10 +275,10 @@ class ConversationMemoryStore {
         iconReplacements: [],
         importFixes: [],
         contrastFixes: [],
-        typeScriptFixes: []
+        typeScriptFixes: [],
       },
       techStackContext: undefined,
-      fileMetadata: {}
+      fileMetadata: {},
     };
 
     this.memories.set(projectId, newMemory);
@@ -280,7 +293,7 @@ class ConversationMemoryStore {
     memory.messages.push({
       role: 'user',
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     // Update entities (extract components, features mentioned)
@@ -296,7 +309,7 @@ class ConversationMemoryStore {
       role: 'assistant',
       content,
       timestamp: new Date(),
-      nodeId
+      nodeId,
     });
   }
 
@@ -335,24 +348,51 @@ class ConversationMemoryStore {
     const lowerText = text.toLowerCase();
 
     // Extract components
-    const componentKeywords = ['navbar', 'hero', 'footer', 'form', 'button', 'modal', 'sidebar', 'table', 'card'];
-    componentKeywords.forEach(keyword => {
+    const componentKeywords = [
+      'navbar',
+      'hero',
+      'footer',
+      'form',
+      'button',
+      'modal',
+      'sidebar',
+      'table',
+      'card',
+    ];
+    componentKeywords.forEach((keyword) => {
       if (lowerText.includes(keyword) && !memory.entities.components.includes(keyword)) {
         memory.entities.components.push(keyword);
       }
     });
 
     // Extract features
-    const featureKeywords = ['auth', 'login', 'dark mode', 'search', 'filter', 'pagination', 'comments', 'blog'];
-    featureKeywords.forEach(keyword => {
+    const featureKeywords = [
+      'auth',
+      'login',
+      'dark mode',
+      'search',
+      'filter',
+      'pagination',
+      'comments',
+      'blog',
+    ];
+    featureKeywords.forEach((keyword) => {
       if (lowerText.includes(keyword) && !memory.entities.features.includes(keyword)) {
         memory.entities.features.push(keyword);
       }
     });
 
     // Extract tech stack
-    const techKeywords = ['next.js', 'react', 'tailwind', 'typescript', 'pocketbase', 'stripe', 'prisma'];
-    techKeywords.forEach(keyword => {
+    const techKeywords = [
+      'next.js',
+      'react',
+      'tailwind',
+      'typescript',
+      'pocketbase',
+      'stripe',
+      'prisma',
+    ];
+    techKeywords.forEach((keyword) => {
       if (lowerText.includes(keyword) && !memory.entities.techStack.includes(keyword)) {
         memory.entities.techStack.push(keyword);
       }
@@ -360,7 +400,7 @@ class ConversationMemoryStore {
 
     // Extract design decisions
     const designKeywords = ['minimalist', 'modern', 'dark', 'light', 'colorful', 'professional'];
-    designKeywords.forEach(keyword => {
+    designKeywords.forEach((keyword) => {
       if (lowerText.includes(keyword) && !memory.entities.designDecisions.includes(keyword)) {
         memory.entities.designDecisions.push(keyword);
       }
@@ -395,11 +435,13 @@ class ConversationMemoryStore {
       messages = messages.slice(-windowSize);
     }
 
-    const formatted = messages.map(msg => {
-      const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';
-      const nodeInfo = msg.nodeId ? ` [${msg.nodeId}]` : '';
-      return `${roleLabel}${nodeInfo}: ${msg.content}`;
-    }).join('\n');
+    const formatted = messages
+      .map((msg) => {
+        const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';
+        const nodeInfo = msg.nodeId ? ` [${msg.nodeId}]` : '';
+        return `${roleLabel}${nodeInfo}: ${msg.content}`;
+      })
+      .join('\n');
 
     return `\n\n## CONVERSATION HISTORY\n${formatted}\n`;
   }
@@ -452,7 +494,7 @@ class ConversationMemoryStore {
 
     // For now, return a simple summary
     // TODO: Can enhance with LLM call for better summarization
-    const userMessages = memory.messages.filter(m => m.role === 'user');
+    const userMessages = memory.messages.filter((m) => m.role === 'user');
     const summary = `User has made ${userMessages.length} requests. Latest features: ${memory.entities.features.join(', ') || 'none'}`;
 
     memory.summary = summary;
@@ -477,7 +519,7 @@ class ConversationMemoryStore {
     try {
       // Check if memory record exists
       const existing = await pb.collection('conversation_memory').getFullList({
-        filter: `projectId = "${projectId}"`
+        filter: `projectId = "${projectId}"`,
       });
 
       const data = {
@@ -490,10 +532,12 @@ class ConversationMemoryStore {
         userPreferences: memory.userPreferences ? JSON.stringify(memory.userPreferences) : null,
         workflowMetadata: memory.workflowMetadata ? JSON.stringify(memory.workflowMetadata) : null,
         // ✅ NEW: Save validation and tech stack context
-        validationContext: memory.validationContext ? JSON.stringify(memory.validationContext) : null,
+        validationContext: memory.validationContext
+          ? JSON.stringify(memory.validationContext)
+          : null,
         techStackContext: memory.techStackContext ? JSON.stringify(memory.techStackContext) : null,
         fileMetadata: memory.fileMetadata ? JSON.stringify(memory.fileMetadata) : null,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
 
       if (existing.length > 0) {
@@ -501,8 +545,15 @@ class ConversationMemoryStore {
         console.log(`[Memory] ✅ Updated memory for project ${projectId}`);
       } else {
         // Validate data before creating
-        const requiredFields = ['projectId', 'messages', 'projectConfig', 'workflowMetadata', 'entities', 'summary'];
-        const missingFields = requiredFields.filter(field => !(field in data));
+        const requiredFields = [
+          'projectId',
+          'messages',
+          'projectConfig',
+          'workflowMetadata',
+          'entities',
+          'summary',
+        ];
+        const missingFields = requiredFields.filter((field) => !(field in data));
 
         if (missingFields.length > 0) {
           console.error(`[Memory] ❌ Missing required fields: ${missingFields.join(', ')}`);
@@ -514,8 +565,11 @@ class ConversationMemoryStore {
         const jsonFields = ['messages', 'projectConfig', 'workflowMetadata', 'entities'];
         for (const field of jsonFields) {
           const size = data[field as keyof typeof data]?.length || 0;
-          if (size > 5_000_000) { // 5MB limit
-            console.warn(`[Memory] ⚠️  Field ${field} is very large (${(size / 1_000_000).toFixed(2)}MB)`);
+          if (size > 5_000_000) {
+            // 5MB limit
+            console.warn(
+              `[Memory] ⚠️  Field ${field} is very large (${(size / 1_000_000).toFixed(2)}MB)`
+            );
           }
         }
 
@@ -524,9 +578,17 @@ class ConversationMemoryStore {
       }
 
       // Log what was saved
-      console.log(`[Memory] 💾 Saved: ${memory.messages.length} messages, ${Object.keys(memory.entities).length} entity types`);
-      if (memory.projectConfig) console.log(`[Memory] 💾 Project config: ${memory.projectConfig.files?.length || 0} files, backend=${!!memory.projectConfig.backendConfig}`);
-      if (memory.workflowMetadata) console.log(`[Memory] 💾 Workflow: ${memory.workflowMetadata.completedNodes?.length || 0} nodes, ${memory.workflowMetadata.totalDuration}ms`);
+      console.log(
+        `[Memory] 💾 Saved: ${memory.messages.length} messages, ${Object.keys(memory.entities).length} entity types`
+      );
+      if (memory.projectConfig)
+        console.log(
+          `[Memory] 💾 Project config: ${memory.projectConfig.files?.length || 0} files, backend=${!!memory.projectConfig.backendConfig}`
+        );
+      if (memory.workflowMetadata)
+        console.log(
+          `[Memory] 💾 Workflow: ${memory.workflowMetadata.completedNodes?.length || 0} nodes, ${memory.workflowMetadata.totalDuration}ms`
+        );
     } catch (error: any) {
       console.error('[Memory] Failed to save:', error);
       if (error.response) {
@@ -542,7 +604,7 @@ class ConversationMemoryStore {
   async loadMemory(projectId: string): Promise<ConversationMemory | null> {
     try {
       const records = await pb.collection('conversation_memory').getFullList({
-        filter: `projectId = "${projectId}"`
+        filter: `projectId = "${projectId}"`,
       });
 
       if (records.length === 0) {
@@ -579,16 +641,22 @@ class ConversationMemoryStore {
           iconReplacements: [],
           importFixes: [],
           contrastFixes: [],
-          typeScriptFixes: []
+          typeScriptFixes: [],
         }),
         techStackContext: safeParse(record.techStackContext, undefined),
-        fileMetadata: safeParse(record.fileMetadata, {})
+        fileMetadata: safeParse(record.fileMetadata, {}),
       };
 
       this.memories.set(projectId, memory);
       console.log(`[Memory] ✅ Loaded full project state for ${projectId}`);
-      if (memory.projectConfig) console.log(`[Memory] 📦 Project config: ${memory.projectConfig.files?.length || 0} files, backend=${!!memory.projectConfig.backendConfig}`);
-      if (memory.workflowMetadata) console.log(`[Memory] 📦 Workflow: ${memory.workflowMetadata.completedNodes.length} nodes, ${memory.workflowMetadata.totalDuration}ms`);
+      if (memory.projectConfig)
+        console.log(
+          `[Memory] 📦 Project config: ${memory.projectConfig.files?.length || 0} files, backend=${!!memory.projectConfig.backendConfig}`
+        );
+      if (memory.workflowMetadata)
+        console.log(
+          `[Memory] 📦 Workflow: ${memory.workflowMetadata.completedNodes.length} nodes, ${memory.workflowMetadata.totalDuration}ms`
+        );
 
       return memory;
     } catch (error) {
@@ -609,7 +677,11 @@ export async function addUserMessage(projectId: string, content: string): Promis
   await conversationMemoryStore.addUserMessage(projectId, content);
 }
 
-export async function addAssistantMessage(projectId: string, content: string, nodeId?: string): Promise<void> {
+export async function addAssistantMessage(
+  projectId: string,
+  content: string,
+  nodeId?: string
+): Promise<void> {
   await conversationMemoryStore.addAssistantMessage(projectId, content, nodeId);
 }
 
@@ -657,7 +729,7 @@ export async function getConversationContext(projectId: string): Promise<string>
     // Icon Replacements
     if (memory.validationContext.iconReplacements.length > 0) {
       context += '\n✅ Icon Replacements (frontend):\n';
-      memory.validationContext.iconReplacements.forEach(r => {
+      memory.validationContext.iconReplacements.forEach((r) => {
         context += `  - Replaced ${r.from} → ${r.to} in ${r.files.join(', ')} (invalid icon)\n`;
       });
     }
@@ -665,8 +737,9 @@ export async function getConversationContext(projectId: string): Promise<string>
     // Import Fixes
     if (memory.validationContext.importFixes.length > 0) {
       context += '\n✅ Import Fixes:\n';
-      memory.validationContext.importFixes.forEach(f => {
-        const action = f.fix === 'added' ? 'Added' : f.fix === 'removed' ? 'Removed' : 'De-duplicated';
+      memory.validationContext.importFixes.forEach((f) => {
+        const action =
+          f.fix === 'added' ? 'Added' : f.fix === 'removed' ? 'Removed' : 'De-duplicated';
         context += `  - ${action} ${f.imports.join(', ')} in ${f.file}\n`;
       });
     }
@@ -674,7 +747,7 @@ export async function getConversationContext(projectId: string): Promise<string>
     // Contrast Fixes
     if (memory.validationContext.contrastFixes.length > 0) {
       context += '\n✅ Contrast Fixes:\n';
-      memory.validationContext.contrastFixes.forEach(f => {
+      memory.validationContext.contrastFixes.forEach((f) => {
         context += `  - ${f.file}: ${f.fix}\n`;
       });
     }
@@ -682,7 +755,7 @@ export async function getConversationContext(projectId: string): Promise<string>
     // TypeScript Fixes
     if (memory.validationContext.typeScriptFixes.length > 0) {
       context += '\n✅ TypeScript Fixes:\n';
-      memory.validationContext.typeScriptFixes.forEach(f => {
+      memory.validationContext.typeScriptFixes.forEach((f) => {
         context += `  - ${f.file}: ${f.fix}\n`;
       });
     }
@@ -691,11 +764,14 @@ export async function getConversationContext(projectId: string): Promise<string>
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 3. BACKEND API
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  if (memory.projectConfig?.backendConfig?.apiEndpoints && memory.projectConfig.backendConfig.apiEndpoints.length > 0) {
+  if (
+    memory.projectConfig?.backendConfig?.apiEndpoints &&
+    memory.projectConfig.backendConfig.apiEndpoints.length > 0
+  ) {
     context += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
     context += 'BACKEND API\n';
     context += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-    memory.projectConfig.backendConfig.apiEndpoints.forEach(e => {
+    memory.projectConfig.backendConfig.apiEndpoints.forEach((e) => {
       context += `- ${e.method} ${e.path}: ${e.description}\n`;
     });
   }
@@ -739,19 +815,31 @@ export async function storeProjectConfig(projectId: string, config: ProjectConfi
   console.log('[ConversationMemory] 📦   - projectId:', projectId);
   console.log('[ConversationMemory] 📦   - stylingConfig exists?', !!config.stylingConfig);
   if (config.stylingConfig) {
-    console.log('[ConversationMemory] 📦   - stylingConfig keys:', Object.keys(config.stylingConfig));
+    console.log(
+      '[ConversationMemory] 📦   - stylingConfig keys:',
+      Object.keys(config.stylingConfig)
+    );
     console.log('[ConversationMemory] 📦   - has brand?', !!config.stylingConfig.brand);
-    console.log('[ConversationMemory] 📦   - has enhancedColors?', !!config.stylingConfig.enhancedColors);
+    console.log(
+      '[ConversationMemory] 📦   - has enhancedColors?',
+      !!config.stylingConfig.enhancedColors
+    );
     console.log('[ConversationMemory] 📦   - has components?', !!config.stylingConfig.components);
   }
   await conversationMemoryStore.storeProjectConfig(projectId, config);
 }
 
-export async function storeUserPreferences(projectId: string, preferences: UserPreferences): Promise<void> {
+export async function storeUserPreferences(
+  projectId: string,
+  preferences: UserPreferences
+): Promise<void> {
   await conversationMemoryStore.storeUserPreferences(projectId, preferences);
 }
 
-export async function storeWorkflowMetadata(projectId: string, metadata: WorkflowMetadata): Promise<void> {
+export async function storeWorkflowMetadata(
+  projectId: string,
+  metadata: WorkflowMetadata
+): Promise<void> {
   await conversationMemoryStore.storeWorkflowMetadata(projectId, metadata);
 }
 
@@ -769,7 +857,7 @@ export async function storeValidationContext(
       iconReplacements: [],
       importFixes: [],
       contrastFixes: [],
-      typeScriptFixes: []
+      typeScriptFixes: [],
     };
   }
 
@@ -788,7 +876,9 @@ export async function storeValidationContext(
   }
 
   console.log(`[Memory] ✅ Stored validation context for ${projectId}`);
-  console.log(`[Memory] 📊 Total validations: ${memory.validationContext.iconReplacements.length} icons, ${memory.validationContext.importFixes.length} imports`);
+  console.log(
+    `[Memory] 📊 Total validations: ${memory.validationContext.iconReplacements.length} icons, ${memory.validationContext.importFixes.length} imports`
+  );
 }
 
 /**

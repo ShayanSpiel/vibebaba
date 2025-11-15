@@ -65,7 +65,9 @@
       "Bash(done)",
       "Bash(mkdir:*)",
       "Bash(npm run type-check:*)",
-      "WebFetch(domain:kysely.dev)"
+      "WebFetch(domain:kysely.dev)",
+      "Bash(npx husky init)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,47 +1,60 @@
-"use client";
+'use client';
 
 import dynamic from 'next/dynamic';
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Footer } from "@/components/Footer";
-import { useAuth } from "@/components/auth/PocketBaseAuthProvider";
-import { useTranslations } from "next-intl";
-import { useLanguage } from "@/lib/language-context";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui";
+import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/auth/PocketBaseAuthProvider';
+import { Footer } from '@/components/Footer';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Button } from '@/components/ui';
+import { useLanguage } from '@/lib/language-context';
 
 // Lazy load heavy components
-const AIChat = dynamic(() => import("@/components/chat/AIChat"), {
+const AIChat = dynamic(() => import('@/components/chat/AIChat'), {
   loading: () => <div className="w-full h-32 bg-background-raised rounded-2xl animate-pulse" />,
   ssr: false,
 });
 
-const ProfileButton = dynamic(() => import("@/components/auth/ProfileButton").then(mod => ({ default: mod.ProfileButton })), {
-  loading: () => <div className="w-24 h-10 bg-background-raised rounded-xl animate-pulse" />,
-  ssr: false,
-});
+const ProfileButton = dynamic(
+  () => import('@/components/auth/ProfileButton').then((mod) => ({ default: mod.ProfileButton })),
+  {
+    loading: () => <div className="w-24 h-10 bg-background-raised rounded-xl animate-pulse" />,
+    ssr: false,
+  }
+);
 
-const AuthModal = dynamic(() => import("@/components/auth/AuthModal").then(mod => ({ default: mod.AuthModal })), {
-  ssr: false,
-});
+const AuthModal = dynamic(
+  () => import('@/components/auth/AuthModal').then((mod) => ({ default: mod.AuthModal })),
+  {
+    ssr: false,
+  }
+);
 
-const ProjectsSidebar = dynamic(() => import("@/components/ProjectsSidebar").then(mod => ({ default: mod.ProjectsSidebar })), {
-  loading: () => null,
-  ssr: false,
-});
+const ProjectsSidebar = dynamic(
+  () => import('@/components/ProjectsSidebar').then((mod) => ({ default: mod.ProjectsSidebar })),
+  {
+    loading: () => null,
+    ssr: false,
+  }
+);
 
-const AIStatusIndicator = dynamic(() => import("@/components/AIStatusIndicator").then(mod => ({ default: mod.AIStatusIndicator })), {
-  ssr: false,
-});
+const AIStatusIndicator = dynamic(
+  () =>
+    import('@/components/AIStatusIndicator').then((mod) => ({ default: mod.AIStatusIndicator })),
+  {
+    ssr: false,
+  }
+);
 
 export default function Home() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const isAuthenticated = !!user;
-  const t = useTranslations("landing");
+  const t = useTranslations('landing');
   const { dir } = useLanguage();
-  const isRTL = dir === "rtl";
+  const isRTL = dir === 'rtl';
 
   // Auto-show auth modal if redirected from protected page
   useEffect(() => {
@@ -80,9 +93,14 @@ export default function Home() {
                 title="View Pricing Plans"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
-                {t("pricing")}
+                {t('pricing')}
               </a>
 
               {/* Language Switcher */}
@@ -98,9 +116,14 @@ export default function Home() {
                   title="Sign in to continue"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                    />
                   </svg>
-                  {t("signIn")}
+                  {t('signIn')}
                 </button>
               )}
             </div>
@@ -112,11 +135,9 @@ export default function Home() {
           <div className="w-full max-w-2xl">
             <div className="text-center mb-10">
               <h1 className="text-5xl font-bold mb-4 tracking-tight bg-gradient-to-r from-amber-400 to-yellow-600 bg-clip-text text-transparent">
-                {t("title")}
+                {t('title')}
               </h1>
-              <p className="text-lg text-text-secondary max-w-xl mx-auto">
-                {t("subtitle")}
-              </p>
+              <p className="text-lg text-text-secondary max-w-xl mx-auto">{t('subtitle')}</p>
             </div>
 
             {/* Always show chatbox, but with sign-in button if not authenticated */}

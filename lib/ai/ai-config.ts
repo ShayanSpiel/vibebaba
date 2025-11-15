@@ -140,7 +140,9 @@ export function setCachedWorkingModel(provider: AIProvider, model: string): void
  */
 export function clearCachedWorkingModel(): void {
   if (cachedWorkingModel) {
-    console.log(`[AI Config] ❌ Cleared cached model: ${cachedWorkingModel.provider}/${cachedWorkingModel.model}`);
+    console.log(
+      `[AI Config] ❌ Cleared cached model: ${cachedWorkingModel.provider}/${cachedWorkingModel.model}`
+    );
   }
   cachedWorkingModel = null;
 }
@@ -154,7 +156,9 @@ export function getConfigSummary() {
     mode: AI_MODE,
     activeProviders: getActiveProviders(),
     cachedModel: cached ? `${cached.provider}/${cached.model}` : null,
-    cacheAge: cachedWorkingModel ? Math.floor((Date.now() - cachedWorkingModel.timestamp) / 1000) : null,
+    cacheAge: cachedWorkingModel
+      ? Math.floor((Date.now() - cachedWorkingModel.timestamp) / 1000)
+      : null,
   };
 }
 

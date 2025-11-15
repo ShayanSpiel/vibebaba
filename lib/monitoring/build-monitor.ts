@@ -179,9 +179,7 @@ export class BuildMonitor {
     let match;
 
     while ((match = regex.exec(output)) !== null) {
-      const severity = match[4].toLowerCase().includes('warning')
-        ? 'warning'
-        : 'error';
+      const severity = match[4].toLowerCase().includes('warning') ? 'warning' : 'error';
 
       errors.push({
         file: match[1],
@@ -217,8 +215,7 @@ export class BuildMonitor {
    * Format error for display
    */
   formatError(error: BuildError): string {
-    const location =
-      error.line > 0 ? `${error.file}:${error.line}:${error.column}` : error.file;
+    const location = error.line > 0 ? `${error.file}:${error.line}:${error.column}` : error.file;
     return `[${error.severity.toUpperCase()}] ${location}: ${error.message}`;
   }
 

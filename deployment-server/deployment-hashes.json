@@ -1,0 +1,16 @@
+{
+  "AclalQQd6xR8kYt": {
+    "hash": "9528eeda8232154f",
+    "url": "http://localhost:4000/apps/project-AclalQQd6xR8kYt/",
+    "apiUrl": null,
+    "databaseUrl": "http://localhost:8090/_/#/collections?filter=project_AclalQQd6xR8kYt",
+    "timestamp": 1763154175320
+  },
+  "Zs8TUu2FcVlBYP2": {
+    "hash": "9000c025576b5c63",
+    "url": "http://localhost:4000/apps/project-Zs8TUu2FcVlBYP2/",
+    "apiUrl": null,
+    "databaseUrl": "http://localhost:8090/_/#/collections?filter=project_Zs8TUu2FcVlBYP2",
+    "timestamp": 1763164988616
+  }
+}

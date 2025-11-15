@@ -222,7 +222,10 @@ export function detectPlaceholders(content: string, filePath: string): Validatio
         const absoluteIndex = bodyIndex + (match.index || 0);
 
         // Get surrounding context to check if it's inside an HTML attribute
-        const surroundingText = content.substring(Math.max(0, absoluteIndex - 50), absoluteIndex + 50);
+        const surroundingText = content.substring(
+          Math.max(0, absoluteIndex - 50),
+          absoluteIndex + 50
+        );
 
         // Skip if this appears to be inside an HTML attribute (e.g., placeholder="...")
         if (surroundingText.match(/\w+\s*=\s*["'][^"']*$/)) {
@@ -256,10 +259,13 @@ export function detectPlaceholders(content: string, filePath: string): Validatio
     const functionBody = match[2].trim();
 
     // If function body is empty or only contains comments
-    if (!functionBody || functionBody.split('\n').every(line => {
-      const trimmed = line.trim();
-      return trimmed === '' || trimmed.startsWith('//') || trimmed.startsWith('/*');
-    })) {
+    if (
+      !functionBody ||
+      functionBody.split('\n').every((line) => {
+        const trimmed = line.trim();
+        return trimmed === '' || trimmed.startsWith('//') || trimmed.startsWith('/*');
+      })
+    ) {
       const line = getLineNumber(content, match.index || 0);
 
       errors.push({
@@ -288,11 +294,14 @@ function getContext(content: string, index: number, contextLines: number = 2): s
   const start = Math.max(0, lineNumber - contextLines);
   const end = Math.min(lines.length, lineNumber + contextLines + 1);
 
-  return lines.slice(start, end).map((line, i) => {
-    const currentLine = start + i + 1;
-    const marker = currentLine === lineNumber + 1 ? '→' : ' ';
-    return `${marker} ${currentLine}: ${line}`;
-  }).join('\n');
+  return lines
+    .slice(start, end)
+    .map((line, i) => {
+      const currentLine = start + i + 1;
+      const marker = currentLine === lineNumber + 1 ? '→' : ' ';
+      return `${marker} ${currentLine}: ${line}`;
+    })
+    .join('\n');
 }
 
 /**

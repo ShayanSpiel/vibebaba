@@ -17,7 +17,7 @@ export interface DesignConfig {
 interface DesignSystem {
   id: DesignSystemId;
   name: string;
-  enabled: boolean;  // ← TOGGLE HERE
+  enabled: boolean; // ← TOGGLE HERE
   description: string;
   getPrompt: (config: DesignConfig) => string;
 }
@@ -29,37 +29,43 @@ export const DESIGN_SYSTEMS: Record<DesignSystemId, DesignSystem> = {
   'ant-design': {
     id: 'ant-design',
     name: 'Ant Design System',
-    enabled: false,  // ← DISABLED (removed completely)
+    enabled: false, // ← DISABLED (removed completely)
     description: 'Enterprise-grade design system with Ant Design specifications (REMOVED)',
     getPrompt: () => {
-      throw new Error('Ant Design has been removed. System now uses shadcn/ui. Check lib/design-systems/index.ts');
-    }
+      throw new Error(
+        'Ant Design has been removed. System now uses shadcn/ui. Check lib/design-systems/index.ts'
+      );
+    },
   },
   'tailwind-shadcn': {
     id: 'tailwind-shadcn',
     name: 'Tailwind + shadcn/ui',
-    enabled: true,  // ← ACTIVE (AI-native, standard patterns)
+    enabled: true, // ← ACTIVE (AI-native, standard patterns)
     description: 'Modern, AI-friendly design system using Tailwind CSS and shadcn/ui components',
-    getPrompt: (config) => getShadcnPrompt(config)
+    getPrompt: (config) => getShadcnPrompt(config),
   },
   'v0-inspired': {
     id: 'v0-inspired',
     name: 'V0-Inspired System',
-    enabled: false,  // ← DISABLED
+    enabled: false, // ← DISABLED
     description: 'V0.dev-inspired creative system with semantic colors',
     getPrompt: () => {
-      throw new Error('V0-inspired design system is currently disabled. Enable in lib/design-systems/index.ts');
-    }
+      throw new Error(
+        'V0-inspired design system is currently disabled. Enable in lib/design-systems/index.ts'
+      );
+    },
   },
   'enhanced-2025': {
     id: 'enhanced-2025',
     name: 'Enhanced 2025 System',
-    enabled: false,  // ← DISABLED
+    enabled: false, // ← DISABLED
     description: 'Modern UI patterns with glassmorphism and advanced caching',
     getPrompt: () => {
-      throw new Error('Enhanced-2025 design system is currently disabled. Enable in lib/design-systems/index.ts');
-    }
-  }
+      throw new Error(
+        'Enhanced-2025 design system is currently disabled. Enable in lib/design-systems/index.ts'
+      );
+    },
+  },
 };
 
 /**
@@ -67,9 +73,11 @@ export const DESIGN_SYSTEMS: Record<DesignSystemId, DesignSystem> = {
  * Throws error if no system is enabled
  */
 export function getActiveDesignSystem(): DesignSystem {
-  const active = Object.values(DESIGN_SYSTEMS).find(ds => ds.enabled);
+  const active = Object.values(DESIGN_SYSTEMS).find((ds) => ds.enabled);
   if (!active) {
-    throw new Error('No design system enabled! Check DESIGN_SYSTEMS config in lib/design-systems/index.ts');
+    throw new Error(
+      'No design system enabled! Check DESIGN_SYSTEMS config in lib/design-systems/index.ts'
+    );
   }
   return active;
 }

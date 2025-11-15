@@ -77,7 +77,7 @@ async function rateLimit(): Promise<void> {
   const now = Date.now();
   const timeSinceLastRequest = now - lastRequestTime;
   if (timeSinceLastRequest < RATE_LIMIT_DELAY) {
-    await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastRequest));
+    await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastRequest));
   }
   lastRequestTime = Date.now();
 }
@@ -85,7 +85,10 @@ async function rateLimit(): Promise<void> {
 /**
  * Fetch with timeout and retry logic
  */
-async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> {
   const { timeout = 5000, ...fetchOptions } = options;
 
   const controller = new AbortController();
@@ -107,7 +110,12 @@ async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: 
 /**
  * Fetch a random image URL from Unsplash API with retry logic
  */
-async function fetchUnsplashImage(query: string, width: number, height: number, retries = 2): Promise<string> {
+async function fetchUnsplashImage(
+  query: string,
+  width: number,
+  height: number,
+  retries = 2
+): Promise<string> {
   // Apply rate limiting
   await rateLimit();
 
@@ -116,7 +124,7 @@ async function fetchUnsplashImage(query: string, width: number, height: number, 
       if (attempt > 0) {
         console.log(`[Unsplash] Retry attempt ${attempt} for query: ${query}`);
         // Exponential backoff: wait longer between retries
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }
 
       const params = new URLSearchParams({
@@ -137,7 +145,7 @@ async function fetchUnsplashImage(query: string, width: number, height: number, 
         if (response.status === 429) {
           // Rate limited, wait longer
           console.warn('[Unsplash] Rate limited, waiting before retry...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           continue;
         }
         // For other errors, try next attempt or fallback
@@ -208,23 +216,67 @@ export async function getRelevantImages(description: string): Promise<{
 
   let category: keyof typeof categoryQueries = 'tech'; // default
 
-  if (lowerDesc.includes('fitness') || lowerDesc.includes('gym') || lowerDesc.includes('workout') || lowerDesc.includes('health')) {
+  if (
+    lowerDesc.includes('fitness') ||
+    lowerDesc.includes('gym') ||
+    lowerDesc.includes('workout') ||
+    lowerDesc.includes('health')
+  ) {
     category = 'fitness';
-  } else if (lowerDesc.includes('food') || lowerDesc.includes('restaurant') || lowerDesc.includes('recipe') || lowerDesc.includes('meal')) {
+  } else if (
+    lowerDesc.includes('food') ||
+    lowerDesc.includes('restaurant') ||
+    lowerDesc.includes('recipe') ||
+    lowerDesc.includes('meal')
+  ) {
     category = 'food';
-  } else if (lowerDesc.includes('design') || lowerDesc.includes('creative') || lowerDesc.includes('art')) {
+  } else if (
+    lowerDesc.includes('design') ||
+    lowerDesc.includes('creative') ||
+    lowerDesc.includes('art')
+  ) {
     category = 'design';
-  } else if (lowerDesc.includes('saas') || lowerDesc.includes('software') || lowerDesc.includes('platform')) {
+  } else if (
+    lowerDesc.includes('saas') ||
+    lowerDesc.includes('software') ||
+    lowerDesc.includes('platform')
+  ) {
     category = 'saas';
-  } else if (lowerDesc.includes('shop') || lowerDesc.includes('ecommerce') || lowerDesc.includes('e-commerce') || lowerDesc.includes('store') || lowerDesc.includes('product')) {
+  } else if (
+    lowerDesc.includes('shop') ||
+    lowerDesc.includes('ecommerce') ||
+    lowerDesc.includes('e-commerce') ||
+    lowerDesc.includes('store') ||
+    lowerDesc.includes('product')
+  ) {
     category = 'ecommerce';
-  } else if (lowerDesc.includes('education') || lowerDesc.includes('learning') || lowerDesc.includes('course') || lowerDesc.includes('school')) {
+  } else if (
+    lowerDesc.includes('education') ||
+    lowerDesc.includes('learning') ||
+    lowerDesc.includes('course') ||
+    lowerDesc.includes('school')
+  ) {
     category = 'education';
-  } else if (lowerDesc.includes('travel') || lowerDesc.includes('trip') || lowerDesc.includes('vacation') || lowerDesc.includes('hotel')) {
+  } else if (
+    lowerDesc.includes('travel') ||
+    lowerDesc.includes('trip') ||
+    lowerDesc.includes('vacation') ||
+    lowerDesc.includes('hotel')
+  ) {
     category = 'travel';
-  } else if (lowerDesc.includes('social') || lowerDesc.includes('community') || lowerDesc.includes('network') || lowerDesc.includes('chat')) {
+  } else if (
+    lowerDesc.includes('social') ||
+    lowerDesc.includes('community') ||
+    lowerDesc.includes('network') ||
+    lowerDesc.includes('chat')
+  ) {
     category = 'social';
-  } else if (lowerDesc.includes('task') || lowerDesc.includes('todo') || lowerDesc.includes('productivity') || lowerDesc.includes('note')) {
+  } else if (
+    lowerDesc.includes('task') ||
+    lowerDesc.includes('todo') ||
+    lowerDesc.includes('productivity') ||
+    lowerDesc.includes('note')
+  ) {
     category = 'productivity';
   }
 

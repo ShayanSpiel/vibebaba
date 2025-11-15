@@ -27,8 +27,8 @@ export const userCollectionSchema = {
       options: {
         min: 3,
         max: 150,
-        pattern: '^[a-zA-Z0-9_]+$'
-      }
+        pattern: '^[a-zA-Z0-9_]+$',
+      },
     },
     {
       name: 'email',
@@ -36,18 +36,18 @@ export const userCollectionSchema = {
       required: true,
       options: {
         exceptDomains: [],
-        onlyDomains: []
-      }
+        onlyDomains: [],
+      },
     },
     {
       name: 'emailVisibility',
       type: 'bool',
-      required: false
+      required: false,
     },
     {
       name: 'verified',
       type: 'bool',
-      required: false
+      required: false,
     },
     {
       name: 'name',
@@ -56,8 +56,8 @@ export const userCollectionSchema = {
       options: {
         min: null,
         max: null,
-        pattern: ''
-      }
+        pattern: '',
+      },
     },
     {
       name: 'avatar',
@@ -67,8 +67,8 @@ export const userCollectionSchema = {
         maxSelect: 1,
         maxSize: 5242880,
         mimeTypes: ['image/jpeg', 'image/png', 'image/svg+xml', 'image/gif', 'image/webp'],
-        thumbs: ['100x100']
-      }
+        thumbs: ['100x100'],
+      },
     },
     {
       name: 'role',
@@ -76,14 +76,14 @@ export const userCollectionSchema = {
       required: false,
       options: {
         maxSelect: 1,
-        values: ['user', 'admin']
-      }
-    }
+        values: ['user', 'admin'],
+      },
+    },
   ],
   indexes: [
     'CREATE UNIQUE INDEX idx_username ON users (username)',
-    'CREATE UNIQUE INDEX idx_email ON users (email)'
-  ]
+    'CREATE UNIQUE INDEX idx_email ON users (email)',
+  ],
 };
 
 /**
@@ -952,13 +952,13 @@ export const authDependencies = {
     bcryptjs: '^2.4.3',
     jsonwebtoken: '^9.0.2',
     'express-validator': '^7.0.1',
-    pocketbase: '^0.21.3'
+    pocketbase: '^0.21.3',
   },
   backendDevDependencies: {
     '@types/bcryptjs': '^2.4.6',
-    '@types/jsonwebtoken': '^9.0.5'
+    '@types/jsonwebtoken': '^9.0.5',
   },
-  frontend: {}
+  frontend: {},
 };
 
 /**
@@ -970,37 +970,37 @@ export function generateAuthFiles(projectId: string): FileToValidate[] {
   // Backend: Auth routes
   files.push({
     path: 'backend/routes/auth.ts',
-    content: authRoutesTemplate
+    content: authRoutesTemplate,
   });
 
   // Backend: Auth middleware
   files.push({
     path: 'backend/middleware/auth.ts',
-    content: authMiddlewareTemplate
+    content: authMiddlewareTemplate,
   });
 
   // Frontend: Login page
   files.push({
     path: 'src/app/login/page.tsx',
-    content: loginPageTemplate
+    content: loginPageTemplate,
   });
 
   // Frontend: Register page
   files.push({
     path: 'src/app/register/page.tsx',
-    content: registerPageTemplate
+    content: registerPageTemplate,
   });
 
   // Frontend: API client
   files.push({
     path: 'src/lib/api-client.ts',
-    content: apiClientTemplate
+    content: apiClientTemplate,
   });
 
   // Environment variables
   files.push({
     path: '.env.local',
-    content: envTemplate
+    content: envTemplate,
   });
 
   return files;
@@ -1052,5 +1052,5 @@ export default {
   authDependencies,
   generateAuthFiles,
   getPocketBaseInitScript,
-  getExpressServerIntegration
+  getExpressServerIntegration,
 };

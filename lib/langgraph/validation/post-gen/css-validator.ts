@@ -20,7 +20,6 @@ export function validateCSS(content: string, filePath: string): ValidationError[
     for (const { css, startLine } of styleBlocks) {
       errors.push(...validateCSSBlock(css, filePath, startLine));
     }
-
   } catch (error: any) {
     errors.push({
       file: filePath,
@@ -138,7 +137,7 @@ function validateCSSBlock(css: string, filePath: string, offsetLine: number): Va
   }
 
   // 4. Check for duplicate properties in same rule
-  const ruleBlocks = css.split('}').filter(block => block.trim());
+  const ruleBlocks = css.split('}').filter((block) => block.trim());
 
   for (const block of ruleBlocks) {
     const properties = new Map<string, number[]>();
@@ -206,7 +205,8 @@ function validateCSSBlock(css: string, filePath: string, offsetLine: number): Va
       message: errorMessage,
       rule: 'color-no-invalid-hex',
       autoFixable: false,
-      suggestion: 'Use valid hex format: #RGB (3 digits) or #RRGGBB (6 digits). Examples: #FFF, #000000, #667eea',
+      suggestion:
+        'Use valid hex format: #RGB (3 digits) or #RRGGBB (6 digits). Examples: #FFF, #000000, #667eea',
     });
   }
 

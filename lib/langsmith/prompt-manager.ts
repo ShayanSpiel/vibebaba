@@ -38,10 +38,7 @@ export interface PromptMetrics {
 /**
  * Fetch a prompt from LangSmith Hub with caching
  */
-export async function fetchPrompt(
-  promptName: string,
-  useCache = true
-): Promise<any> {
+export async function fetchPrompt(promptName: string, useCache = true): Promise<any> {
   // Check cache first
   if (useCache) {
     const cached = promptCache.get(promptName);
@@ -68,7 +65,7 @@ export async function fetchPrompt(
     console.error(`[LangSmith] Failed to fetch prompt "${promptName}":`, error.message);
     throw new Error(
       `Failed to fetch prompt from LangSmith Hub. ` +
-      `Make sure the prompt "${promptName}" exists and is public, or you have access to it.`
+        `Make sure the prompt "${promptName}" exists and is public, or you have access to it.`
     );
   }
 }
@@ -92,9 +89,7 @@ export function selectVariant(
   // Validate weights sum to 100
   const totalWeight = config.variants.reduce((sum, v) => sum + v.weight, 0);
   if (Math.abs(totalWeight - 100) > 0.01) {
-    console.warn(
-      `[LangSmith] Variant weights sum to ${totalWeight}, not 100. Normalizing...`
-    );
+    console.warn(`[LangSmith] Variant weights sum to ${totalWeight}, not 100. Normalizing...`);
   }
 
   let selector: number;
@@ -178,10 +173,7 @@ export async function trackPromptMetrics(metrics: PromptMetrics) {
 /**
  * Format prompt with variables
  */
-export function formatPrompt(
-  prompt: any,
-  variables: Record<string, any>
-): string {
+export function formatPrompt(prompt: any, variables: Record<string, any>): string {
   try {
     // LangSmith prompts have a .format() method
     if (typeof prompt.format === 'function') {

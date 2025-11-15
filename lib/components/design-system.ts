@@ -14,107 +14,107 @@ export const colors = {
   // Primary Brand Colors - Golden Gradient
   brand: {
     primary: {
-      DEFAULT: '#F59E0B',      // Amber-500
-      light: '#FCD34D',        // Amber-300
-      dark: '#D97706',         // Amber-600
-      pale: '#FEF3C7',         // Amber-100
+      DEFAULT: '#F59E0B', // Amber-500
+      light: '#FCD34D', // Amber-300
+      dark: '#D97706', // Amber-600
+      pale: '#FEF3C7', // Amber-100
     },
     secondary: {
-      DEFAULT: '#EAB308',      // Yellow-500
-      light: '#FDE047',        // Yellow-300
-      dark: '#CA8A04',         // Yellow-600
-      pale: '#FEF9C3',         // Yellow-100
+      DEFAULT: '#EAB308', // Yellow-500
+      light: '#FDE047', // Yellow-300
+      dark: '#CA8A04', // Yellow-600
+      pale: '#FEF9C3', // Yellow-100
     },
   },
 
   // Golden Gradients
   gradients: {
     primary: {
-      from: '#FBBF24',         // Amber-400
-      to: '#EAB308',           // Yellow-600
+      from: '#FBBF24', // Amber-400
+      to: '#EAB308', // Yellow-600
       css: 'linear-gradient(to right, #FBBF24, #EAB308)',
     },
     hover: {
-      from: '#F59E0B',         // Amber-500
-      to: '#CA8A04',           // Yellow-700
+      from: '#F59E0B', // Amber-500
+      to: '#CA8A04', // Yellow-700
       css: 'linear-gradient(to right, #F59E0B, #CA8A04)',
     },
     light: {
-      from: '#FDE68A',         // Amber-200
-      to: '#FEF08A',           // Yellow-200
+      from: '#FDE68A', // Amber-200
+      to: '#FEF08A', // Yellow-200
       css: 'linear-gradient(to right, #FDE68A, #FEF08A)',
     },
     radial: {
-      from: '#FBBF24',         // Amber-400
-      to: '#EAB308',           // Yellow-600
+      from: '#FBBF24', // Amber-400
+      to: '#EAB308', // Yellow-600
       css: 'radial-gradient(circle, #FBBF24, #EAB308)',
     },
   },
 
   // Background Colors
   background: {
-    base: '#0A0A0A',           // Almost black
-    raised: '#1A1A1A',         // Slightly lighter
-    subtle: '#171717',         // Neutral-900
-    overlay: '#262626',        // Neutral-800
-    sunken: '#0F0F0F',         // Darker
-    card: '#1F1F1F',           // Card background
+    base: '#0A0A0A', // Almost black
+    raised: '#1A1A1A', // Slightly lighter
+    subtle: '#171717', // Neutral-900
+    overlay: '#262626', // Neutral-800
+    sunken: '#0F0F0F', // Darker
+    card: '#1F1F1F', // Card background
   },
 
   // Text Colors
   text: {
-    primary: '#FAFAFA',        // Almost white
-    secondary: '#D4D4D4',      // Neutral-300
-    tertiary: '#A3A3A3',       // Neutral-400
-    inverse: '#0A0A0A',        // Dark text on light backgrounds
-    muted: '#737373',          // Neutral-500
-    disabled: '#525252',       // Neutral-600
+    primary: '#FAFAFA', // Almost white
+    secondary: '#D4D4D4', // Neutral-300
+    tertiary: '#A3A3A3', // Neutral-400
+    inverse: '#0A0A0A', // Dark text on light backgrounds
+    muted: '#737373', // Neutral-500
+    disabled: '#525252', // Neutral-600
   },
 
   // Border Colors
   border: {
-    subtle: '#262626',         // Very subtle
-    light: '#404040',          // Light border
-    DEFAULT: '#525252',        // Default border
-    strong: '#737373',         // Strong border
-    focus: '#FBBF24',          // Golden focus
-    brand: '#F59E0B',          // Brand border
+    subtle: '#262626', // Very subtle
+    light: '#404040', // Light border
+    DEFAULT: '#525252', // Default border
+    strong: '#737373', // Strong border
+    focus: '#FBBF24', // Golden focus
+    brand: '#F59E0B', // Brand border
   },
 
   // Semantic Colors
   semantic: {
     success: {
-      DEFAULT: '#22C55E',      // Green-500
-      light: '#86EFAC',        // Green-300
-      dark: '#16A34A',         // Green-600
-      bg: '#14532D',           // Green-900
+      DEFAULT: '#22C55E', // Green-500
+      light: '#86EFAC', // Green-300
+      dark: '#16A34A', // Green-600
+      bg: '#14532D', // Green-900
     },
     error: {
-      DEFAULT: '#EF4444',      // Red-500
-      light: '#FCA5A5',        // Red-300
-      dark: '#DC2626',         // Red-600
-      bg: '#7F1D1D',           // Red-900
+      DEFAULT: '#EF4444', // Red-500
+      light: '#FCA5A5', // Red-300
+      dark: '#DC2626', // Red-600
+      bg: '#7F1D1D', // Red-900
     },
     warning: {
-      DEFAULT: '#F59E0B',      // Amber-500 (golden)
-      light: '#FCD34D',        // Amber-300
-      dark: '#D97706',         // Amber-600
-      bg: '#78350F',           // Amber-900
+      DEFAULT: '#F59E0B', // Amber-500 (golden)
+      light: '#FCD34D', // Amber-300
+      dark: '#D97706', // Amber-600
+      bg: '#78350F', // Amber-900
     },
     info: {
-      DEFAULT: '#3B82F6',      // Blue-500
-      light: '#93C5FD',        // Blue-300
-      dark: '#2563EB',         // Blue-600
-      bg: '#1E3A8A',           // Blue-900
+      DEFAULT: '#3B82F6', // Blue-500
+      light: '#93C5FD', // Blue-300
+      dark: '#2563EB', // Blue-600
+      bg: '#1E3A8A', // Blue-900
     },
   },
 
   // Accent Colors
   accents: {
-    gold: '#FFD700',           // Pure gold
-    bronze: '#CD7F32',         // Bronze
-    copper: '#B87333',         // Copper
-    rose: '#F43F5E',           // Rose-500
+    gold: '#FFD700', // Pure gold
+    bronze: '#CD7F32', // Bronze
+    copper: '#B87333', // Copper
+    rose: '#F43F5E', // Rose-500
   },
 
   // Overlay & Modal Colors
@@ -134,18 +134,18 @@ export const typography = {
   },
 
   fontSize: {
-    xs: '0.75rem',       // 12px
-    sm: '0.875rem',      // 14px
-    base: '1rem',        // 16px
-    lg: '1.125rem',      // 18px
-    xl: '1.25rem',       // 20px
-    '2xl': '1.5rem',     // 24px
-    '3xl': '1.875rem',   // 30px
-    '4xl': '2.25rem',    // 36px
-    '5xl': '3rem',       // 48px
-    '6xl': '3.75rem',    // 60px
-    '7xl': '4.5rem',     // 72px
-    '8xl': '6rem',       // 96px
+    xs: '0.75rem', // 12px
+    sm: '0.875rem', // 14px
+    base: '1rem', // 16px
+    lg: '1.125rem', // 18px
+    xl: '1.25rem', // 20px
+    '2xl': '1.5rem', // 24px
+    '3xl': '1.875rem', // 30px
+    '4xl': '2.25rem', // 36px
+    '5xl': '3rem', // 48px
+    '6xl': '3.75rem', // 60px
+    '7xl': '4.5rem', // 72px
+    '8xl': '6rem', // 96px
   },
 
   fontWeight: {
@@ -180,39 +180,39 @@ export const typography = {
 export const spacing = {
   '0': '0',
   px: '1px',
-  '0.5': '0.125rem',   // 2px
-  '1': '0.25rem',      // 4px
-  '1.5': '0.375rem',   // 6px
-  '2': '0.5rem',       // 8px
-  '2.5': '0.625rem',   // 10px
-  '3': '0.75rem',      // 12px
-  '3.5': '0.875rem',   // 14px
-  '4': '1rem',         // 16px
-  '5': '1.25rem',      // 20px
-  '6': '1.5rem',       // 24px
-  '7': '1.75rem',      // 28px
-  '8': '2rem',         // 32px
-  '9': '2.25rem',      // 36px
-  '10': '2.5rem',      // 40px
-  '12': '3rem',        // 48px
-  '14': '3.5rem',      // 56px
-  '16': '4rem',        // 64px
-  '20': '5rem',        // 80px
-  '24': '6rem',        // 96px
-  '32': '8rem',        // 128px
+  '0.5': '0.125rem', // 2px
+  '1': '0.25rem', // 4px
+  '1.5': '0.375rem', // 6px
+  '2': '0.5rem', // 8px
+  '2.5': '0.625rem', // 10px
+  '3': '0.75rem', // 12px
+  '3.5': '0.875rem', // 14px
+  '4': '1rem', // 16px
+  '5': '1.25rem', // 20px
+  '6': '1.5rem', // 24px
+  '7': '1.75rem', // 28px
+  '8': '2rem', // 32px
+  '9': '2.25rem', // 36px
+  '10': '2.5rem', // 40px
+  '12': '3rem', // 48px
+  '14': '3.5rem', // 56px
+  '16': '4rem', // 64px
+  '20': '5rem', // 80px
+  '24': '6rem', // 96px
+  '32': '8rem', // 128px
 };
 
 // Border Radius - Modern, smooth curves
 export const borderRadius = {
   none: '0',
-  sm: '0.25rem',       // 4px
-  DEFAULT: '0.5rem',   // 8px
-  md: '0.5rem',        // 8px
-  lg: '0.75rem',       // 12px
-  xl: '1rem',          // 16px
-  '2xl': '1.5rem',     // 24px
-  '3xl': '2rem',       // 32px
-  full: '9999px',      // Fully rounded
+  sm: '0.25rem', // 4px
+  DEFAULT: '0.5rem', // 8px
+  md: '0.5rem', // 8px
+  lg: '0.75rem', // 12px
+  xl: '1rem', // 16px
+  '2xl': '1.5rem', // 24px
+  '3xl': '2rem', // 32px
+  full: '9999px', // Fully rounded
 };
 
 // Border Width
@@ -450,7 +450,10 @@ export const getGradient = (type: 'primary' | 'hover' | 'light' | 'radial' = 'pr
 };
 
 // Utility function to get shadow CSS
-export const getShadow = (size: 'sm' | 'md' | 'lg' | 'xl' | '2xl' = 'md', golden: boolean = false) => {
+export const getShadow = (
+  size: 'sm' | 'md' | 'lg' | 'xl' | '2xl' = 'md',
+  golden: boolean = false
+) => {
   if (golden) {
     return shadows.golden[size as 'sm' | 'md' | 'lg' | 'xl'];
   }

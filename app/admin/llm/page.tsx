@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Check, Copy, Loader2, Send, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Send, Loader2, Trash2, Copy, Check, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { getCurrentAIConfig } from '@/lib/ai/ai-config';
 
 interface Message {
@@ -148,9 +148,7 @@ export default function AdminLLMTestPage() {
           <span>Cost: {aiConfig.cost}</span>
         </div>
         {statusMessage && (
-          <div className="mt-3 p-3 rounded-md bg-muted text-sm">
-            {statusMessage}
-          </div>
+          <div className="mt-3 p-3 rounded-md bg-muted text-sm">{statusMessage}</div>
         )}
       </div>
 
@@ -197,9 +195,7 @@ export default function AdminLLMTestPage() {
                 >
                   <div
                     className={`max-w-[80%] rounded-lg p-4 ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                      message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, logAdminAction } from '@/lib/auth/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
+import { logAdminAction, requireAdmin } from '@/lib/auth/admin-middleware';
 
 const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090';
 
@@ -14,24 +14,15 @@ export async function POST(req: NextRequest) {
       const { emails, tokens, action } = await req.json();
 
       if (!emails || !Array.isArray(emails) || emails.length === 0) {
-        return NextResponse.json(
-          { error: 'emails array is required' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'emails array is required' }, { status: 400 });
       }
 
       if (!tokens || tokens <= 0) {
-        return NextResponse.json(
-          { error: 'tokens must be greater than 0' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'tokens must be greater than 0' }, { status: 400 });
       }
 
       if (!action || (action !== 'add' && action !== 'remove')) {
-        return NextResponse.json(
-          { error: 'action must be "add" or "remove"' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'action must be "add" or "remove"' }, { status: 400 });
       }
 
       const pb = new PocketBase(PB_URL);
@@ -75,19 +66,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Log admin action
-      await logAdminAction(
-        admin.id,
-        'bulk_credit_operation',
-        'users',
-        '',
-        {
-          action,
-          tokens,
-          totalEmails: emails.length,
-          successCount: results.success.length,
-          failedCount: results.failed.length,
-        }
-      );
+      await logAdminAction(admin.id, 'bulk_credit_operation', 'users', '', {
+        action,
+        tokens,
+        totalEmails: emails.length,
+        successCount: results.success.length,
+        failedCount: results.failed.length,
+      });
 
       return NextResponse.json({
         success: true,
@@ -96,10 +81,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (error: any) {
       console.error('Error in bulk credit operation:', error);
-      return NextResponse.json(
-        { error: 'Failed to process bulk operation' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to process bulk operation' }, { status: 500 });
     }
   });
 }

@@ -1,6 +1,6 @@
 // app/api/admin/pricing/config/route.ts
 // Admin API for managing pricing configuration
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/auth/admin-auth';
 import { getPricingConfig, reloadPricingConfig } from '@/lib/config/pricing-config';
 import { getAdminPb } from '@/lib/database/pocketbase-admin';
@@ -23,9 +23,7 @@ export async function GET(req: NextRequest) {
     const adminPb = await getAdminPb();
     let storedConfig = null;
     try {
-      const setting = await adminPb
-        .collection('settings')
-        .getFirstListItem('key="pricing_config"');
+      const setting = await adminPb.collection('settings').getFirstListItem('key="pricing_config"');
       if (setting?.value) {
         storedConfig = JSON.parse(setting.value);
       }
@@ -41,10 +39,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching pricing config:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch pricing config' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch pricing config' }, { status: 500 });
   }
 }
 
@@ -64,10 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Validate the updates
     if (!updates || typeof updates !== 'object') {
-      return NextResponse.json(
-        { error: 'Invalid configuration format' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid configuration format' }, { status: 400 });
     }
 
     // Save to database
@@ -137,9 +129,6 @@ export async function PUT(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error reloading pricing config:', error);
-    return NextResponse.json(
-      { error: 'Failed to reload pricing config' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to reload pricing config' }, { status: 500 });
   }
 }

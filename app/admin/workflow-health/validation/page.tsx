@@ -6,11 +6,10 @@
  * Monitors validation errors and debugging sessions
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -19,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ValidationError {
   id: string;
@@ -88,15 +88,18 @@ export default function ValidationDashboard() {
       const data = await response.json();
 
       // Transform workflow-health data to match validation page expectations
-      const validationStats = data.category_stats?.validation || { total: 0, errors: 0, warnings: 0 };
+      const validationStats = data.category_stats?.validation || {
+        total: 0,
+        errors: 0,
+        warnings: 0,
+      };
       const totalErrors = validationStats.errors;
       const totalWarnings = validationStats.warnings;
       const totalSessions = validationStats.total;
       const successfulSessions = totalSessions - totalErrors;
       const failedSessions = totalErrors;
-      const successRate = totalSessions > 0
-        ? ((successfulSessions / totalSessions) * 100).toFixed(1)
-        : '0';
+      const successRate =
+        totalSessions > 0 ? ((successfulSessions / totalSessions) * 100).toFixed(1) : '0';
 
       // Get recent errors from workflow data
       const recentErrors = data.recent_errors || [];
@@ -110,14 +113,15 @@ export default function ValidationDashboard() {
         successRate,
         errorsByType: {},
         errorsBySeverity: { error: totalErrors, warning: totalWarnings },
-        mostCommonErrors: data.most_common_errors?.map((e: any) => ({
-          rule: e.error,
-          count: e.count,
-          severity: 'error'
-        })) || [],
+        mostCommonErrors:
+          data.most_common_errors?.map((e: any) => ({
+            rule: e.error,
+            count: e.count,
+            severity: 'error',
+          })) || [],
         errorTrend: Object.entries(data.error_trends || {}).map(([date, count]) => ({
           date,
-          count: count as number
+          count: count as number,
         })),
         recentErrors: recentErrors.map((err: any) => ({
           id: err.id,
@@ -134,7 +138,7 @@ export default function ValidationDashboard() {
           attemptNumber: 1,
           created: err.timestamp || new Date().toISOString(),
         })),
-        recentSessions: []
+        recentSessions: [],
       };
 
       setStats(transformedStats);
@@ -167,7 +171,7 @@ export default function ValidationDashboard() {
           <h1 className="text-3xl font-bold mb-2">Validation Dashboard</h1>
           <p className="text-text-secondary">Monitor validation errors and AI debugging sessions</p>
         </div>
-        <Button onClick={() => window.location.href = '/admin/validation/logs'} variant="outline">
+        <Button onClick={() => (window.location.href = '/admin/validation/logs')} variant="outline">
           View Full Logs
         </Button>
       </div>
@@ -191,9 +195,7 @@ export default function ValidationDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-text-secondary">
-                  {stats?.totalWarnings || 0} warnings
-                </p>
+                <p className="text-sm text-text-secondary">{stats?.totalWarnings || 0} warnings</p>
               </CardContent>
             </Card>
 
@@ -217,9 +219,7 @@ export default function ValidationDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-text-secondary">
-                  {stats?.failedSessions || 0} failed
-                </p>
+                <p className="text-sm text-text-secondary">{stats?.failedSessions || 0} failed</p>
               </CardContent>
             </Card>
 
@@ -227,12 +227,15 @@ export default function ValidationDashboard() {
               <CardHeader className="pb-2">
                 <CardDescription>Auto-Fixed</CardDescription>
                 <CardTitle className="text-3xl text-text-primary">
-                  {errors.filter(e => e.isFixed).length}
+                  {errors.filter((e) => e.isFixed).length}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-text-secondary">
-                  {((errors.filter(e => e.isFixed).length / (errors.length || 1)) * 100).toFixed(0)}% of errors
+                  {((errors.filter((e) => e.isFixed).length / (errors.length || 1)) * 100).toFixed(
+                    0
+                  )}
+                  % of errors
                 </p>
               </CardContent>
             </Card>
@@ -291,7 +294,7 @@ export default function ValidationDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {errors.map(error => (
+                  {errors.map((error) => (
                     <TableRow key={error.id}>
                       <TableCell className="font-mono text-sm">
                         {error.file}:{error.line}
@@ -350,7 +353,7 @@ export default function ValidationDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sessions.map(session => (
+                  {sessions.map((session) => (
                     <TableRow key={session.id}>
                       <TableCell>
                         <Badge variant="outline">{session.sessionType}</Badge>
@@ -360,11 +363,13 @@ export default function ValidationDashboard() {
                       <TableCell className="text-text-primary">{session.totalWarnings}</TableCell>
                       <TableCell className="text-text-primary">{session.totalFixed}</TableCell>
                       <TableCell className="font-mono text-xs">
-                        {session.durationMs ? (
-                          session.durationMs < 1000 ? `${session.durationMs}ms` :
-                          session.durationMs < 60000 ? `${(session.durationMs / 1000).toFixed(2)}s` :
-                          `${(session.durationMs / 60000).toFixed(2)}m`
-                        ) : 'N/A'}
+                        {session.durationMs
+                          ? session.durationMs < 1000
+                            ? `${session.durationMs}ms`
+                            : session.durationMs < 60000
+                              ? `${(session.durationMs / 1000).toFixed(2)}s`
+                              : `${(session.durationMs / 60000).toFixed(2)}m`
+                          : 'N/A'}
                       </TableCell>
                       <TableCell>
                         {session.wasSuccessful ? (
@@ -409,7 +414,7 @@ export default function ValidationDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stats?.errorTrend?.map(day => (
+                  {stats?.errorTrend?.map((day) => (
                     <div key={day.date} className="flex items-center justify-between">
                       <span className="text-sm">{day.date}</span>
                       <Badge variant="outline">{day.count}</Badge>
