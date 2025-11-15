@@ -186,10 +186,26 @@ async function startApiServer(projectId, buildPath) {
   console.log(`\n[API Manager] 🚀 Starting API server for ${projectId}...`);
   console.log(`[API Manager] 📂 Build path: ${buildPath}`);
 
-  const apiServerPath = path.join(buildPath, 'api');
+  // Check for standalone Next.js server (for API routes like NextAuth)
+  const standaloneServerPath = path.join(buildPath, 'standalone');
+  const standalonServerFile = path.join(standaloneServerPath, 'server.js');
 
-  // Check if API server exists (optional - PocketBase-direct architecture doesn't need it)
-  if (!fs.existsSync(path.join(apiServerPath, 'server.js'))) {
+  // Check for Express API server
+  const apiServerPath = path.join(buildPath, 'api');
+  const expressServerFile = path.join(apiServerPath, 'server.js');
+
+  let serverPath = null;
+  let serverType = null;
+
+  if (fs.existsSync(standalonServerFile)) {
+    serverPath = standaloneServerPath;
+    serverType = 'standalone';
+    console.log(`[API Manager] 📦 Found standalone Next.js server (supports API routes)`);
+  } else if (fs.existsSync(expressServerFile)) {
+    serverPath = apiServerPath;
+    serverType = 'express';
+    console.log(`[API Manager] 📦 Found Express API server`);
+  } else {
     console.log(`[API Manager] ℹ️  No API server found - using PocketBase-direct architecture`);
     console.log(`[API Manager] ℹ️  Frontend will call PocketBase API directly via /pb-api proxy`);
     return null; // Return null without allocating port (not an error)
@@ -197,41 +213,49 @@ async function startApiServer(projectId, buildPath) {
 
   const port = allocatePort(projectId);
 
-  // ✅ FIX: Install dependencies before starting server
-  console.log(`[API Manager] 📦 Installing API dependencies for ${projectId}...`);
-  const npmInstall = spawn('npm', ['install'], {
-    cwd: apiServerPath,
-    stdio: 'inherit'
-  });
-
-  await new Promise((resolve, reject) => {
-    npmInstall.on('exit', (code) => {
-      if (code === 0) {
-        console.log(`[API Manager] ✅ Dependencies installed for ${projectId}`);
-        resolve();
-      } else {
-        console.error(`[API Manager] ❌ npm install failed for ${projectId} (exit code: ${code})`);
-        reject(new Error('npm install failed'));
-      }
+  // ✅ FIX: Install dependencies before starting server (Express API only, standalone has deps)
+  if (serverType === 'express') {
+    console.log(`[API Manager] 📦 Installing API dependencies for ${projectId}...`);
+    const npmInstall = spawn('npm', ['install'], {
+      cwd: serverPath,
+      stdio: 'inherit'
     });
 
-    npmInstall.on('error', (err) => {
-      console.error(`[API Manager] ❌ npm install error for ${projectId}:`, err);
-      reject(err);
+    await new Promise((resolve, reject) => {
+      npmInstall.on('exit', (code) => {
+        if (code === 0) {
+          console.log(`[API Manager] ✅ Dependencies installed for ${projectId}`);
+          resolve();
+        } else {
+          console.error(`[API Manager] ❌ npm install failed for ${projectId} (exit code: ${code})`);
+          reject(new Error('npm install failed'));
+        }
+      });
+
+      npmInstall.on('error', (err) => {
+        console.error(`[API Manager] ❌ npm install error for ${projectId}:`, err);
+        reject(err);
+      });
+    }).catch((err) => {
+      console.error(`[API Manager] ❌ Failed to install dependencies: ${err.message}`);
+      releasePort(port);
+      return null;
     });
-  }).catch((err) => {
-    console.error(`[API Manager] ❌ Failed to install dependencies: ${err.message}`);
-    releasePort(port);
-    return null;
-  });
+  } else {
+    console.log(`[API Manager] ℹ️  Standalone server has dependencies pre-installed`);
+  }
 
   const apiProcess = spawn('node', ['server.js'], {
-    cwd: apiServerPath,
+    cwd: serverPath,
     env: {
       ...process.env,
       PORT: port,
+      HOSTNAME: '0.0.0.0', // Standalone Next.js requires HOSTNAME
       PROJECT_ID: projectId,
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      // NextAuth/PocketBase integration
+      NEXT_PUBLIC_POCKETBASE_URL: process.env.POCKETBASE_URL || 'http://127.0.0.1:8090',
+      POCKETBASE_URL: process.env.POCKETBASE_URL || 'http://127.0.0.1:8090'
     },
     detached: false
   });
@@ -270,11 +294,12 @@ async function startApiServer(projectId, buildPath) {
   apiServers.set(projectId, {
     process: apiProcess,
     port,
+    type: serverType, // Store server type for routing decisions
     startTime: Date.now(),
     restartCount: 0
   });
 
-  console.log(`[API Manager] ✅ API server started for ${projectId} on port ${port}\n`);
+  console.log(`[API Manager] ✅ ${serverType === 'standalone' ? 'Standalone Next.js' : 'Express API'} server started for ${projectId} on port ${port}\n`);
 
   return port;
 }
@@ -561,14 +586,23 @@ app.post('/deploy/:projectId', async (req, res) => {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // STEP 6: Start API server (if backend config exists)
+    // STEP 6: Start API server (Express API OR standalone Next.js)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let apiPort = null;
     let apiUrl = null;
 
-    if (backendConfig?.apiEndpoints && backendConfig.apiEndpoints.length > 0) {
-      console.log(`\n🔧 Step 6/6: Starting API server...`);
-      console.log(`[Deployment] 🔗 API Endpoints: ${backendConfig.apiEndpoints.length}`);
+    // Check if Express API or standalone Next.js server exists
+    const hasExpressApi = backendConfig?.apiEndpoints && backendConfig.apiEndpoints.length > 0;
+    const hasStandaloneServer = fs.existsSync(path.join(deployPath, 'standalone', 'server.js'));
+
+    if (hasExpressApi || hasStandaloneServer) {
+      console.log(`\n🔧 Step 6/6: Starting ${hasStandaloneServer ? 'standalone Next.js' : 'Express API'} server...`);
+      if (hasExpressApi) {
+        console.log(`[Deployment] 🔗 API Endpoints: ${backendConfig.apiEndpoints.length}`);
+      }
+      if (hasStandaloneServer) {
+        console.log(`[Deployment] 📦 Standalone Next.js (for API routes like NextAuth)`);
+      }
 
       try {
         // Stop existing API server if running
@@ -578,12 +612,12 @@ app.post('/deploy/:projectId', async (req, res) => {
           await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for cleanup
         }
 
-        // Start new API server
-        apiPort = await startApiServer(projectId, buildPath);
+        // Start new API server (will auto-detect standalone or Express)
+        apiPort = await startApiServer(projectId, deployPath);
 
         if (apiPort) {
           apiUrl = `http://localhost:${apiPort}`;
-          console.log(`[Deployment] ✅ API server started on port ${apiPort}\n`);
+          console.log(`[Deployment] ✅ ${hasStandaloneServer ? 'Standalone Next.js' : 'Express API'} server started on port ${apiPort}\n`);
         } else {
           console.log(`[Deployment] ℹ️  API server not started (using PocketBase-direct architecture)\n`);
         }
@@ -778,6 +812,33 @@ app.use('/apps/:projectId', (req, res, next) => {
     "connect-src *; " +
     "frame-src *;"
   );
+
+  // ✅ NEW: Proxy /api/* requests to standalone Next.js server (for NextAuth, etc.)
+  if (req.path.startsWith('/api/')) {
+    const server = apiServers.get(projectId);
+
+    if (server && server.type === 'standalone') {
+      // Proxy request to standalone Next.js server
+      const targetUrl = `http://localhost:${server.port}${req.path}`;
+      console.log(`[Proxy] ${req.method} ${req.path} → standalone:${server.port}`);
+
+      const proxyReq = require('http').request(targetUrl, {
+        method: req.method,
+        headers: req.headers
+      }, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+
+      proxyReq.on('error', (err) => {
+        console.error(`[Proxy] Error proxying to standalone server:`, err);
+        res.status(502).json({ error: 'API server unavailable' });
+      });
+
+      req.pipe(proxyReq);
+      return;
+    }
+  }
 
   // Next.js static export structure: HTML in /server/app/, assets at root
   // Handle static assets (_next/static/* OR static/*) from root

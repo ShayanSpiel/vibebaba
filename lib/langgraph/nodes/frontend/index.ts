@@ -1472,6 +1472,7 @@ ${state.allRequestedFeatures
 ${availableRoutes.length > 0 ? availableRoutes.join('\n') : '✓ / → src/app/page.tsx (main page)'}
 
 When creating navigation links, use these exact route paths.
+${availableRoutes.some(r => r.includes('/login') || r.includes('/signup') || r.includes('/register')) ? '\n🚨 CRITICAL: This app has authentication routes - make sure you add proper buttons or links for login/register pages where appropriate (hero, nav, footer, etc.).' : ''}
 
 ## Available Components (already created):
 ${
